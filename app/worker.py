@@ -5,6 +5,7 @@ class AIWorker(QThread):
 
     finished = Signal(str)
 
+
     def __init__(
         self,
         planner,
@@ -12,12 +13,14 @@ class AIWorker(QThread):
         chat_agent,
         message
     ):
+
         super().__init__()
 
         self.planner = planner
         self.tool_agent = tool_agent
         self.chat_agent = chat_agent
         self.message = message
+
 
 
     def run(self):
@@ -29,9 +32,11 @@ class AIWorker(QThread):
 
         if plan["tool"] == "chat":
 
-            result = self.chat_agent.chat(
-                self.message
+            result = plan.get(
+                "message",
+                "Merhaba!"
             )
+
 
         else:
 

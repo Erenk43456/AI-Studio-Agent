@@ -43,43 +43,6 @@ class AIWindow(QWidget):
         )
 
 
-        self.setStyleSheet("""
-        QWidget {
-            background-color: #1e1e1e;
-            color: white;
-        }
-
-        QTextEdit {
-            background-color: #252526;
-            border: 1px solid #3c3c3c;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        QLineEdit {
-            background-color: #252526;
-            border: 1px solid #3c3c3c;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        QPushButton {
-            background-color: #0078d4;
-            border-radius: 8px;
-            padding: 10px;
-        }
-
-        QPushButton:hover {
-            background-color: #1084e8;
-        }
-        """)
-
-
-        self.busy = False
-
-
         self.memory = Memory()
 
         self.conversation = ConversationMemory()
@@ -121,7 +84,7 @@ class AIWindow(QWidget):
 
 
 
-        layout = QVBoxLayout()
+        self.layout = QVBoxLayout()
 
 
         self.chat = QTextEdit()
@@ -134,11 +97,6 @@ class AIWindow(QWidget):
         self.input = QLineEdit()
 
 
-        self.input.returnPressed.connect(
-            self.send_message
-        )
-
-
         self.button = QPushButton(
             "Gönder"
         )
@@ -149,49 +107,34 @@ class AIWindow(QWidget):
         )
 
 
-        layout.addWidget(
+        self.layout.addWidget(
             self.chat
         )
 
-        layout.addWidget(
+
+        self.layout.addWidget(
             self.input
         )
 
-        layout.addWidget(
+
+        self.layout.addWidget(
             self.button
         )
 
 
         self.setLayout(
-            layout
+            self.layout
         )
 
 
 
     def send_message(self):
 
-        if self.busy:
-            return
-
-
-        message = self.input.text().strip()
+        message = self.input.text()
 
 
         if not message:
             return
-
-
-        self.busy = True
-
-
-        self.button.setEnabled(
-            False
-        )
-
-
-        self.input.setEnabled(
-            False
-        )
 
 
         self.chat.append(
@@ -200,6 +143,11 @@ class AIWindow(QWidget):
 
 
         self.input.clear()
+
+
+        self.button.setEnabled(
+            False
+        )
 
 
         self.worker = AIWorker(
@@ -225,11 +173,8 @@ class AIWindow(QWidget):
     ):
 
         self.chat.append(
-            "AI: " + str(response)
+            "AI: " + response
         )
-
-
-        self.busy = False
 
 
         self.button.setEnabled(
@@ -237,16 +182,10 @@ class AIWindow(QWidget):
         )
 
 
-        self.input.setEnabled(
-            True
-        )
-
-
-        self.input.setFocus()
-
 
 
 if __name__ == "__main__":
+
 
     app = QApplication(
         sys.argv
