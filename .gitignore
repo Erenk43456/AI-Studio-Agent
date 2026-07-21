@@ -1,17 +1,86 @@
-# Virtual environment
-venv/
-.venv/
+# =========================
+# Python
+# =========================
 
-# Python cache
 __pycache__/
 *.py[cod]
+*$py.class
 
-# Local AI data
-data/
+# Virtual Environment
+venv/
+.venv/
+env/
 
-# Environment files
-.env
 
-# IDE files
+# =========================
+# Test / Cache
+# =========================
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+
+# =========================
+# Build / Distribution
+# =========================
+
+build/
+dist/
+*.spec
+
+# Executable files
+*.exe
+
+
+# =========================
+# Release Files
+# =========================
+
+release/
+
+
+# =========================
+# Local Data
+# =========================
+
+data/*.json
+
+# Memory files
+memory/*.json
+
+
+# =========================
+# IDE / Editor
+# =========================
+
 .vscode/
 .idea/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+
+# =========================
+# Logs
+# =========================
+
+*.log
+
+
+# =========================
+# Environment Variables
+# =========================
+
+.env
+.env.*
+
+
+# =========================
+# Temporary Files
+# =========================
+
+*.tmp
+*.bak
+*.swp
