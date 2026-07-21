@@ -17,6 +17,7 @@ class PlannerAgent(BaseAgent):
         self.llm = LLM()
 
 
+
     def clean_json(self, text):
 
         text = text.strip()
@@ -31,16 +32,20 @@ class PlannerAgent(BaseAgent):
             ""
         )
 
+
         match = re.search(
             r"\{.*\}",
             text,
             re.DOTALL
         )
 
+
         if match:
             return match.group()
 
+
         return "{}"
+
 
 
 
@@ -49,8 +54,9 @@ class PlannerAgent(BaseAgent):
         task = task.lower().strip()
 
 
+
         #
-        # Normal sohbet
+        # Selamlaşma
         #
 
         greetings = [
@@ -67,8 +73,73 @@ class PlannerAgent(BaseAgent):
 
             return {
                 "tool": "chat",
-                "message": task
+                "message": "Merhaba! Nasıl yardımcı olabilirim?"
             }
+
+
+
+
+        #
+        # Matematik algılama
+        #
+
+        numbers = re.findall(
+            r"\d+",
+            task
+        )
+
+
+        math_words = [
+            "topla",
+            "ekle",
+            "arttır",
+            "artir",
+            "çıkar",
+            "cikar",
+            "eksi",
+            "çarp",
+            "carp",
+            "kat"
+        ]
+
+
+        if (
+            len(numbers) >= 2
+            and any(
+                word in task
+                for word in math_words
+            )
+        ):
+
+            operation = "add"
+
+
+            if (
+                "çıkar" in task
+                or "cikar" in task
+                or "eksi" in task
+            ):
+                operation = "subtract"
+
+
+            if (
+                "çarp" in task
+                or "carp" in task
+                or "kat" in task
+            ):
+                operation = "multiply"
+
+
+
+            return {
+                "tool": "calculator",
+                "operation": operation,
+                "numbers": [
+                    int(numbers[0]),
+                    int(numbers[1])
+                ]
+            }
+
 
 
 
@@ -89,6 +160,7 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         if (
             "favori oyunum ne" in task
             or "favori oyunum nedir" in task
@@ -98,6 +170,7 @@ class PlannerAgent(BaseAgent):
                 "tool": "memory_get",
                 "key": "favori_oyun"
             }
+
 
 
 
@@ -124,10 +197,16 @@ class PlannerAgent(BaseAgent):
 
 
 
+
+        #
+        # Son görev kaydı
+        #
+
         self.memory.save(
             "last_task",
             task
         )
+
 
 
 
@@ -150,47 +229,20 @@ Format:
 }}
 
 
-
 memory_save:
 Yeni bilgi kaydetmek için.
-
-Format:
-
-{{
-"tool":"memory_save",
-"key":"isim",
-"value":"eren"
-}}
-
 
 
 memory_get:
 Kayıtlı bilgi almak için.
-
-Format:
-
-{{
-"tool":"memory_get",
-"key":"isim"
-}}
-
 
 
 file:
 Dosya işlemleri için.
 
 
-
 chat:
 Normal konuşmalar için.
-
-Format:
-
-{{
-"tool":"chat",
-"message":"cevap"
-}}
-
 
 
 Kurallar:
@@ -233,6 +285,7 @@ Kullanıcı:
             )
 
 
+
             if "tool" not in plan:
 
                 plan["tool"] = "chat"
@@ -240,6 +293,7 @@ Kullanıcı:
 
 
             return plan
+
 
 
 

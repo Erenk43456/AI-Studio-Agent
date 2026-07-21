@@ -85,9 +85,11 @@ class AIWindow(QWidget):
         self.conversation = ConversationMemory()
 
 
+
         self.planner = PlannerAgent(
             self.memory
         )
+
 
 
         registry = ToolRegistry()
@@ -109,6 +111,7 @@ class AIWindow(QWidget):
             "memory",
             MemoryTool(self.memory)
         )
+
 
 
         self.tool_agent = ToolAgent(
@@ -181,6 +184,7 @@ class AIWindow(QWidget):
             return
 
 
+
         self.busy = True
 
 
@@ -202,12 +206,14 @@ class AIWindow(QWidget):
         self.input.clear()
 
 
+
         self.worker = AIWorker(
             self.planner,
             self.tool_agent,
             self.chat_agent,
             message
         )
+
 
 
         self.worker.finished.connect(
@@ -247,6 +253,7 @@ class AIWindow(QWidget):
 
 
 if __name__ == "__main__":
+
 
     app = QApplication(
         sys.argv

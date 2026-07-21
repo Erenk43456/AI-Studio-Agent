@@ -32,9 +32,8 @@ class AIWorker(QThread):
 
         if plan["tool"] == "chat":
 
-            result = plan.get(
-                "message",
-                "Merhaba!"
+            result = self.chat_agent.chat(
+                self.message
             )
 
 
