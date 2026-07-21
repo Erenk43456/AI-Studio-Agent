@@ -56,7 +56,7 @@ class PlannerAgent(BaseAgent):
 
 
         #
-        # Selamlaşma
+        # Normal sohbet / selamlaşma
         #
 
         greetings = [
@@ -65,15 +65,27 @@ class PlannerAgent(BaseAgent):
             "selaam",
             "hey",
             "hi",
-            "hello"
+            "hello",
+            "nasılsın",
+            "sen nasılsın",
+            "iyi misin",
+            "iyiyim",
+            "teşekkür",
+            "tesekkur",
+            "sağol",
+            "sağ ol"
         ]
 
 
-        if task in greetings:
+
+        if any(
+            word in task
+            for word in greetings
+        ):
 
             return {
                 "tool": "chat",
-                "message": "Merhaba! Nasıl yardımcı olabilirim?"
+                "message": task
             }
 
 
@@ -103,6 +115,7 @@ class PlannerAgent(BaseAgent):
         ]
 
 
+
         if (
             len(numbers) >= 2
             and any(
@@ -111,7 +124,9 @@ class PlannerAgent(BaseAgent):
             )
         ):
 
+
             operation = "add"
+
 
 
             if (
@@ -119,7 +134,9 @@ class PlannerAgent(BaseAgent):
                 or "cikar" in task
                 or "eksi" in task
             ):
+
                 operation = "subtract"
+
 
 
             if (
@@ -127,6 +144,7 @@ class PlannerAgent(BaseAgent):
                 or "carp" in task
                 or "kat" in task
             ):
+
                 operation = "multiply"
 
 
@@ -220,7 +238,7 @@ Araçlar:
 calculator:
 Matematik işlemleri için.
 
-Format:
+Örnek:
 
 {{
 "tool":"calculator",
@@ -249,7 +267,7 @@ Kurallar:
 
 - Sadece JSON döndür.
 - Açıklama yazma.
-- Selamlaşmaları memory olarak kaydetme.
+- Normal sohbetlerde chat kullan.
 - Bilgi kaydetme isteği yoksa memory kullanma.
 
 
@@ -267,6 +285,7 @@ Kullanıcı:
             )
 
 
+
             print(
                 "\nLLM cevabı:"
             )
@@ -278,6 +297,7 @@ Kullanıcı:
             response = self.clean_json(
                 response
             )
+
 
 
             plan = json.loads(
@@ -303,6 +323,7 @@ Kullanıcı:
                 "Planner hatası:",
                 error
             )
+
 
 
             return {

@@ -11,6 +11,7 @@ class AIWorker(QThread):
         planner,
         tool_agent,
         chat_agent,
+        conversation,
         message
     ):
 
@@ -19,6 +20,7 @@ class AIWorker(QThread):
         self.planner = planner
         self.tool_agent = tool_agent
         self.chat_agent = chat_agent
+        self.conversation = conversation
         self.message = message
 
 
@@ -42,6 +44,16 @@ class AIWorker(QThread):
             result = self.tool_agent.execute(
                 plan
             )
+
+
+
+        # Konuşmayı kaydet
+
+        self.conversation.add(
+            self.message,
+            str(result)
+        )
+
 
 
         self.finished.emit(

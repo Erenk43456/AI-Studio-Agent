@@ -4,24 +4,42 @@ from PySide6.QtWidgets import (
     QApplication,
     QWidget,
     QVBoxLayout,
-    QTextEdit,
+    QHBoxLayout,
     QLineEdit,
-    QPushButton
+    QPushButton,
+    QLabel,
+    QScrollArea,
+    QStackedWidget
 )
+
+from PySide6.QtCore import Qt
+
 
 from tools.tool_registry import ToolRegistry
 from tools.calculator import Calculator
 from tools.file_tool import FileTool
 from tools.memory_tool import MemoryTool
 
+
 from agents.planner_agent import PlannerAgent
 from agents.tool_agent import ToolAgent
 from agents.chat_agent import ChatAgent
 
+
 from memory.memory import Memory
 from memory.conversation import ConversationMemory
 
+
 from app.worker import AIWorker
+from app.chat_widget import MessageBubble
+from app.header import Header
+from app.sidebar import Sidebar
+
+
+from app.pages.memory_page import MemoryPage
+from app.pages.tools_page import ToolsPage
+from app.pages.settings_page import SettingsPage
+
 
 
 
@@ -38,47 +56,71 @@ class AIWindow(QWidget):
 
 
         self.resize(
-            600,
+            1000,
             700
         )
 
 
-        self.setStyleSheet("""
-        QWidget {
-            background-color: #1e1e1e;
-            color: white;
-        }
 
-        QTextEdit {
-            background-color: #252526;
-            border: 1px solid #3c3c3c;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 14px;
-        }
+        self.setStyleSheet(
+            """
+            QWidget {
+                background-color: #1e1e1e;
+                color: white;
+            }
 
-        QLineEdit {
-            background-color: #252526;
-            border: 1px solid #3c3c3c;
-            border-radius: 8px;
-            padding: 10px;
-            font-size: 14px;
-        }
 
-        QPushButton {
-            background-color: #0078d4;
-            border-radius: 8px;
-            padding: 10px;
-        }
+            QLineEdit {
 
-        QPushButton:hover {
-            background-color: #1084e8;
-        }
-        """)
+                background-color: #252526;
+                border: 1px solid #3c3c3c;
+                border-radius: 8px;
+                padding: 10px;
+
+            }
+
+
+            QPushButton {
+
+                background-color: #0078d4;
+                border-radius: 8px;
+                padding: 10px;
+                color:white;
+
+            }
+
+
+            QPushButton:hover {
+
+                background-color:#1084e8;
+
+            }
+
+
+            QLabel {
+
+                color:white;
+
+            }
+
+
+            QScrollArea {
+
+                border:none;
+
+            }
+            """
+        )
+
 
 
         self.busy = False
 
+
+
+        #
+        # Memory
+        #
 
         self.memory = Memory()
 
@@ -86,10 +128,13 @@ class AIWindow(QWidget):
 
 
 
+        #
+        # Agents
+        #
+
         self.planner = PlannerAgent(
             self.memory
         )
-
 
 
         registry = ToolRegistry()
@@ -120,19 +165,178 @@ class AIWindow(QWidget):
         )
 
 
-        self.chat_agent = ChatAgent()
+        self.chat_agent = ChatAgent(
+            self.memory
+        )
 
 
 
-        layout = QVBoxLayout()
+        #
+        # Ana düzen
+        #
+
+        main_layout = QVBoxLayout()
 
 
-        self.chat = QTextEdit()
 
-        self.chat.setReadOnly(
+        self.header = Header()
+
+
+        main_layout.addWidget(
+            self.header
+        )
+
+
+
+        content_layout = QHBoxLayout()
+
+
+
+        #
+        # Sidebar
+        #
+
+        self.sidebar = Sidebar()
+
+
+        content_layout.addWidget(
+            self.sidebar
+        )
+
+
+
+        #
+        # Sayfalar
+        #
+
+        self.pages = QStackedWidget()
+
+
+
+        self.chat_widget = QWidget()
+
+
+        self.chat_layout = QVBoxLayout()
+
+
+
+        self.chat_layout.setAlignment(
+            Qt.AlignTop
+        )
+
+
+
+        self.chat_widget.setLayout(
+            self.chat_layout
+        )
+
+
+        self.scroll = QScrollArea()
+
+
+        self.scroll.setWidgetResizable(
             True
         )
 
+
+        self.scroll.setWidget(
+            self.chat_widget
+        )
+
+
+        self.pages.addWidget(
+            self.scroll
+        )
+
+
+
+        self.memory_page = MemoryPage()
+
+
+        self.tools_page = ToolsPage()
+
+
+        self.settings_page = SettingsPage()
+
+
+
+        self.pages.addWidget(
+            self.memory_page
+        )
+
+
+        self.pages.addWidget(
+            self.tools_page
+        )
+
+
+        self.pages.addWidget(
+            self.settings_page
+        )
+
+
+
+        content_layout.addWidget(
+            self.pages
+        )
+
+
+
+        main_layout.addLayout(
+            content_layout
+        )
+                #
+        # Sidebar bağlantıları
+        #
+
+        self.sidebar.chat_button.clicked.connect(
+            lambda:
+            self.pages.setCurrentIndex(0)
+        )
+
+
+        self.sidebar.memory_button.clicked.connect(
+            self.show_memory
+        )
+
+
+        self.sidebar.tools_button.clicked.connect(
+            self.show_tools
+        )
+
+
+        self.sidebar.settings_button.clicked.connect(
+            lambda:
+            self.pages.setCurrentIndex(3)
+        )
+
+
+
+
+        #
+        # Durum
+        #
+
+        self.status = QLabel(
+            ""
+        )
+
+
+        self.status.setAlignment(
+            Qt.AlignCenter
+        )
+
+
+        main_layout.addWidget(
+            self.status
+        )
+
+
+
+
+        #
+        # Input
+        #
 
         self.input = QLineEdit()
 
@@ -140,6 +344,7 @@ class AIWindow(QWidget):
         self.input.returnPressed.connect(
             self.send_message
         )
+
 
 
         self.button = QPushButton(
@@ -152,40 +357,109 @@ class AIWindow(QWidget):
         )
 
 
-        layout.addWidget(
-            self.chat
-        )
 
-        layout.addWidget(
+        main_layout.addWidget(
             self.input
         )
 
-        layout.addWidget(
+
+        main_layout.addWidget(
             self.button
         )
 
 
+
         self.setLayout(
-            layout
+            main_layout
         )
+
+
+
+
+
+    def show_memory(self):
+
+        self.memory_page.update_memory(
+            self.memory.data
+        )
+
+
+        self.pages.setCurrentWidget(
+            self.memory_page
+        )
+
+
+
+
+
+    def show_tools(self):
+
+        tools = [
+            "calculator",
+            "file",
+            "memory"
+        ]
+
+
+        self.tools_page.update_tools(
+            tools
+        )
+
+
+        self.pages.setCurrentWidget(
+            self.tools_page
+        )
+
+
+
+
+
+    def add_message(
+        self,
+        text,
+        is_user
+    ):
+
+
+        bubble = MessageBubble(
+            text,
+            is_user
+        )
+
+
+        self.chat_layout.addWidget(
+            bubble
+        )
+
+
+        self.scroll.verticalScrollBar().setValue(
+            self.scroll.verticalScrollBar().maximum()
+        )
+
+
 
 
 
     def send_message(self):
 
+
         if self.busy:
+
             return
+
 
 
         message = self.input.text().strip()
 
 
         if not message:
+
             return
 
 
 
         self.busy = True
+
 
 
         self.button.setEnabled(
@@ -198,12 +472,21 @@ class AIWindow(QWidget):
         )
 
 
-        self.chat.append(
-            "Sen: " + message
+
+        self.add_message(
+            message,
+            True
         )
 
 
+
         self.input.clear()
+
+
+
+        self.status.setText(
+            "🤖 AI düşünüyor..."
+        )
 
 
 
@@ -211,9 +494,9 @@ class AIWindow(QWidget):
             self.planner,
             self.tool_agent,
             self.chat_agent,
+            self.conversation,
             message
         )
-
 
 
         self.worker.finished.connect(
@@ -225,17 +508,27 @@ class AIWindow(QWidget):
 
 
 
+
+
     def show_response(
         self,
         response
     ):
 
-        self.chat.append(
-            "AI: " + str(response)
+
+        self.add_message(
+            str(response),
+            False
+        )
+
+
+        self.status.setText(
+            ""
         )
 
 
         self.busy = False
+
 
 
         self.button.setEnabled(
@@ -249,6 +542,8 @@ class AIWindow(QWidget):
 
 
         self.input.setFocus()
+
+
 
 
 

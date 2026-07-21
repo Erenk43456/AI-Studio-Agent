@@ -14,6 +14,7 @@ class LLM:
         self.url = url
 
 
+
     def generate(
         self,
         prompt
@@ -26,8 +27,15 @@ class LLM:
                 json={
                     "model": self.model,
                     "prompt": prompt,
-                    "stream": False
+
+                    "stream": False,
+
+                    "options": {
+                        "temperature": 0.3,
+                        "num_predict": 150
+                    }
                 },
+
                 timeout=120
             )
 
@@ -47,14 +55,17 @@ class LLM:
             return result.strip()
 
 
+
         except requests.exceptions.Timeout:
 
             return "LLM_ERROR: timeout"
 
 
+
         except requests.exceptions.ConnectionError:
 
             return "LLM_ERROR: connection"
+
 
 
         except Exception as error:
