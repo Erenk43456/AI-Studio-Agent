@@ -6,11 +6,10 @@ venv/
 __pycache__/
 *.py[cod]
 
-# AI Agent local data
-data/memory.json
-data/conversation.json
+# Local AI data
+data/
 
-# Environment variables
+# Environment files
 .env
 
 # IDE files
