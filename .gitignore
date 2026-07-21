@@ -1,0 +1,13 @@
+# Virtual environment
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# AI Agent user data
+data/memory.json
+data/conversation.json
+
+# Environment files
+.env

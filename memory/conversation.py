@@ -4,38 +4,32 @@ import os
 
 class ConversationMemory:
 
-    def __init__(
-        self,
-        file="conversation.json",
-        limit=10
-    ):
 
-        self.file = file
-        self.limit = limit
-        self.data = []
+    def __init__(self):
 
-        self.load()
+        os.makedirs(
+            "data",
+            exist_ok=True
+        )
 
 
-    def load(self):
+        self.file = "data/conversation.json"
 
-        if not os.path.exists(self.file):
-            self.data = []
-            return
 
-        try:
+        if os.path.exists(self.file):
+
             with open(
                 self.file,
                 "r",
                 encoding="utf-8"
             ) as f:
+
                 self.data = json.load(f)
 
-        except (
-            json.JSONDecodeError,
-            OSError
-        ):
+        else:
+
             self.data = []
+
 
 
     def add(
@@ -44,6 +38,7 @@ class ConversationMemory:
         assistant
     ):
 
+
         self.data.append(
             {
                 "user": user,
@@ -51,41 +46,26 @@ class ConversationMemory:
             }
         )
 
-        self.data = self.data[-self.limit:]
 
-        self.save()
+        self.data = self.data[-10:]
 
 
-    def save(self):
+        with open(
+            self.file,
+            "w",
+            encoding="utf-8"
+        ) as f:
 
-        try:
-            with open(
-                self.file,
-                "w",
-                encoding="utf-8"
-            ) as f:
 
-                json.dump(
-                    self.data,
-                    f,
-                    ensure_ascii=False,
-                    indent=4
-                )
-
-        except OSError as error:
-
-            print(
-                "Conversation kayıt hatası:",
-                error
+            json.dump(
+                self.data,
+                f,
+                ensure_ascii=False,
+                indent=4
             )
+
 
 
     def get(self):
 
         return self.data
-
-
-    def clear(self):
-
-        self.data = []
-        self.save()
