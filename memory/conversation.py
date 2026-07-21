@@ -1,30 +1,35 @@
 import json
-import os
+from pathlib import Path
 
 
 class ConversationMemory:
 
-
     def __init__(self):
 
-        os.makedirs(
-            "data",
+        self.data_dir = Path("data")
+
+        self.data_dir.mkdir(
             exist_ok=True
         )
 
+        self.file = self.data_dir / "conversation.json"
 
-        self.file = "data/conversation.json"
 
+        if self.file.exists():
 
-        if os.path.exists(self.file):
+            try:
 
-            with open(
-                self.file,
-                "r",
-                encoding="utf-8"
-            ) as f:
+                with open(
+                    self.file,
+                    "r",
+                    encoding="utf-8"
+                ) as f:
 
-                self.data = json.load(f)
+                    self.data = json.load(f)
+
+            except json.JSONDecodeError:
+
+                self.data = []
 
         else:
 
@@ -38,7 +43,6 @@ class ConversationMemory:
         assistant
     ):
 
-
         self.data.append(
             {
                 "user": user,
@@ -47,15 +51,21 @@ class ConversationMemory:
         )
 
 
+        # Son 10 konuşmayı sakla
         self.data = self.data[-10:]
 
+
+        self._save()
+
+
+
+    def _save(self):
 
         with open(
             self.file,
             "w",
             encoding="utf-8"
         ) as f:
-
 
             json.dump(
                 self.data,

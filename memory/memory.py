@@ -1,28 +1,35 @@
 import json
-import os
+from pathlib import Path
 
 
 class Memory:
 
     def __init__(self):
 
-        os.makedirs(
-            "data",
+        self.data_dir = Path("data")
+
+        self.data_dir.mkdir(
             exist_ok=True
         )
 
-        self.file = "data/memory.json"
+        self.file = self.data_dir / "memory.json"
 
 
-        if os.path.exists(self.file):
+        if self.file.exists():
 
-            with open(
-                self.file,
-                "r",
-                encoding="utf-8"
-            ) as f:
+            try:
 
-                self.data = json.load(f)
+                with open(
+                    self.file,
+                    "r",
+                    encoding="utf-8"
+                ) as f:
+
+                    self.data = json.load(f)
+
+            except json.JSONDecodeError:
+
+                self.data = {}
 
         else:
 
@@ -30,7 +37,11 @@ class Memory:
 
 
 
-    def save(self, key, value):
+    def save(
+        self,
+        key,
+        value
+    ):
 
         self.data[key] = value
 
@@ -50,7 +61,10 @@ class Memory:
 
 
 
-    def get(self, key):
+    def get(
+        self,
+        key
+    ):
 
         return self.data.get(key)
 
