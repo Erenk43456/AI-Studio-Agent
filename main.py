@@ -3,58 +3,136 @@ from tools.calculator import Calculator
 from tools.file_tool import FileTool
 from tools.memory_tool import MemoryTool
 
-from agents.decision_agent import DecisionAgent
 from agents.tool_agent import ToolAgent
 from agents.planner_agent import PlannerAgent
 
+from memory.memory import Memory
 from memory.conversation import ConversationMemory
 
 
-registry = ToolRegistry()
+
+def main():
+
+    # Ortak hafıza
+    memory = Memory()
 
 
-calculator = Calculator()
-file_tool = FileTool()
-memory_tool = MemoryTool()
+    # Tool sistemi
+    registry = ToolRegistry()
 
 
-registry.register("calculator", calculator)
-registry.register("file", file_tool)
-registry.register("memory", memory_tool)
+    calculator = Calculator()
+    file_tool = FileTool()
+    memory_tool = MemoryTool(memory)
 
 
-tool_agent = ToolAgent(registry)
-planner_agent = PlannerAgent()
-conversation = ConversationMemory()
+    registry.register(
+        "calculator",
+        calculator
+    )
+
+    registry.register(
+        "file",
+        file_tool
+    )
+
+    registry.register(
+        "memory",
+        memory_tool
+    )
 
 
-print("Kayıtlı araçlar:")
-print(registry.list_tools())
+    # Agentlar
+
+    tool_agent = ToolAgent(
+        registry
+    )
+
+    planner_agent = PlannerAgent(
+        memory
+    )
 
 
-request = input("\nİstek:\n")
+    conversation = ConversationMemory()
 
 
-plan = planner_agent.create_plan(request)
 
-history = conversation.get()
-
-if history:
-    print("\nÖnceki konuşmalar:")
-    print(history)
+    print("Kayıtlı araçlar:")
+    print(
+        registry.list_tools()
+    )
 
 
-print("\nPlan:")
-print(plan)
+    request = input(
+        "\nİstek:\n"
+    ).strip()
 
 
-result = tool_agent.execute(plan)
+    if not request:
+        print(
+            "Boş istek gönderilemez."
+        )
+        return
 
 
-print("\nSonuç:")
-print(result)
 
-conversation.add(
-    request,
-    str(result)
-)
+    try:
+
+        history = conversation.get()
+
+
+        if history:
+
+            print(
+                "\nÖnceki konuşmalar:"
+            )
+
+            print(history)
+
+
+
+        plan = planner_agent.create_plan(
+            request
+        )
+
+
+        print(
+            "\nPlan:"
+        )
+
+        print(plan)
+
+
+
+        result = tool_agent.execute(
+            plan
+        )
+
+
+        print(
+            "\nSonuç:"
+        )
+
+        print(result)
+
+
+
+        conversation.add(
+            request,
+            str(result)
+        )
+
+
+    except Exception as error:
+
+        print(
+            "\nHata oluştu:"
+        )
+
+        print(error)
+
+
+
+
+if __name__ == "__main__":
+    main()

@@ -6,5 +6,13 @@
     {
         "user": "20 ile 30'u topla, sonucu sonuc.txt dosyasına kaydet",
         "assistant": "Bilgi bulunamadı."
+    },
+    {
+        "user": "merhaba",
+        "assistant": "Bilgi bulunamadı."
+    },
+    {
+        "user": "20 ile 30u topla",
+        "assistant": "Hesaplama için iki sayı gerekli."
     }
 ]
