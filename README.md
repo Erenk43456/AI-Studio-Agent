@@ -1,28 +1,38 @@
-# AI-Studio-Agent
+# AI-Studio-Agent 🤖
 
-Python ile geliştirilmiş, local çalışan modüler bir AI Agent framework.
+Python ile geliştirilmiş, local çalışan modüler AI Agent masaüstü asistanı.
 
-Bu proje; LLM tabanlı karar verme, tool kullanımı, hafıza yönetimi ve konuşma geçmişi özelliklerini bir araya getirerek kişiselleştirilebilir bir AI asistan altyapısı sunar.
+AI-Studio-Agent; LLM tabanlı karar verme, tool kullanımı, hafıza yönetimi ve konuşma geçmişi özelliklerini bir araya getirerek kişiselleştirilebilir bir yapay zeka asistan altyapısı sunar.
 
-## Özellikler
-
-- Local LLM desteği (Ollama + Qwen2.5)
-- Planner Agent ile görev analizi ve yönlendirme
-- Tool Agent ile araç çalıştırma sistemi
-- Chat Agent ile doğal dil konuşma desteği
-- Memory sistemi ile kalıcı bilgi saklama
-- Conversation history yönetimi
-- Tool Registry mimarisi
-- Calculator tool
-- File operation tool
-- Pytest ile otomatik test sistemi
+Proje tamamen local çalışır. Kullanıcı verileri, hafıza kayıtları ve konuşma geçmişi cihaz üzerinde tutulur.
 
 ---
 
-## Proje Mimarisi
+# Özellikler
+
+- 🤖 Local LLM desteği (Ollama + Qwen2.5)
+- 🧠 Planner Agent ile görev analizi ve yönlendirme
+- 🛠 Tool Agent ile araç çalıştırma sistemi
+- 💬 Chat Agent ile doğal dil konuşma desteği
+- 💾 Memory sistemi ile kalıcı bilgi saklama
+- 📝 Conversation history yönetimi
+- 🔌 Tool Registry mimarisi
+- 🧮 Calculator Tool
+- 📁 File Operation Tool
+- 🖥 PySide6 masaüstü kullanıcı arayüzü
+- ⚡ QThread ile arka plan işlem yönetimi
+- 🧪 Pytest otomatik test sistemi
+- 📦 Windows EXE desteği
+
+---
+
+# Proje Mimarisi
 
 ```text
 User
+ |
+ v
+Desktop GUI
  |
  v
 Planner Agent
@@ -40,38 +50,60 @@ Memory Calculator File Tool
 
 ---
 
-## Agent Yapısı
+# Agent Yapısı
 
-### Planner Agent
+## Planner Agent
 
 - Kullanıcı isteğini analiz eder.
 - Uygun agent veya tool seçimini yapar.
 - JSON tabanlı görev planı oluşturur.
 
-### Tool Agent
+Örnek:
 
-- Seçilen araçları çalıştırır.
-- Calculator, Memory ve File işlemlerini yönetir.
-
-### Chat Agent
-
-- Normal sohbet isteklerini yönetir.
-- Local LLM üzerinden doğal dil cevapları üretir.
+```json
+{
+ "tool":"calculator",
+ "operation":"add",
+ "numbers":[20,30]
+}
+```
 
 ---
 
-## Kullanılan Teknolojiler
+## Tool Agent
+
+Seçilen araçları çalıştırır.
+
+Desteklenen araçlar:
+
+- Calculator
+- Memory
+- File Operations
+
+---
+
+## Chat Agent
+
+Normal sohbet isteklerini yönetir.
+
+Local LLM üzerinden doğal dil cevapları üretir.
+
+---
+
+# Kullanılan Teknolojiler
 
 - Python 3.12+
+- PySide6
 - Ollama
 - Qwen2.5 Local LLM
 - Requests
 - JSON
 - Pytest
+- PyInstaller
 
 ---
 
-## Kurulum
+# Kurulum
 
 Projeyi klonlayın:
 
@@ -107,14 +139,14 @@ pip install -r requirements.txt
 
 ---
 
-## Local LLM Kurulumu
+# Local LLM Kurulumu
 
 Bu proje Ollama üzerinden local LLM kullanır.
 
 Qwen2.5 modelini indirmek için:
 
 ```bash
-ollama pull qwen2.5:1.5b
+ollama pull qwen2.5:3b
 ```
 
 Ollama servisini başlatın:
@@ -125,47 +157,66 @@ ollama serve
 
 ---
 
-## Kullanım
+# Kullanım
 
-Projeyi çalıştırın:
+GUI uygulamasını başlatmak için:
 
 ```bash
-python main.py
+python -m app.gui
 ```
 
 Örnek:
 
 ```
-İstek:
+Kullanıcı:
 20 ile 40'ı topla
 
-Sonuç:
+AI:
 60
 ```
 
 Memory örneği:
 
 ```
-İstek:
+Kullanıcı:
 Benim adım Eren
 
-Sonuç:
-isim kaydedildi.
+AI:
+İsim kaydedildi.
 ```
 
 Daha sonra:
 
 ```
-İstek:
+Kullanıcı:
 Benim adım ne
 
-Sonuç:
+AI:
 eren
 ```
 
 ---
 
-## Testler
+# Windows EXE Kullanımı
+
+Hazırlanan executable sürümü ile uygulama Python kurulumu olmadan çalıştırılabilir.
+
+```
+AI-Studio-Agent.exe
+```
+
+Not:
+
+Local AI modeli kullanıldığı için bilgisayarda:
+
+- Ollama
+- qwen2.5:3b modeli
+
+kurulu olmalıdır.
+
+---
+
+# Testler
 
 Proje otomatik test desteğine sahiptir.
 
@@ -188,7 +239,7 @@ Test edilen bileşenler:
 
 ---
 
-## Veri Gizliliği
+# Veri Gizliliği
 
 Kullanıcı hafızası ve konuşma geçmişi lokal olarak saklanır.
 
@@ -203,16 +254,20 @@ Bu sayede kişisel kullanıcı verileri kaynak koddan ayrı tutulur.
 
 ---
 
-## Geliştirme Hedefleri
+# Gelecek Geliştirmeler
 
-- Web tabanlı kullanıcı arayüzü eklemek
-- Yeni tool entegrasyonları geliştirmek
-- Daha gelişmiş agent karar mekanizması oluşturmak
-- RAG tabanlı bilgi sistemi eklemek
-- Daha büyük local modeller ile çalışmak
+- RAG tabanlı bilgi sistemi
+- Plugin mimarisi
+- Sesli asistan desteği
+- Daha gelişmiş uzun süreli hafıza
+- Model değiştirme sistemi
+- Web tabanlı dashboard
+- Multi-agent koordinasyonu
 
 ---
 
-## Proje Hakkında
+# Proje Hakkında
 
 AI-Studio-Agent; agent mimarileri, local LLM kullanımı, tool entegrasyonu ve hafıza sistemleri üzerine geliştirilmiş bir yapay zeka asistan prototipidir.
+
+Amaç; kullanıcı isteklerini analiz edebilen, uygun araçları seçebilen ve lokal olarak çalışan modüler bir AI sistemi oluşturmaktır.
