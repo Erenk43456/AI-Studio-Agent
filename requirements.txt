@@ -1,3 +1,4 @@
 # AI-Studio-Agent Python Dependencies
 
 requests>=2.32.0
+pytest>=8.0.0
