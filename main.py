@@ -5,6 +5,7 @@ from tools.memory_tool import MemoryTool
 
 from agents.tool_agent import ToolAgent
 from agents.planner_agent import PlannerAgent
+from agents.chat_agent import ChatAgent
 
 from memory.memory import Memory
 from memory.conversation import ConversationMemory
@@ -44,6 +45,11 @@ def main():
     tool_agent = ToolAgent(
         registry,
         memory
+    )
+
+
+    chat_agent = ChatAgent(
+    memory
     )
 
 
@@ -106,9 +112,17 @@ def main():
     )
 
 
-    result = tool_agent.execute(
-        plan
-    )
+    if plan.get("tool") == "chat":
+
+        result = chat_agent.respond(
+            plan.get("message", request)
+        )
+
+    else:
+
+        result = tool_agent.execute(
+            plan
+        )
 
 
     print(

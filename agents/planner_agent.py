@@ -5,13 +5,9 @@ import json
 import re
 
 
-
 class PlannerAgent(BaseAgent):
 
-    def __init__(
-        self,
-        memory=None
-    ):
+    def __init__(self, memory=None):
 
         super().__init__(
             "Planner Agent",
@@ -21,14 +17,9 @@ class PlannerAgent(BaseAgent):
         self.llm = LLM()
 
 
-
-    def clean_json(
-        self,
-        text
-    ):
+    def clean_json(self, text):
 
         text = text.strip()
-
 
         text = text.replace(
             "```json",
@@ -40,36 +31,50 @@ class PlannerAgent(BaseAgent):
             ""
         )
 
-
         match = re.search(
             r"\{.*\}",
             text,
             re.DOTALL
         )
 
-
         if match:
             return match.group()
-
 
         return "{}"
 
 
 
-
-    def create_plan(
-        self,
-        task
-    ):
+    def create_plan(self, task):
 
         task = task.lower().strip()
 
 
+        #
+        # Normal sohbet
+        #
 
-        # =========================
-        # Kesin hafıza sorguları
-        # =========================
+        greetings = [
+            "merhaba",
+            "selam",
+            "selaam",
+            "hey",
+            "hi",
+            "hello"
+        ]
 
+
+        if task in greetings:
+
+            return {
+                "tool": "chat",
+                "message": task
+            }
+
+
+
+        #
+        # Hafıza sorguları
+        #
 
         if (
             "adım ne" in task
@@ -78,37 +83,27 @@ class PlannerAgent(BaseAgent):
         ):
 
             return {
-
                 "tool": "memory_get",
-
                 "key": "isim"
-
             }
-
 
 
 
         if (
             "favori oyunum ne" in task
             or "favori oyunum nedir" in task
-            or "en sevdiğim oyun ne" in task
         ):
 
             return {
-
                 "tool": "memory_get",
-
                 "key": "favori_oyun"
-
             }
 
 
 
-
-        # =========================
-        # Kesin hafıza kayıtları
-        # =========================
-
+        #
+        # İsim kaydetme
+        #
 
         if task.startswith(
             "benim adım "
@@ -129,40 +124,10 @@ class PlannerAgent(BaseAgent):
 
 
 
-
-
-        if task.startswith(
-            "favori oyunum "
-        ):
-
-            return {
-
-                "tool": "memory_save",
-
-                "key": "favori_oyun",
-
-                "value": task.replace(
-                    "favori oyunum",
-                    ""
-                ).strip()
-
-            }
-
-
-
-
-        # =========================
-        # Genel görevler için memory
-        # =========================
-
-
-        if self.memory:
-
-            self.memory.save(
-                "last_task",
-                task
-            )
-
+        self.memory.save(
+            "last_task",
+            task
+        )
 
 
 
@@ -171,19 +136,12 @@ Sen bir AI agent planlayıcısısın.
 
 Sadece JSON döndür.
 
-Kullanılabilir araçlar:
-
+Araçlar:
 
 calculator:
+Matematik işlemleri için.
 
-Matematik işlemleri için kullan.
-
-Örnek:
-
-Kullanıcı:
-20 ile 30'u topla
-
-Cevap:
+Format:
 
 {{
 "tool":"calculator",
@@ -194,60 +152,63 @@ Cevap:
 
 
 memory_save:
-
-Yeni bilgi kaydetmek için kullan.
+Yeni bilgi kaydetmek için.
 
 Format:
 
 {{
 "tool":"memory_save",
-"key":"kisa_turkce_isim",
-"value":"bilgi"
+"key":"isim",
+"value":"eren"
 }}
 
 
 
 memory_get:
-
-Daha önce kaydedilmiş bilgi istenirse kullan.
+Kayıtlı bilgi almak için.
 
 Format:
 
 {{
 "tool":"memory_get",
-"key":"bilgi_adi"
+"key":"isim"
 }}
 
 
 
 file:
-
-Dosya işlemleri için kullan.
+Dosya işlemleri için.
 
 
 
 chat:
+Normal konuşmalar için.
 
-Normal sohbet için kullan.
+Format:
+
+{{
+"tool":"chat",
+"message":"cevap"
+}}
+
 
 
 Kurallar:
 
-- Sadece JSON yaz.
+- Sadece JSON döndür.
 - Açıklama yazma.
-- JSON dışında hiçbir şey yazma.
+- Selamlaşmaları memory olarak kaydetme.
+- Bilgi kaydetme isteği yoksa memory kullanma.
 
 
 Kullanıcı:
 
 {task}
-
 """
 
 
 
         try:
-
 
             response = self.llm.generate(
                 prompt
@@ -258,9 +219,7 @@ Kullanıcı:
                 "\nLLM cevabı:"
             )
 
-            print(
-                response
-            )
+            print(response)
 
 
 
@@ -269,11 +228,9 @@ Kullanıcı:
             )
 
 
-
             plan = json.loads(
                 response
             )
-
 
 
             if "tool" not in plan:
@@ -286,9 +243,7 @@ Kullanıcı:
 
 
 
-
         except Exception as error:
-
 
             print(
                 "Planner hatası:",
@@ -297,9 +252,6 @@ Kullanıcı:
 
 
             return {
-
                 "tool": "chat",
-
                 "message": task
-
             }
