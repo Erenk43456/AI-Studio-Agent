@@ -3,14 +3,14 @@ from agents.base_agent import BaseAgent
 
 class DecisionAgent(BaseAgent):
 
-    def __init__(self, registry):
+    def __init__(self, memory):
         super().__init__("Decision Agent")
-        self.registry = registry
+        self.memory = memory
 
 
     def process(self, request):
 
-        request = request.lower()
+        request = request.lower().strip()
 
 
         # İsim sorgu
@@ -21,9 +21,16 @@ class DecisionAgent(BaseAgent):
         # İsim kayıt
         if "benim adım" in request:
 
-            name = request.replace("benim adım", "").strip()
+            name = request.replace(
+                "benim adım",
+                ""
+            ).strip()
 
-            self.memory.save("isim", name)
+            if name:
+                self.memory.save(
+                    "isim",
+                    name
+                )
 
             return "memory_save"
 
@@ -36,11 +43,20 @@ class DecisionAgent(BaseAgent):
         # Öğrenme kayıt
         if "öğreniyorum" in request:
 
-            value = request.replace("öğreniyorum", "").strip()
+            value = request.replace(
+                "öğreniyorum",
+                ""
+            ).replace(
+                "ben",
+                ""
+            ).strip()
 
-            value = value.replace("ben", "").strip()
 
-            self.memory.save("öğreniyor", value)
+            if value:
+                self.memory.save(
+                    "öğreniyor",
+                    value
+                )
 
             return "memory_save"
 
@@ -53,24 +69,49 @@ class DecisionAgent(BaseAgent):
         # Favori oyun kayıt
         if "favori oyunum" in request:
 
-            value = request.replace("benim favori oyunum", "").strip()
+            value = request.replace(
+                "benim favori oyunum",
+                ""
+            ).strip()
 
-            self.memory.save("favori_oyun", value)
+
+            if value:
+                self.memory.save(
+                    "favori_oyun",
+                    value
+                )
 
             return "memory_save"
 
 
         # Hesaplama
-        if "topla" in request:
+        calculation_words = [
+            "topla",
+            "çıkar",
+            "çarp",
+            "böl"
+        ]
+
+
+        if any(
+            word in request
+            for word in calculation_words
+        ):
             return "calculator"
 
 
-        if "çarp" in request:
-            return "calculator"
+        # Dosya işlemleri
+        file_words = [
+            "dosya",
+            "oluştur",
+            "yaz"
+        ]
 
 
-        # Dosya
-        if "dosya" in request or "oluştur" in request or "yaz" in request:
+        if any(
+            word in request
+            for word in file_words
+        ):
             return "file"
 
 
