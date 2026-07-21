@@ -13,17 +13,16 @@ from memory.conversation import ConversationMemory
 
 def main():
 
-    # Ortak hafıza
     memory = Memory()
 
-
-    # Tool sistemi
     registry = ToolRegistry()
 
 
     calculator = Calculator()
     file_tool = FileTool()
-    memory_tool = MemoryTool(memory)
+    memory_tool = MemoryTool(
+        memory
+    )
 
 
     registry.register(
@@ -42,11 +41,11 @@ def main():
     )
 
 
-    # Agentlar
-
     tool_agent = ToolAgent(
-        registry
+        registry,
+        memory
     )
+
 
     planner_agent = PlannerAgent(
         memory
@@ -57,7 +56,10 @@ def main():
 
 
 
-    print("Kayıtlı araçlar:")
+    print(
+        "Kayıtlı araçlar:"
+    )
+
     print(
         registry.list_tools()
     )
@@ -69,68 +71,59 @@ def main():
 
 
     if not request:
-        print(
-            "Boş istek gönderilemez."
-        )
         return
 
 
 
-    try:
-
-        history = conversation.get()
+    history = conversation.get()
 
 
-        if history:
-
-            print(
-                "\nÖnceki konuşmalar:"
-            )
-
-            print(history)
-
-
-
-        plan = planner_agent.create_plan(
-            request
-        )
-
+    if history:
 
         print(
-            "\nPlan:"
+            "\nSon konuşma:"
         )
 
-        print(plan)
-
-
-
-        result = tool_agent.execute(
-            plan
-        )
-
+        last = history[-1]
 
         print(
-            "\nSonuç:"
-        )
-
-        print(result)
-
-
-
-        conversation.add(
-            request,
-            str(result)
+            last
         )
 
 
-    except Exception as error:
 
-        print(
-            "\nHata oluştu:"
-        )
+    plan = planner_agent.create_plan(
+        request
+    )
 
-        print(error)
 
+    print(
+        "\nPlan:"
+    )
+
+    print(
+        plan
+    )
+
+
+    result = tool_agent.execute(
+        plan
+    )
+
+
+    print(
+        "\nSonuç:"
+    )
+
+    print(
+        result
+    )
+
+
+    conversation.add(
+        request,
+        str(result)
+    )
 
 
 

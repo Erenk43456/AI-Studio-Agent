@@ -1,18 +1,42 @@
 [
     {
-        "user": "bugün çok yoruldum",
-        "assistant": "Bilgi bulunamadı."
-    },
-    {
-        "user": "20 ile 30'u topla, sonucu sonuc.txt dosyasına kaydet",
-        "assistant": "Bilgi bulunamadı."
-    },
-    {
         "user": "merhaba",
         "assistant": "Bilgi bulunamadı."
     },
     {
         "user": "20 ile 30u topla",
         "assistant": "Hesaplama için iki sayı gerekli."
+    },
+    {
+        "user": "benim adım ne",
+        "assistant": "Benim adım Eren"
+    },
+    {
+        "user": "benim adım ne",
+        "assistant": "eren"
+    },
+    {
+        "user": "favori oyunum ne",
+        "assistant": "Bilgi bulunamadı."
+    },
+    {
+        "user": "favori oyunum hoi4",
+        "assistant": "favorite_game kaydedildi."
+    },
+    {
+        "user": "favori oyunum n",
+        "assistant": "hio4"
+    },
+    {
+        "user": "20 ile 40ı topla",
+        "assistant": "60.0"
+    },
+    {
+        "user": "favori oyunum hoi4",
+        "assistant": "favori_oyun kaydedildi."
+    },
+    {
+        "user": "favori oyunum ne",
+        "assistant": "hoi4"
     }
 ]

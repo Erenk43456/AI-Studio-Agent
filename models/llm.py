@@ -5,15 +5,13 @@ class LLM:
 
     def __init__(
         self,
-        model="qwen2.5:1.5b",
+        model="qwen2.5:3b",
         url="http://localhost:11434/api/generate"
     ):
 
         self.name = "Qwen2.5 Local"
-
         self.model = model
         self.url = url
-
 
 
     def generate(
@@ -40,22 +38,25 @@ class LLM:
             data = response.json()
 
 
-            return data.get(
+            result = data.get(
                 "response",
                 ""
             )
 
 
+            return result.strip()
+
+
         except requests.exceptions.Timeout:
 
-            return "LLM zaman aşımına uğradı."
+            return "LLM_ERROR: timeout"
 
 
         except requests.exceptions.ConnectionError:
 
-            return "LLM bağlantısı kurulamadı. Ollama çalışıyor mu kontrol edin."
+            return "LLM_ERROR: connection"
 
 
         except Exception as error:
 
-            return f"LLM hatası: {error}"
+            return f"LLM_ERROR: {error}"

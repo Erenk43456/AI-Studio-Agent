@@ -1,11 +1,26 @@
 class Calculator:
 
+
+    def clean_result(self, value):
+
+        if isinstance(value, float):
+
+            if value.is_integer():
+                return int(value)
+
+        return value
+
+
+
     def add(
         self,
         a,
         b
     ):
-        return a + b
+
+        return self.clean_result(
+            a + b
+        )
 
 
 
@@ -14,7 +29,10 @@ class Calculator:
         a,
         b
     ):
-        return a - b
+
+        return self.clean_result(
+            a - b
+        )
 
 
 
@@ -23,7 +41,10 @@ class Calculator:
         a,
         b
     ):
-        return a * b
+
+        return self.clean_result(
+            a * b
+        )
 
 
 
@@ -36,4 +57,7 @@ class Calculator:
         if b == 0:
             return "Sıfıra bölme yapılamaz."
 
-        return a / b
+
+        return self.clean_result(
+            a / b
+        )

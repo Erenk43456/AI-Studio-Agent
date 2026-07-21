@@ -3,18 +3,20 @@ from memory.memory import Memory
 
 class BaseAgent:
 
-    def __init__(self, name, memory=None):
+    def __init__(
+        self,
+        name,
+        memory=None
+    ):
+
         self.name = name
-
-        # Dışarıdan memory verilirse onu kullanır.
-        # Verilmezse kendi memory'sini oluşturur.
-        self.memory = memory if memory else Memory()
+        self.memory = memory or Memory()
 
 
-    def think(self, task):
-        """
-        Agent düşünme aşaması.
-        """
+    def think(
+        self,
+        task
+    ):
 
         self.memory.save(
             "last_thought",
@@ -25,17 +27,14 @@ class BaseAgent:
 
 
     def remember(self):
-        """
-        Hafızayı getirir.
-        """
 
         return self.memory.recall()
 
 
-    def act(self, task):
-        """
-        Agent çalışma aşaması.
-        """
+    def act(
+        self,
+        task
+    ):
 
         self.memory.save(
             "last_action",
