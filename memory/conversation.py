@@ -17,36 +17,25 @@ class ConversationMemory:
         self.load()
 
 
-
     def load(self):
-
-        """
-        Önceki konuşmaları yükler.
-        """
 
         if not os.path.exists(self.file):
             self.data = []
             return
 
-
         try:
-
             with open(
                 self.file,
                 "r",
                 encoding="utf-8"
             ) as f:
-
                 self.data = json.load(f)
-
 
         except (
             json.JSONDecodeError,
             OSError
         ):
-
             self.data = []
-
 
 
     def add(
@@ -55,10 +44,6 @@ class ConversationMemory:
         assistant
     ):
 
-        """
-        Yeni konuşma ekler.
-        """
-
         self.data.append(
             {
                 "user": user,
@@ -66,23 +51,14 @@ class ConversationMemory:
             }
         )
 
-
-        # Son N konuşmayı tut
         self.data = self.data[-self.limit:]
-
 
         self.save()
 
 
-
     def save(self):
 
-        """
-        Konuşmaları diske yazar.
-        """
-
         try:
-
             with open(
                 self.file,
                 "w",
@@ -96,7 +72,6 @@ class ConversationMemory:
                     indent=4
                 )
 
-
         except OSError as error:
 
             print(
@@ -105,23 +80,12 @@ class ConversationMemory:
             )
 
 
-
     def get(self):
-
-        """
-        Konuşma geçmişini döndürür.
-        """
 
         return self.data
 
 
-
     def clear(self):
 
-        """
-        Geçmişi temizler.
-        """
-
         self.data = []
-
         self.save()
