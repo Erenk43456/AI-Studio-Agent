@@ -13,7 +13,14 @@ class ConfigManager:
         )
 
 
+        self.file.parent.mkdir(
+            exist_ok=True
+        )
+
+
         self.data = self.load()
+
+
 
 
 
@@ -56,10 +63,17 @@ class ConfigManager:
 
 
 
+
+
+
     def get(
+
         self,
+
         key,
+
         default=None
+
     ):
 
 
@@ -76,6 +90,85 @@ class ConfigManager:
 
 
 
+
+
+    def set(
+
+        self,
+
+        key,
+
+        value
+
+    ):
+
+
+        self.data[key] = value
+
+
+
+
+
+
+
+    def update(
+
+        self,
+
+        values
+
+    ):
+
+
+        self.data.update(
+
+            values
+
+        )
+
+
+
+
+
+
+
+
+
+    def save(self):
+
+
+        with open(
+
+            self.file,
+
+            "w",
+
+            encoding="utf-8"
+
+        ) as f:
+
+
+            json.dump(
+
+                self.data,
+
+                f,
+
+                indent=4,
+
+                ensure_ascii=False
+
+            )
+
+
+
+
+
+
+
+
+
     def all(self):
+
 
         return self.data
