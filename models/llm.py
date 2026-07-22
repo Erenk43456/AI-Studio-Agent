@@ -1,6 +1,7 @@
 import requests
-import json
-import os
+
+from config.config_manager import ConfigManager
+
 
 
 class LLM:
@@ -8,102 +9,125 @@ class LLM:
 
     def __init__(self):
 
+
         self.name = "Qwen2.5 Local LLM"
 
 
-        settings = self.load_settings()
+
+        self.config = ConfigManager()
 
 
 
-        self.model = settings.get(
+        self.model = self.config.get(
+
             "model",
+
             "qwen2.5:3b"
+
         )
 
 
-        self.url = settings.get(
+
+        self.url = self.config.get(
+
             "ollama_url",
+
             "http://localhost:11434/api/generate"
+
         )
+
 
 
         self.base_url = (
+
             self.url
+
             .replace(
+
                 "/api/generate",
+
                 ""
+
             )
+
         )
 
 
-        self.temperature = settings.get(
+
+        self.temperature = self.config.get(
+
             "temperature",
+
             0.3
+
         )
 
 
-        self.num_predict = settings.get(
+
+        self.num_predict = self.config.get(
+
             "num_predict",
+
             150
+
         )
 
 
 
 
-
-    def load_settings(self):
-
-        path = "config/settings.json"
-
-
-        if os.path.exists(path):
-
-            with open(
-                path,
-                "r",
-                encoding="utf-8"
-            ) as file:
-
-                return json.load(file)
-
-
-        return {}
 
 
 
 
 
     def generate(
+
         self,
+
         prompt
+
     ):
+
 
         try:
 
 
+
             response = requests.post(
+
 
                 self.url,
 
+
                 json={
+
 
                     "model": self.model,
 
+
                     "prompt": prompt,
+
 
                     "stream": False,
 
+
                     "options": {
+
 
                         "temperature": self.temperature,
 
+
                         "num_predict": self.num_predict
+
 
                     }
 
+
                 },
 
+
                 timeout=120
+
 
             )
 
@@ -112,13 +136,17 @@ class LLM:
             response.raise_for_status()
 
 
+
             data = response.json()
 
 
 
             return data.get(
+
                 "response",
+
                 ""
+
             ).strip()
 
 
@@ -154,28 +182,35 @@ class LLM:
 
 
 
+
+
     def check_connection(self):
+
 
         try:
 
+
             response = requests.get(
+
                 self.base_url,
+
                 timeout=5
+
             )
 
 
-            if response.status_code == 200:
 
-                return True
+            return response.status_code == 200
 
 
-            return False
 
 
 
         except:
 
+
             return False
+
 
 
 
@@ -184,39 +219,59 @@ class LLM:
 
     def get_models(self):
 
+
         try:
+
 
             response = requests.get(
 
+
                 self.base_url + "/api/tags",
+
 
                 timeout=5
 
+
             )
+
 
 
             response.raise_for_status()
 
 
+
             data = response.json()
+
 
 
             models = []
 
 
+
             for model in data.get(
+
                 "models",
+
                 []
+
             ):
 
+
                 models.append(
+
                     model.get(
+
                         "name"
+
                     )
+
                 )
 
 
+
             return models
+
+
 
 
 
@@ -231,6 +286,9 @@ class LLM:
 
 
 
+
+
     def get_current_model(self):
+
 
         return self.model
