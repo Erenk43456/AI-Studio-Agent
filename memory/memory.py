@@ -2,6 +2,8 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+from app.core.logger import AppLogger
+
 
 
 
@@ -9,6 +11,10 @@ class Memory:
 
 
     def __init__(self):
+
+
+        self.logger = AppLogger()
+
 
         self.data_dir = Path("data")
 
@@ -27,17 +33,39 @@ class Memory:
 
             try:
 
+
                 with open(
+
                     self.file,
+
                     "r",
+
                     encoding="utf-8"
+
                 ) as f:
+
 
                     self.data = json.load(f)
 
 
 
-            except json.JSONDecodeError:
+                self.logger.info(
+
+                    "Memory loaded successfully."
+
+                )
+
+
+
+            except json.JSONDecodeError as error:
+
+
+                self.logger.error(
+
+                    f"Memory JSON error: {error}"
+
+                )
+
 
                 self.data = {}
 
@@ -45,7 +73,17 @@ class Memory:
 
         else:
 
+
             self.data = {}
+
+
+            self.logger.info(
+
+                "New memory created."
+
+            )
+
+
 
 
 
@@ -56,7 +94,9 @@ class Memory:
     def _timestamp(self):
 
         return datetime.now().strftime(
+
             "%Y-%m-%d %H:%M:%S"
+
         )
 
 
@@ -66,11 +106,17 @@ class Memory:
 
 
 
+
     def save(
+
         self,
+
         key,
+
         value,
+
         category="general"
+
     ):
 
 
@@ -101,23 +147,43 @@ class Memory:
 
 
 
+        self.logger.info(
+
+            f"Memory saved: {key}"
+
+        )
+
+
+
+
+
 
 
 
 
     def update(
+
         self,
+
         key,
+
         value
+
     ):
 
 
 
-        if key in self.data and isinstance(
+        if (
 
-            self.data[key],
+            key in self.data
 
-            dict
+            and isinstance(
+
+                self.data[key],
+
+                dict
+
+            )
 
         ):
 
@@ -130,7 +196,16 @@ class Memory:
 
 
 
+            self.logger.info(
+
+                f"Memory updated: {key}"
+
+            )
+
+
+
         else:
+
 
 
             self.save(
@@ -153,20 +228,35 @@ class Memory:
 
 
 
+
+
     def get(
+
         self,
+
         key
+
     ):
 
 
 
         item = self.data.get(
+
             key
+
         )
 
 
 
         if item is None:
+
+
+            self.logger.warning(
+
+                f"Memory not found: {key}"
+
+            )
+
 
             return None
 
@@ -174,15 +264,19 @@ class Memory:
 
 
 
+        if (
 
-        if isinstance(
+            isinstance(
 
-            item,
+                item,
 
-            dict
+                dict
 
-        ) and "value" in item:
+            )
 
+            and "value" in item
+
+        ):
 
 
             return item["value"]
@@ -201,14 +295,21 @@ class Memory:
 
 
 
+
+
     def get_full(
+
         self,
+
         key
+
     ):
 
 
         return self.data.get(
+
             key
+
         )
 
 
@@ -219,9 +320,15 @@ class Memory:
 
 
 
+
+
+
     def delete(
+
         self,
+
         key
+
     ):
 
 
@@ -235,13 +342,30 @@ class Memory:
             self._write()
 
 
+
+            self.logger.info(
+
+                f"Memory deleted: {key}"
+
+            )
+
+
             return True
 
 
 
 
 
+        self.logger.warning(
+
+            f"Delete failed, memory not found: {key}"
+
+        )
+
+
         return False
+
+
 
 
 
@@ -258,6 +382,14 @@ class Memory:
 
 
         self._write()
+
+
+
+        self.logger.info(
+
+            "All memory cleared."
+
+        )
 
 
 
@@ -281,29 +413,44 @@ class Memory:
 
 
 
+
     def _write(self):
 
 
-        with open(
-
-            self.file,
-
-            "w",
-
-            encoding="utf-8"
-
-        ) as f:
+        try:
 
 
+            with open(
 
-            json.dump(
+                self.file,
 
-                self.data,
+                "w",
 
-                f,
+                encoding="utf-8"
 
-                ensure_ascii=False,
+            ) as f:
 
-                indent=4
+
+
+                json.dump(
+
+                    self.data,
+
+                    f,
+
+                    ensure_ascii=False,
+
+                    indent=4
+
+                )
+
+
+
+        except Exception as error:
+
+
+            self.logger.error(
+
+                f"Memory write error: {error}"
 
             )
