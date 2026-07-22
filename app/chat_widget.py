@@ -8,7 +8,10 @@ from PySide6.QtCore import Qt
 
 
 
+
+
 class MessageBubble(QWidget):
+
 
     def __init__(
         self,
@@ -19,19 +22,24 @@ class MessageBubble(QWidget):
         super().__init__()
 
 
+
         layout = QHBoxLayout()
 
 
+
         layout.setContentsMargins(
-            10,
-            5,
-            10,
-            5
+            12,
+            8,
+            12,
+            8
         )
+
 
         layout.setSpacing(
             0
         )
+
+
 
 
         self.label = QLabel(
@@ -50,24 +58,24 @@ class MessageBubble(QWidget):
 
 
         self.label.setMaximumWidth(
-            600
+            650
         )
 
 
-        if is_user:
 
+
+        if is_user:
 
             self.label.setStyleSheet(
                 """
                 QLabel {
 
                     background-color:#0078d4;
-
                     color:white;
 
-                    padding:12px;
+                    padding:12px 16px;
 
-                    border-radius:14px;
+                    border-radius:16px;
 
                     font-size:14px;
 
@@ -81,23 +89,23 @@ class MessageBubble(QWidget):
             layout.addWidget(
                 self.label
             )
+
 
 
 
         else:
 
-
             self.label.setStyleSheet(
                 """
                 QLabel {
 
-                    background-color:#333333;
+                    background-color:#2d2d30;
 
-                    color:white;
+                    color:#f1f1f1;
 
-                    padding:12px;
+                    padding:12px 16px;
 
-                    border-radius:14px;
+                    border-radius:16px;
 
                     font-size:14px;
 
@@ -110,8 +118,8 @@ class MessageBubble(QWidget):
                 self.label
             )
 
-
             layout.addStretch()
+
 
 
 

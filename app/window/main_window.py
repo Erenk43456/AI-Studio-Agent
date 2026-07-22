@@ -73,9 +73,7 @@ class AIWindow(QWidget):
 
 
 
-        self.show_welcome_message()
-
-
+        self.load_conversation()
 
 
 
@@ -107,7 +105,6 @@ class AIWindow(QWidget):
 
 
 
-
     def send_message(self):
 
 
@@ -116,7 +113,6 @@ class AIWindow(QWidget):
             self
 
         )
-
 
 
 
@@ -138,6 +134,60 @@ class AIWindow(QWidget):
             response
 
         )
+
+
+
+
+
+
+
+
+
+    def load_conversation(self):
+
+
+        history = self.conversation.get()
+
+
+
+        if not history:
+
+
+            self.show_welcome_message()
+
+            return
+
+
+
+
+
+
+        for item in history:
+
+
+            self.add_message(
+
+                item.get(
+                    "user",
+                    ""
+                ),
+
+                True
+
+            )
+
+
+
+            self.add_message(
+
+                item.get(
+                    "assistant",
+                    ""
+                ),
+
+                False
+
+            )
 
 
 
@@ -267,6 +317,7 @@ How can I help you?
             except RuntimeError:
 
                 pass
+
 
 
 
