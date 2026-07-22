@@ -56,26 +56,19 @@ class PlannerAgent(BaseAgent):
 
 
         #
-        # Normal conversation / greetings
+        # Greetings
         #
 
         greetings = [
             "merhaba",
             "selam",
-            "selaam",
             "hey",
             "hi",
             "hello",
             "nasılsın",
-            "sen nasılsın",
-            "iyi misin",
-            "iyiyim",
             "teşekkür",
-            "tesekkur",
-            "sağol",
-            "sağ ol"
+            "sağol"
         ]
-
 
 
         if any(
@@ -93,7 +86,56 @@ class PlannerAgent(BaseAgent):
 
 
         #
-        # Math detection
+        # Direct math expression
+        #
+
+        expression = re.search(
+            r"(\d+)\s*([\+\-\*/])\s*(\d+)",
+            task
+        )
+
+
+        if expression:
+
+            a = int(
+                expression.group(1)
+            )
+
+            operator = expression.group(2)
+
+            b = int(
+                expression.group(3)
+            )
+
+
+            operations = {
+
+                "+": "add",
+                "-": "subtract",
+                "*": "multiply",
+                "/": "divide"
+
+            }
+
+
+            return {
+
+                "tool": "calculator",
+
+                "operation": operations[operator],
+
+                "numbers": [
+                    a,
+                    b
+                ]
+
+            }
+
+
+
+
+        #
+        # Turkish math commands
         #
 
         numbers = re.findall(
@@ -103,16 +145,23 @@ class PlannerAgent(BaseAgent):
 
 
         math_words = [
+
             "topla",
             "ekle",
             "arttır",
             "artir",
+
             "çıkar",
             "cikar",
             "eksi",
+
             "çarp",
             "carp",
-            "kat"
+            "kat",
+
+            "böl",
+            "bol"
+
         ]
 
 
@@ -140,7 +189,7 @@ class PlannerAgent(BaseAgent):
 
 
 
-            if (
+            elif (
                 "çarp" in task
                 or "carp" in task
                 or "kat" in task
@@ -150,21 +199,35 @@ class PlannerAgent(BaseAgent):
 
 
 
+            elif (
+                "böl" in task
+                or "bol" in task
+            ):
+
+                operation = "divide"
+
+
+
             return {
+
                 "tool": "calculator",
+
                 "operation": operation,
+
                 "numbers": [
+
                     int(numbers[0]),
                     int(numbers[1])
+
                 ]
+
             }
 
 
 
 
-
         #
-        # Memory queries
+        # Memory
         #
 
         if (
@@ -174,30 +237,33 @@ class PlannerAgent(BaseAgent):
         ):
 
             return {
-                "tool": "memory_get",
-                "key": "isim"
-            }
 
+                "tool": "memory_get",
+
+                "key": "isim"
+
+            }
 
 
 
 
         if (
             "favori oyunum ne" in task
-            or "favori oyunum nedir" in task
         ):
 
             return {
+
                 "tool": "memory_get",
+
                 "key": "favori_oyun"
+
             }
 
 
 
 
-
         #
-        # Name storage
+        # Save name
         #
 
         if task.startswith(
@@ -220,17 +286,10 @@ class PlannerAgent(BaseAgent):
 
 
 
-
-        #
-        # Save last task
-        #
-
         self.memory.save(
             "last_task",
             task
         )
-
-
 
 
 
@@ -242,43 +301,29 @@ Return JSON only.
 Available tools:
 
 calculator:
-Used for mathematical operations.
-
-Example:
-
-{{
-"tool":"calculator",
-"operation":"add",
-"numbers":[20,30]
-}}
-
+Math operations.
 
 memory_save:
-Used to store new information.
-
+Save information.
 
 memory_get:
-Used to retrieve stored information.
-
+Retrieve information.
 
 file:
-Used for file operations.
-
+File operations.
 
 chat:
-Used for normal conversations.
+Normal conversation.
 
 
 Rules:
 
-- Return JSON only.
-- Do not write explanations.
-- Use chat for normal conversations.
-- Do not use memory unless the user wants to save or retrieve information.
-- Always select the most appropriate tool.
+- Return only JSON.
+- No explanations.
+- Use chat for normal conversation.
 
 
-User request:
+User:
 
 {task}
 """
@@ -292,19 +337,9 @@ User request:
             )
 
 
-
-            print(
-                "\nLLM response:"
-            )
-
-            print(response)
-
-
-
             response = self.clean_json(
                 response
             )
-
 
 
             plan = json.loads(
@@ -312,15 +347,12 @@ User request:
             )
 
 
-
             if "tool" not in plan:
 
                 plan["tool"] = "chat"
 
 
-
             return plan
-
 
 
 
@@ -332,8 +364,10 @@ User request:
             )
 
 
-
             return {
+
                 "tool": "chat",
+
                 "message": task
+
             }

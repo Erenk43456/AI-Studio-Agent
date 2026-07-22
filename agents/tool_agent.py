@@ -24,7 +24,7 @@ class ToolAgent(BaseAgent):
     ):
 
         if not plan:
-            return "Invalid plan."
+            return "Geçersiz plan."
 
 
         tool_name = plan.get(
@@ -40,6 +40,7 @@ class ToolAgent(BaseAgent):
                 return self.run_calculator(
                     plan
                 )
+
 
 
             if tool_name == "memory_save":
@@ -68,10 +69,11 @@ class ToolAgent(BaseAgent):
 
 
                 if value:
+
                     return value
 
 
-                return "Information not found."
+                return "Bilgi bulunamadı."
 
 
 
@@ -92,18 +94,19 @@ class ToolAgent(BaseAgent):
 
                 return plan.get(
                     "message",
-                    "How can I help you?"
+                    "Size nasıl yardımcı olabilirim?"
                 )
 
 
 
-            return "Unknown tool."
+            return "Bilinmeyen araç."
 
 
 
         except Exception as error:
 
-            return f"Tool error: {error}"
+            return f"Araç hatası: {error}"
+
 
 
 
@@ -113,13 +116,16 @@ class ToolAgent(BaseAgent):
         plan
     ):
 
+
         tool = self.registry.get(
             "calculator"
         )
 
 
         if tool is None:
-            return "Calculator tool not found."
+
+            return "Calculator bulunamadı."
+
 
 
         numbers = plan.get(
@@ -129,11 +135,19 @@ class ToolAgent(BaseAgent):
 
 
         if len(numbers) < 2:
-            return "Two numbers are required."
+
+            return "İki sayı gerekli."
 
 
-        a = float(numbers[0])
-        b = float(numbers[1])
+
+        a = float(
+            numbers[0]
+        )
+
+        b = float(
+            numbers[1]
+        )
+
 
 
         operation = plan.get(
@@ -141,12 +155,41 @@ class ToolAgent(BaseAgent):
         )
 
 
+
         if operation == "add":
-            return tool.add(a,b)
+
+            return tool.add(
+                a,
+                b
+            )
+
+
+
+        if operation == "subtract":
+
+            return tool.subtract(
+                a,
+                b
+            )
+
 
 
         if operation == "multiply":
-            return tool.multiply(a,b)
+
+            return tool.multiply(
+                a,
+                b
+            )
 
 
-        return "Unsupported operation."
+
+        if operation == "divide":
+
+            return tool.divide(
+                a,
+                b
+            )
+
+
+
+        return "Desteklenmeyen işlem."
