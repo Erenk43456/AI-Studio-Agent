@@ -1,12 +1,24 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['app\\gui.py'],
     pathex=['.'],
     binaries=[],
     datas=[],
-    hiddenimports=[],
+    hiddenimports=[
+        "agents.planner_agent",
+        "agents.tool_agent",
+        "agents.chat_agent",
+        "tools.calculator",
+        "tools.file_tool",
+        "tools.memory_tool",
+        "tools.tool_registry",
+        "memory.memory",
+        "memory.conversation",
+        "models.llm",
+        "PySide6.QtWidgets",
+        "PySide6.QtCore",
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -14,32 +26,21 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
+
 
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='AI-Studio-Agent',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=['icon.ico'],
-)
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='AI-Studio-Agent',
+    icon='icon.ico',
 )

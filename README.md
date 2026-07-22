@@ -1,76 +1,86 @@
 # AI-Studio-Agent 🤖
 
-> ** A modular local AI agent framework combining LLM reasoning, task planning, memory management, and tool execution.**
+> A modular local AI agent framework combining LLM reasoning, task planning, memory management, and tool execution.
 
-AI-Studio-Agent is a modular AI assistant framework developed in Python.
+AI-Studio-Agent is a **Local-First AI assistant framework** developed in Python.
 
-The project combines multiple specialized AI agents, persistent memory, local Large Language Models (LLMs), and a modern desktop interface to provide a Local-First & Privacy Focused AI assistant.
+The project combines:
 
-Unlike cloud-based AI services, all conversations, memory, and user data remain on the user's machine.
+- Specialized AI agents
+- Local Large Language Models (LLMs)
+- Persistent memory
+- Tool execution
+- Modern desktop interface
+
+to create a privacy-focused AI assistant that runs entirely on the user's machine.
+
+Unlike cloud-based AI services, conversations, memory data, and processing remain local.
 
 ---
 
 # ✨ Features
 
 - 🤖 Local LLM Support (Ollama + Qwen2.5)
-- 🧠 Planner Agent for intelligent task analysis
-- 🛠 Tool Agent for dynamic tool execution
-- 💬 Chat Agent for natural language conversations
+- 🧠 Intelligent Planner Agent
+- 🛠 Dynamic Tool Execution System
+- 💬 Natural Language Chat Agent
 - 💾 Persistent Memory System
 - 📝 Conversation History Management
 - 🔌 Modular Tool Registry Architecture
 - 🧮 Calculator Tool
 - 📁 File Management Tool
-- 🖥 Modern Desktop GUI (PySide6)
-- ⚡ Background Processing using QThread
+- 🖥 Modern Desktop GUI with PySide6
+- ⚡ Background Processing Support
 - 🧪 Automated Testing with Pytest
 - 📦 Windows Executable Support
-- 🔒 Local-First & Privacy Focused
-- 📋 Structured JSON Task Planning
+- 🔒 Local-First Privacy Architecture
+- 📋 JSON-Based Task Planning
 
 ---
 
 # 🏗 Architecture
 
 ```text
-                 User
-                   |
-                   ▼
-             PySide6 GUI
-                   |
-                   ▼
-            Planner Agent
-                   |
-        ┌──────────┴──────────┐
-        ▼                     ▼
-   Tool Agent             Chat Agent
-        |
- ┌──────┼───────────┐
- ▼      ▼           ▼
-Memory Calculator File Tool
-        |
-        ▼
-   Local JSON Storage
+                         User
+                           |
+                           ▼
+                    PySide6 Desktop GUI
+                           |
+                           ▼
+                    Planner Agent
+                           |
+              ┌────────────┴────────────┐
+              ▼                         ▼
+        Tool Agent                 Chat Agent
+              |
+      ┌───────┼──────────┐
+      ▼       ▼          ▼
+  Memory  Calculator  File Tool
+      |
+      ▼
+ Local JSON Storage
+
 
 Chat Agent
-        |
-        ▼
- Ollama + Qwen2.5
+      |
+      ▼
+ Ollama + Qwen2.5 Local LLM
 ```
 
 ---
 
-# 🧠 Agent Overview
+# 🧠 Agent System
 
 ## Planner Agent
 
-The Planner Agent analyzes the user's request and determines the most appropriate action.
+The Planner Agent analyzes user requests and creates structured execution plans.
 
 Responsibilities:
 
-- Analyze user requests
-- Select the appropriate tool or agent
-- Generate structured execution plans
+- Understand user intent
+- Select appropriate tools
+- Generate JSON-based plans
+- Route tasks between agents
 
 Example:
 
@@ -86,19 +96,26 @@ Example:
 
 ## Tool Agent
 
-The Tool Agent executes the selected tools.
+The Tool Agent executes actions selected by the Planner Agent.
 
-Currently supported tools:
+Supported tools:
 
 - Calculator
 - Memory
 - File Operations
 
+The modular architecture allows adding new tools easily.
+
 ---
 
 ## Chat Agent
 
-The Chat Agent handles normal conversations using a local Large Language Model.
+The Chat Agent handles general conversations using a local Large Language Model.
+
+Powered by:
+
+- Ollama
+- Qwen2.5
 
 ---
 
@@ -109,7 +126,7 @@ The Chat Agent handles normal conversations using a local Large Language Model.
 - Ollama
 - Qwen2.5 Local LLM
 - Requests
-- JSON
+- JSON Storage
 - Pytest
 - PyInstaller
 
@@ -123,19 +140,19 @@ Clone the repository:
 git clone https://github.com/Erenk43456/AI-Studio-Agent.git
 ```
 
-Navigate to the project directory:
+Navigate into the project:
 
 ```bash
 cd AI-Studio-Agent
 ```
 
-Create a virtual environment:
+Create virtual environment:
 
 ```bash
 python -m venv venv
 ```
 
-Activate the virtual environment:
+Activate environment:
 
 Windows:
 
@@ -153,15 +170,15 @@ pip install -r requirements.txt
 
 # 🤖 Local LLM Setup
 
-AI-Studio-Agent uses Ollama for local inference.
+AI-Studio-Agent uses Ollama for local AI inference.
 
-Download the model:
+Install Qwen2.5:
 
 ```bash
 ollama pull qwen2.5:3b
 ```
 
-Start the Ollama server:
+Start Ollama:
 
 ```bash
 ollama serve
@@ -169,9 +186,9 @@ ollama serve
 
 ---
 
-# ▶ Usage
+# ▶ Running the Application
 
-Run the desktop application:
+Start the desktop application:
 
 ```bash
 python -m app.gui
@@ -181,41 +198,69 @@ Example:
 
 ```
 User:
-Calculate 20 + 40
+20 ile 40'ı topla
+
 
 AI:
 60
 ```
 
-Memory example:
+---
+
+# 💾 Memory System Example
+
+Save information:
 
 ```
 User:
-My name is Eren.
+Benim adım Eren.
+```
 
 AI:
-Information saved.
+
+```
+Bilgi kaydedildi.
 ```
 
 Later:
 
 ```
 User:
-What's my name?
+Benim adım ne?
+```
 
 AI:
-Your name is Eren.
+
+```
+Eren
 ```
 
 ---
 
-# 📦 Windows Executable
+# 📦 Building Windows Executable
 
-A standalone Windows executable is available.
+The project supports standalone Windows executable builds using PyInstaller.
+
+Install PyInstaller:
+
+```bash
+pip install pyinstaller
+```
+
+Build:
+
+```bash
+pyinstaller AI-Studio-Agent.spec
+```
+
+Output:
 
 ```
-AI-Studio-Agent.exe
+dist/
+ └── AI-Studio-Agent.exe
 ```
+
+The generated executable runs independently.
 
 Requirements:
 
@@ -226,19 +271,19 @@ Requirements:
 
 # 🧪 Running Tests
 
-Execute all tests:
+Run:
 
 ```bash
 pytest
 ```
 
-Example output:
+Example:
 
 ```
 3 passed
 ```
 
-Current test coverage:
+Current tests:
 
 - Calculator Tool
 - Memory System
@@ -247,42 +292,58 @@ Current test coverage:
 
 # 🔒 Privacy
 
-All conversations and memory are stored locally.
+AI-Studio-Agent follows a Local-First architecture.
 
-The following files are excluded from GitHub:
+Stored locally:
 
 ```
 data/memory.json
 data/conversation.json
 ```
 
-No personal data is uploaded to external servers.
+Excluded from Git:
+
+```
+data/*.json
+```
+
+No user data is uploaded to external servers.
 
 ---
 
 # 🛣 Roadmap
 
-Planned features:
+Future improvements:
 
 - RAG Integration
 - Web Search Tool
-- Plugin Architecture
+- Plugin System
 - Multi-Agent Collaboration
-- Long-Term Memory
+- Advanced Long-Term Memory
+- Automatic Memory Extraction
+- Semantic Search
+- Embedding Support
+- Vector Database Integration
 - Voice Assistant
 - Model Switching
 - API Support
-- Cross-Platform Support
-- Optional Cloud Synchronization
-- Automatic Memory Extraction
-- Semantic Memory with Embeddings
-- Vector Database Integration
+- Cross Platform Support
 
 ---
 
 # 🎯 Project Vision
 
-The long-term goal is to build a local AI ecosystem where specialized agents can reason, plan tasks, use external tools, maintain long-term memory, and collaborate through a unified architecture.
+The goal of AI-Studio-Agent is to evolve into a complete local AI ecosystem.
+
+A system where specialized agents can:
+
+- Understand tasks
+- Plan actions
+- Use external tools
+- Maintain long-term memory
+- Collaborate with other agents
+
+while keeping user data private and local.
 
 ---
 
@@ -297,4 +358,5 @@ This project is released under the MIT License.
 Developed by **Eren K.**
 
 GitHub:
+
 https://github.com/Erenk43456
