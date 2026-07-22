@@ -3,25 +3,19 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QPushButton,
-    QScrollArea,
-    QStackedWidget,
-    QWidget
+    QPushButton
 )
 
 from PySide6.QtCore import Qt
 
 
-
 from app.header import Header
 from app.sidebar import Sidebar
 
-from app.chat_widget import MessageBubble
 
-from app.pages.memory_page import MemoryPage
-from app.pages.history_page import HistoryPage
-from app.pages.tools_page import ToolsPage
-from app.pages.settings_page import SettingsPage
+from app.ui.styles import AppStyles
+from app.ui.chat_ui import ChatUI
+from app.ui.page_manager import PageManager
 
 
 
@@ -53,46 +47,10 @@ class UIBuilder:
 
 
         window.setStyleSheet(
-            """
-            QWidget {
-                background-color:#1e1e1e;
-                color:white;
-            }
-
-
-            QLineEdit {
-
-                background:#252526;
-                border:1px solid #3c3c3c;
-                border-radius:8px;
-                padding:10px;
-
-            }
-
-
-            QPushButton {
-
-                background:#0078d4;
-                border-radius:8px;
-                padding:10px;
-
-            }
-
-
-            QPushButton:hover {
-
-                background:#1084e8;
-
-            }
-
-
-            QScrollArea {
-
-                border:none;
-
-            }
-            """
+            AppStyles.MAIN_STYLE
         )
+
+
 
 
 
@@ -128,48 +86,23 @@ class UIBuilder:
 
 
 
-        window.pages = QStackedWidget()
 
+        #
+        # Chat UI
+        #
 
-
-        UIBuilder.create_chat_page(
+        ChatUI.create(
             window
         )
 
 
 
-        window.memory_page = MemoryPage()
+        #
+        # Pages
+        #
 
-        window.history_page = HistoryPage()
-
-        window.tools_page = ToolsPage()
-
-        window.settings_page = SettingsPage()
-
-
-
-        window.pages.addWidget(
-            window.scroll
-        )
-
-
-        window.pages.addWidget(
-            window.memory_page
-        )
-
-
-        window.pages.addWidget(
-            window.history_page
-        )
-
-
-        window.pages.addWidget(
-            window.tools_page
-        )
-
-
-        window.pages.addWidget(
-            window.settings_page
+        PageManager.create(
+            window
         )
 
 
@@ -185,6 +118,12 @@ class UIBuilder:
         )
 
 
+
+
+
+        #
+        # Status
+        #
 
         window.status = QLabel(
             "🟢 Ready"
@@ -202,12 +141,19 @@ class UIBuilder:
 
 
 
+
+
+        #
+        # Input
+        #
+
         window.input = QLineEdit()
 
 
         window.input.setPlaceholderText(
             "Ask something..."
         )
+
 
 
         window.button = QPushButton(
@@ -229,59 +175,4 @@ class UIBuilder:
 
         window.setLayout(
             main_layout
-        )
-
-
-
-
-
-    @staticmethod
-    def create_chat_page(window):
-
-
-        window.chat_widget = QWidget()
-
-
-        window.chat_layout = QVBoxLayout()
-
-
-
-        window.chat_layout.setSpacing(
-            12
-        )
-
-
-
-        window.chat_layout.setContentsMargins(
-            10,
-            10,
-            10,
-            10
-        )
-
-
-
-        window.chat_layout.setAlignment(
-            Qt.AlignTop
-        )
-
-
-
-        window.chat_widget.setLayout(
-            window.chat_layout
-        )
-
-
-
-        window.scroll = QScrollArea()
-
-
-
-        window.scroll.setWidgetResizable(
-            True
-        )
-
-
-        window.scroll.setWidget(
-            window.chat_widget
         )
