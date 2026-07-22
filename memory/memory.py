@@ -4,6 +4,7 @@ from datetime import datetime
 
 
 
+
 class Memory:
 
 
@@ -18,6 +19,7 @@ class Memory:
 
 
         self.file = self.data_dir / "memory.json"
+
 
 
 
@@ -48,11 +50,17 @@ class Memory:
 
 
 
+
+
+
     def _timestamp(self):
 
         return datetime.now().strftime(
             "%Y-%m-%d %H:%M:%S"
         )
+
+
+
 
 
 
@@ -72,19 +80,27 @@ class Memory:
 
         self.data[key] = {
 
+
             "value": value,
+
 
             "category": category,
 
+
             "created": now,
 
+
             "updated": now
+
 
         }
 
 
 
         self._write()
+
+
+
 
 
 
@@ -96,13 +112,19 @@ class Memory:
     ):
 
 
+
         if key in self.data and isinstance(
+
             self.data[key],
+
             dict
+
         ):
 
 
+
             self.data[key]["value"] = value
+
 
             self.data[key]["updated"] = self._timestamp()
 
@@ -110,14 +132,23 @@ class Memory:
 
         else:
 
+
             self.save(
+
                 key,
+
                 value
+
             )
 
 
 
         self._write()
+
+
+
+
+
 
 
 
@@ -128,9 +159,11 @@ class Memory:
     ):
 
 
+
         item = self.data.get(
             key
         )
+
 
 
         if item is None:
@@ -139,20 +172,31 @@ class Memory:
 
 
 
-        # Yeni format
+
+
 
         if isinstance(
+
             item,
+
             dict
+
         ) and "value" in item:
+
+
 
             return item["value"]
 
 
 
-        # Eski format desteği
+
 
         return item
+
+
+
+
+
 
 
 
@@ -162,9 +206,14 @@ class Memory:
         key
     ):
 
+
         return self.data.get(
             key
         )
+
+
+
+
 
 
 
@@ -176,13 +225,19 @@ class Memory:
     ):
 
 
+
         if key in self.data:
+
 
             del self.data[key]
 
+
             self._write()
 
+
             return True
+
+
 
 
 
@@ -192,9 +247,36 @@ class Memory:
 
 
 
+
+
+
+
+    def clear(self):
+
+
+        self.data = {}
+
+
+        self._write()
+
+
+
+
+
+
+
+
+
     def recall(self):
 
+
         return self.data
+
+
+
+
+
+
 
 
 
@@ -203,15 +285,25 @@ class Memory:
 
 
         with open(
+
             self.file,
+
             "w",
+
             encoding="utf-8"
+
         ) as f:
 
 
+
             json.dump(
+
                 self.data,
+
                 f,
+
                 ensure_ascii=False,
+
                 indent=4
+
             )

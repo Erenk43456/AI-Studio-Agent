@@ -2,10 +2,12 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QLabel,
-    QScrollArea
+    QScrollArea,
+    QPushButton
 )
 
 from PySide6.QtCore import Qt
+
 
 
 
@@ -17,13 +19,18 @@ class MemoryPage(QWidget):
         super().__init__()
 
 
+
         layout = QVBoxLayout()
+
+
+
 
 
 
         title = QLabel(
             "🧠 Memory System"
         )
+
 
 
         title.setStyleSheet(
@@ -37,9 +44,15 @@ class MemoryPage(QWidget):
         )
 
 
+
         layout.addWidget(
             title
         )
+
+
+
+
+
 
 
 
@@ -48,14 +61,17 @@ class MemoryPage(QWidget):
         )
 
 
+
         self.content.setWordWrap(
             True
         )
 
 
+
         self.content.setAlignment(
             Qt.AlignTop
         )
+
 
 
         self.content.setStyleSheet(
@@ -74,12 +90,19 @@ class MemoryPage(QWidget):
 
 
 
+
+
+
+
+
         self.scroll = QScrollArea()
+
 
 
         self.scroll.setWidgetResizable(
             True
         )
+
 
 
         self.scroll.setWidget(
@@ -94,9 +117,47 @@ class MemoryPage(QWidget):
 
 
 
+
+
+
+
+
+        self.refresh_button = QPushButton(
+            "🔄 Refresh Memory"
+        )
+
+
+        layout.addWidget(
+            self.refresh_button
+        )
+
+
+
+
+
+        self.clear_button = QPushButton(
+            "🗑 Clear Memory"
+        )
+
+
+        layout.addWidget(
+            self.clear_button
+        )
+
+
+
+
+
+
+
+
         self.setLayout(
             layout
         )
+
+
+
+
 
 
 
@@ -108,13 +169,21 @@ class MemoryPage(QWidget):
     ):
 
 
+
         if not data:
 
+
             self.content.setText(
+
                 "🧠 No memory data available."
+
             )
 
+
             return
+
+
+
 
 
 
@@ -123,7 +192,12 @@ class MemoryPage(QWidget):
 
 
 
+
+
+
+
         for key, value in data.items():
+
 
 
             if isinstance(
@@ -132,52 +206,90 @@ class MemoryPage(QWidget):
             ):
 
 
+
                 category = value.get(
+
                     "category",
+
                     "general"
+
                 )
+
 
 
                 stored_value = value.get(
+
                     "value",
+
                     ""
+
                 )
 
 
+
                 text += (
+
                     f"📂 {category.upper()}\n"
+
                 )
 
 
+
                 text += (
+
                     f"🔹 {key}\n"
+
                 )
 
 
+
                 text += (
+
                     f"   ➜ {stored_value}\n"
+
                 )
 
 
 
-                if value.get("created"):
+
+
+                if value.get(
+                    "created"
+                ):
+
 
                     text += (
+
                         f"   🕒 Created: {value.get('created')}\n"
+
                     )
 
 
-                if value.get("updated"):
+
+
+
+                if value.get(
+                    "updated"
+                ):
+
 
                     text += (
+
                         f"   🔄 Updated: {value.get('updated')}\n"
+
                     )
+
+
 
 
 
                 text += (
+
                     "\n----------------------\n\n"
+
                 )
+
+
 
 
 
@@ -185,8 +297,14 @@ class MemoryPage(QWidget):
 
 
                 text += (
+
                     f"🔹 {key}: {value}\n\n"
+
                 )
+
+
+
+
 
 
 
