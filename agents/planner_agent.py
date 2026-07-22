@@ -1,11 +1,13 @@
 from agents.base_agent import BaseAgent
 from models.llm import LLM
+from app.core.logger import AppLogger
 
 
 from agents.planner.calculator_parser import parse_calculator
 from agents.planner.memory_parser import parse_memory
 from agents.planner.greeting_parser import parse_greeting
 from agents.planner.llm_planner import create_llm_plan
+
 
 
 
@@ -18,6 +20,7 @@ class PlannerAgent(BaseAgent):
         memory=None
     ):
 
+
         super().__init__(
             "Planner Agent",
             memory
@@ -25,6 +28,10 @@ class PlannerAgent(BaseAgent):
 
 
         self.llm = LLM()
+
+        self.logger = AppLogger()
+
+
 
 
 
@@ -40,58 +47,110 @@ class PlannerAgent(BaseAgent):
 
 
 
-
-
-        greeting_plan = parse_greeting(
-            task
+        self.logger.info(
+            f"Creating plan for: {task}"
         )
 
 
-        if greeting_plan:
-
-            return greeting_plan
 
 
+        try:
 
 
 
-        calculator_plan = parse_calculator(
-            task
-        )
+            greeting_plan = parse_greeting(
+                task
+            )
 
 
-        if calculator_plan:
-
-            return calculator_plan
+            if greeting_plan:
 
 
+                self.logger.info(
+                    "Plan selected: greeting"
+                )
 
 
-
-        memory_plan = parse_memory(
-            task
-        )
-
-
-        if memory_plan:
-
-            return memory_plan
+                return greeting_plan
 
 
 
 
 
 
-        if self.memory:
+            calculator_plan = parse_calculator(
+                task
+            )
 
 
-            self.memory.save(
+            if calculator_plan:
 
-                "last_task",
 
-                task,
+                self.logger.info(
+                    "Plan selected: calculator"
+                )
 
-                "system"
+
+                return calculator_plan
+
+
+
+
+
+
+            memory_plan = parse_memory(
+                task
+            )
+
+
+            if memory_plan:
+
+
+                self.logger.info(
+                    "Plan selected: memory"
+                )
+
+
+                return memory_plan
+
+
+
+
+
+
+
+
+            if self.memory:
+
+
+                self.memory.save(
+
+                    "last_task",
+
+                    task,
+
+                    "system"
+
+                )
+
+
+
+
+
+
+
+
+            self.logger.info(
+                "No parser matched. Using LLM planner."
+            )
+
+
+
+            return create_llm_plan(
+
+                self.llm,
+
+                task
 
             )
 
@@ -99,10 +158,21 @@ class PlannerAgent(BaseAgent):
 
 
 
-        return create_llm_plan(
 
-            self.llm,
+        except Exception as error:
 
-            task
 
-        )
+            self.logger.error(
+
+                f"Planner error: {error}"
+
+            )
+
+
+            return {
+
+                "tool": "chat",
+
+                "message": task
+
+            }
