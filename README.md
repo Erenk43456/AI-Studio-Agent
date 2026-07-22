@@ -1,70 +1,74 @@
 # AI-Studio-Agent 🤖
 
-Python ile geliştirilmiş, local çalışan modüler AI Agent masaüstü asistanı.
+> **A modular desktop AI assistant powered by local LLMs, intelligent agents, persistent memory, and tool execution.**
 
-AI-Studio-Agent; LLM tabanlı karar verme, tool kullanımı, hafıza yönetimi ve konuşma geçmişi özelliklerini bir araya getirerek kişiselleştirilebilir bir yapay zeka asistan altyapısı sunar.
+AI-Studio-Agent is a modular AI assistant framework developed in Python.
 
-Proje tamamen local çalışır. Kullanıcı verileri, hafıza kayıtları ve konuşma geçmişi cihaz üzerinde tutulur.
+The project combines multiple autonomous agents, persistent memory, local Large Language Models (LLMs), and a modern desktop interface to provide a fully local and privacy-focused AI assistant.
+
+Unlike cloud-based AI services, all conversations, memory, and user data remain on the user's machine.
 
 ---
 
-# Özellikler
+# ✨ Features
 
-- 🤖 Local LLM desteği (Ollama + Qwen2.5)
-- 🧠 Planner Agent ile görev analizi ve yönlendirme
-- 🛠 Tool Agent ile araç çalıştırma sistemi
-- 💬 Chat Agent ile doğal dil konuşma desteği
-- 💾 Memory sistemi ile kalıcı bilgi saklama
-- 📝 Conversation history yönetimi
-- 🔌 Tool Registry mimarisi
+- 🤖 Local LLM Support (Ollama + Qwen2.5)
+- 🧠 Planner Agent for intelligent task analysis
+- 🛠 Tool Agent for dynamic tool execution
+- 💬 Chat Agent for natural language conversations
+- 💾 Persistent Memory System
+- 📝 Conversation History Management
+- 🔌 Modular Tool Registry Architecture
 - 🧮 Calculator Tool
-- 📁 File Operation Tool
-- 🖥 PySide6 masaüstü kullanıcı arayüzü
-- ⚡ QThread ile arka plan işlem yönetimi
-- 🧪 Pytest otomatik test sistemi
-- 📦 Windows EXE desteği
+- 📁 File Management Tool
+- 🖥 Modern Desktop GUI (PySide6)
+- ⚡ Background Processing using QThread
+- 🧪 Automated Testing with Pytest
+- 📦 Windows Executable Support
+- 🔒 Fully Local & Privacy Focused
 
 ---
 
-# Proje Mimarisi
+# 🏗 Architecture
 
 ```text
-User
- |
- v
-Desktop GUI
- |
- v
-Planner Agent
- |
- +----------------+
- |                |
- v                v
-Tool Agent     Chat Agent
- |
- +----------------+
- |       |        |
- v       v        v
-Memory Calculator File Tool
+                User
+                  │
+                  ▼
+          Desktop Interface
+                  │
+                  ▼
+           Planner Agent
+          ┌───────┴────────┐
+          ▼                ▼
+     Tool Agent      Chat Agent
+          │
+   ┌──────┼────────────┐
+   ▼      ▼            ▼
+Memory  Calculator   File Tool
 ```
 
 ---
 
-# Agent Yapısı
+# 🧠 Agent Overview
 
 ## Planner Agent
 
-- Kullanıcı isteğini analiz eder.
-- Uygun agent veya tool seçimini yapar.
-- JSON tabanlı görev planı oluşturur.
+The Planner Agent analyzes the user's request and determines the most appropriate action.
 
-Örnek:
+Responsibilities:
+
+- Analyze user requests
+- Select the appropriate tool or agent
+- Generate structured execution plans
+
+Example:
 
 ```json
 {
- "tool":"calculator",
- "operation":"add",
- "numbers":[20,30]
+  "tool": "calculator",
+  "operation": "add",
+  "numbers": [20, 30]
 }
 ```
 
@@ -72,9 +76,9 @@ Memory Calculator File Tool
 
 ## Tool Agent
 
-Seçilen araçları çalıştırır.
+The Tool Agent executes the selected tools.
 
-Desteklenen araçlar:
+Currently supported tools:
 
 - Calculator
 - Memory
@@ -84,13 +88,11 @@ Desteklenen araçlar:
 
 ## Chat Agent
 
-Normal sohbet isteklerini yönetir.
-
-Local LLM üzerinden doğal dil cevapları üretir.
+The Chat Agent handles normal conversations using a local Large Language Model.
 
 ---
 
-# Kullanılan Teknolojiler
+# 🛠 Technologies
 
 - Python 3.12+
 - PySide6
@@ -103,27 +105,27 @@ Local LLM üzerinden doğal dil cevapları üretir.
 
 ---
 
-# Kurulum
+# 🚀 Installation
 
-Projeyi klonlayın:
+Clone the repository:
 
 ```bash
 git clone https://github.com/Erenk43456/AI-Studio-Agent.git
 ```
 
-Proje klasörüne girin:
+Navigate to the project directory:
 
 ```bash
 cd AI-Studio-Agent
 ```
 
-Virtual environment oluşturun:
+Create a virtual environment:
 
 ```bash
 python -m venv venv
 ```
 
-Virtual environment aktif edin:
+Activate the virtual environment:
 
 Windows:
 
@@ -131,7 +133,7 @@ Windows:
 venv\Scripts\activate
 ```
 
-Bağımlılıkları yükleyin:
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -139,17 +141,17 @@ pip install -r requirements.txt
 
 ---
 
-# Local LLM Kurulumu
+# 🤖 Local LLM Setup
 
-Bu proje Ollama üzerinden local LLM kullanır.
+AI-Studio-Agent uses Ollama for local inference.
 
-Qwen2.5 modelini indirmek için:
+Download the model:
 
 ```bash
 ollama pull qwen2.5:3b
 ```
 
-Ollama servisini başlatın:
+Start the Ollama server:
 
 ```bash
 ollama serve
@@ -157,117 +159,129 @@ ollama serve
 
 ---
 
-# Kullanım
+# ▶ Usage
 
-GUI uygulamasını başlatmak için:
+Run the desktop application:
 
 ```bash
 python -m app.gui
 ```
 
-Örnek:
+Example:
 
 ```
-Kullanıcı:
-20 ile 40'ı topla
+User:
+Calculate 20 + 40
 
 AI:
 60
 ```
 
-Memory örneği:
+Memory example:
 
 ```
-Kullanıcı:
-Benim adım Eren
+User:
+My name is Eren.
 
 AI:
-İsim kaydedildi.
+Information saved.
 ```
 
-Daha sonra:
+Later:
 
 ```
-Kullanıcı:
-Benim adım ne
+User:
+What's my name?
 
 AI:
-eren
+Your name is Eren.
 ```
 
 ---
 
-# Windows EXE Kullanımı
+# 📦 Windows Executable
 
-Hazırlanan executable sürümü ile uygulama Python kurulumu olmadan çalıştırılabilir.
+A standalone Windows executable is available.
 
 ```
 AI-Studio-Agent.exe
 ```
 
-Not:
+Requirements:
 
-Local AI modeli kullanıldığı için bilgisayarda:
-
-- Ollama
-- qwen2.5:3b modeli
-
-kurulu olmalıdır.
+- Ollama installed
+- Qwen2.5 model downloaded
 
 ---
 
-# Testler
+# 🧪 Running Tests
 
-Proje otomatik test desteğine sahiptir.
-
-Testleri çalıştırmak için:
+Execute all tests:
 
 ```bash
 pytest
 ```
 
-Örnek çıktı:
+Example output:
 
 ```
 3 passed
 ```
 
-Test edilen bileşenler:
+Current test coverage:
 
-- Calculator
-- Memory sistemi
+- Calculator Tool
+- Memory System
 
 ---
 
-# Veri Gizliliği
+# 🔒 Privacy
 
-Kullanıcı hafızası ve konuşma geçmişi lokal olarak saklanır.
+All conversations and memory are stored locally.
 
-Aşağıdaki dosyalar GitHub'a gönderilmez:
+The following files are excluded from GitHub:
 
 ```
 data/memory.json
 data/conversation.json
 ```
 
-Bu sayede kişisel kullanıcı verileri kaynak koddan ayrı tutulur.
+No personal data is uploaded to external servers.
 
 ---
 
-# Gelecek Geliştirmeler
+# 🛣 Roadmap
 
-- RAG tabanlı bilgi sistemi
-- Plugin mimarisi
-- Sesli asistan desteği
-- Daha gelişmiş uzun süreli hafıza
-- Model değiştirme sistemi
-- Web tabanlı dashboard
-- Multi-agent koordinasyonu
+Planned features:
+
+- RAG Integration
+- Web Search Tool
+- Plugin Architecture
+- Multi-Agent Collaboration
+- Long-Term Memory
+- Voice Assistant
+- Model Switching
+- API Support
+- Cross-Platform Support
+- Optional Cloud Synchronization
 
 ---
 
-# Proje Hakkında
+# 🎯 Project Vision
 
-AI-Studio-Agent; agent mimarileri, local LLM kullanımı, tool entegrasyonu ve hafıza sistemleri üzerine geliştirilmiş bir yapay zeka asistan prototipidir.
+The long-term goal of AI-Studio-Agent is to evolve into a modular AI ecosystem capable of planning tasks, interacting with external tools, managing long-term memory, and collaborating between specialized AI agents while running entirely on local hardware.
 
-Amaç; kullanıcı isteklerini analiz edebilen, uygun araçları seçebilen ve lokal olarak çalışan modüler bir AI sistemi oluşturmaktır.
+---
+
+# 📄 License
+
+This project is released under the MIT License.
+
+---
+
+# 👨‍💻 Author
+
+Developed by **Eren K.**
+
+GitHub:
+https://github.com/Erenk43456
