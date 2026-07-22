@@ -1,8 +1,7 @@
 from PySide6.QtWidgets import (
     QWidget,
     QLabel,
-    QHBoxLayout,
-    QVBoxLayout
+    QHBoxLayout
 )
 
 from PySide6.QtCore import Qt
@@ -23,6 +22,18 @@ class MessageBubble(QWidget):
         layout = QHBoxLayout()
 
 
+        layout.setContentsMargins(
+            10,
+            5,
+            10,
+            5
+        )
+
+        layout.setSpacing(
+            0
+        )
+
+
         self.label = QLabel(
             text
         )
@@ -33,35 +44,37 @@ class MessageBubble(QWidget):
         )
 
 
+        self.label.setTextInteractionFlags(
+            Qt.TextSelectableByMouse
+        )
+
+
         self.label.setMaximumWidth(
-            450
+            600
         )
-
-
-        self.label.setStyleSheet(
-            """
-            QLabel {
-                padding: 10px;
-                border-radius: 12px;
-                font-size: 14px;
-            }
-            """
-        )
-
 
 
         if is_user:
 
+
             self.label.setStyleSheet(
                 """
                 QLabel {
-                    background-color: #0078d4;
-                    color: white;
-                    padding: 10px;
-                    border-radius: 12px;
+
+                    background-color:#0078d4;
+
+                    color:white;
+
+                    padding:12px;
+
+                    border-radius:14px;
+
+                    font-size:14px;
+
                 }
                 """
             )
+
 
             layout.addStretch()
 
@@ -70,22 +83,33 @@ class MessageBubble(QWidget):
             )
 
 
+
         else:
+
 
             self.label.setStyleSheet(
                 """
                 QLabel {
-                    background-color: #333333;
-                    color: white;
-                    padding: 10px;
-                    border-radius: 12px;
+
+                    background-color:#333333;
+
+                    color:white;
+
+                    padding:12px;
+
+                    border-radius:14px;
+
+                    font-size:14px;
+
                 }
                 """
             )
 
+
             layout.addWidget(
                 self.label
             )
+
 
             layout.addStretch()
 

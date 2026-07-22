@@ -14,12 +14,15 @@ class MemoryTool:
 
 
 
+
     def normalize(
         self,
         value
     ):
 
+
         value = value.lower().strip()
+
 
 
         replacements = {
@@ -31,10 +34,13 @@ class MemoryTool:
         }
 
 
+
         return replacements.get(
             value,
             value
         )
+
+
 
 
 
@@ -44,23 +50,38 @@ class MemoryTool:
 
 
 
+
+
     def save_info(
         self,
         key,
-        value
+        value,
+        category="general"
     ):
 
+
         key = key.lower().strip()
-        value = self.normalize(value)
 
 
-        self.memory.save(
-            key,
+        value = self.normalize(
             value
         )
 
 
-        return f"{key} saved successfully."
+
+        self.memory.save(
+            key,
+            value,
+            category
+        )
+
+
+
+        return (
+            f"{key} saved successfully."
+        )
+
+
 
 
 
@@ -69,6 +90,47 @@ class MemoryTool:
         key
     ):
 
+
         return self.memory.get(
             key
+        )
+
+
+
+
+
+    def get_details(
+        self,
+        key
+    ):
+
+
+        return self.memory.get_full(
+            key
+        )
+
+
+
+
+
+    def delete_info(
+        self,
+        key
+    ):
+
+
+        result = self.memory.delete(
+            key
+        )
+
+
+        if result:
+
+            return (
+                f"{key} deleted successfully."
+            )
+
+
+        return (
+            f"{key} not found."
         )

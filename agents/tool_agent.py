@@ -46,12 +46,16 @@ class ToolAgent(BaseAgent):
             if tool_name == "memory_save":
 
                 tool = self.registry.get(
-                    "memory"
+                "memory"
                 )
 
                 return tool.save_info(
                     plan.get("key"),
-                    plan.get("value")
+                    plan.get("value"),
+                    plan.get(
+                        "category",
+                        "general"
+                    )
                 )
 
 

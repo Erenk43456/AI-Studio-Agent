@@ -1,11 +1,9 @@
 from PySide6.QtCore import QThread, Signal
 
 
-
 class AIWorker(QThread):
 
     finished = Signal(str)
-
 
 
     def __init__(
@@ -19,14 +17,11 @@ class AIWorker(QThread):
 
         super().__init__()
 
-
         self.planner = planner
         self.tool_agent = tool_agent
         self.chat_agent = chat_agent
         self.conversation = conversation
         self.message = message
-
-
 
 
 
@@ -39,18 +34,14 @@ class AIWorker(QThread):
             )
 
 
-
             if plan.get("tool") == "chat":
-
 
                 result = self.chat_agent.chat(
                     self.message
                 )
 
 
-
             else:
-
 
                 result = self.tool_agent.execute(
                     plan
@@ -58,56 +49,32 @@ class AIWorker(QThread):
 
 
 
-            result = str(result)
-
-
-
-        except ConnectionError:
-
-
-            result = (
-                "⚠️ Ollama bağlantısı kurulamadı.\n\n"
-                "Lütfen Ollama'nın çalıştığından emin olun."
-            )
-
-
-
-        except Exception as error:
-
-
-            print(
-                "AI Worker Error:",
-                error
-            )
-
-
-            result = (
-                "⚠️ Bir hata oluştu:\n"
-                f"{error}"
-            )
-
-
-
-
-        try:
-
             self.conversation.add(
                 self.message,
-                result
+                str(result)
             )
+
+
+
+            self.finished.emit(
+                str(result)
+            )
+
 
 
         except Exception as error:
 
 
-            print(
-                "Conversation save error:",
-                error
+            self.finished.emit(
+                f"Worker Error: {error}"
             )
 
 
 
+    def stop(self):
 
-        self.finished.emit(
-            result
-        )
+        if self.isRunning():
+
+            self.quit()
+
+            self.wait()

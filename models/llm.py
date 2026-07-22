@@ -3,33 +3,52 @@ import json
 import os
 
 
+
 class LLM:
+
 
     def __init__(self):
 
         self.name = "Qwen2.5 Local LLM"
 
+
         settings = self.load_settings()
+
+
 
         self.model = settings.get(
             "model",
             "qwen2.5:3b"
         )
 
+
         self.url = settings.get(
             "ollama_url",
             "http://localhost:11434/api/generate"
         )
+
+
+        self.base_url = (
+            self.url
+            .replace(
+                "/api/generate",
+                ""
+            )
+        )
+
 
         self.temperature = settings.get(
             "temperature",
             0.3
         )
 
+
         self.num_predict = settings.get(
             "num_predict",
             150
         )
+
+
 
 
 
@@ -54,12 +73,15 @@ class LLM:
 
 
 
+
     def generate(
         self,
         prompt
     ):
 
+
         try:
+
 
             response = requests.post(
 
@@ -88,23 +110,22 @@ class LLM:
             )
 
 
+
             response.raise_for_status()
 
 
             data = response.json()
 
 
-            result = data.get(
+            return data.get(
                 "response",
                 ""
-            )
-
-
-            return result.strip()
+            ).strip()
 
 
 
         except requests.exceptions.Timeout:
+
 
             return "LLM_ERROR: Request timeout."
 
@@ -112,10 +133,96 @@ class LLM:
 
         except requests.exceptions.ConnectionError:
 
+
             return "LLM_ERROR: Connection failed."
 
 
 
         except Exception as error:
 
+
             return f"LLM_ERROR: {error}"
+
+
+
+
+
+
+    def check_connection(self):
+
+        try:
+
+            response = requests.get(
+                self.base_url,
+                timeout=5
+            )
+
+
+            if response.status_code == 200:
+
+                return True
+
+
+            return False
+
+
+
+        except:
+
+            return False
+
+
+
+
+
+
+    def get_models(self):
+
+        try:
+
+            response = requests.get(
+
+                self.base_url + "/api/tags",
+
+                timeout=5
+
+            )
+
+
+            response.raise_for_status()
+
+
+            data = response.json()
+
+
+            models = []
+
+
+            for model in data.get(
+                "models",
+                []
+            ):
+
+                models.append(
+                    model.get(
+                        "name"
+                    )
+                )
+
+
+            return models
+
+
+
+        except:
+
+
+            return []
+
+
+
+
+
+    def get_current_model(self):
+
+        return self.model

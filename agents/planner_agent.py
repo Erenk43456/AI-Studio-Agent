@@ -41,6 +41,7 @@ class PlannerAgent(BaseAgent):
 
 
         if match:
+
             return match.group()
 
 
@@ -60,6 +61,7 @@ class PlannerAgent(BaseAgent):
         #
 
         greetings = [
+
             "merhaba",
             "selam",
             "hey",
@@ -68,7 +70,9 @@ class PlannerAgent(BaseAgent):
             "nasılsın",
             "teşekkür",
             "sağol"
+
         ]
+
 
 
         if any(
@@ -77,10 +81,12 @@ class PlannerAgent(BaseAgent):
         ):
 
             return {
-                "tool": "chat",
-                "message": task
-            }
 
+                "tool": "chat",
+
+                "message": task
+
+            }
 
 
 
@@ -95,13 +101,17 @@ class PlannerAgent(BaseAgent):
         )
 
 
+
         if expression:
+
 
             a = int(
                 expression.group(1)
             )
 
+
             operator = expression.group(2)
+
 
             b = int(
                 expression.group(3)
@@ -118,6 +128,7 @@ class PlannerAgent(BaseAgent):
             }
 
 
+
             return {
 
                 "tool": "calculator",
@@ -125,8 +136,10 @@ class PlannerAgent(BaseAgent):
                 "operation": operations[operator],
 
                 "numbers": [
+
                     a,
                     b
+
                 ]
 
             }
@@ -167,11 +180,14 @@ class PlannerAgent(BaseAgent):
 
 
         if (
+
             len(numbers) >= 2
+
             and any(
                 word in task
                 for word in math_words
             )
+
         ):
 
 
@@ -180,9 +196,11 @@ class PlannerAgent(BaseAgent):
 
 
             if (
+
                 "çıkar" in task
                 or "cikar" in task
                 or "eksi" in task
+
             ):
 
                 operation = "subtract"
@@ -190,9 +208,11 @@ class PlannerAgent(BaseAgent):
 
 
             elif (
+
                 "çarp" in task
                 or "carp" in task
                 or "kat" in task
+
             ):
 
                 operation = "multiply"
@@ -200,11 +220,14 @@ class PlannerAgent(BaseAgent):
 
 
             elif (
+
                 "böl" in task
                 or "bol" in task
+
             ):
 
                 operation = "divide"
+
 
 
 
@@ -227,13 +250,15 @@ class PlannerAgent(BaseAgent):
 
 
         #
-        # Memory
+        # Memory Get
         #
 
         if (
+
             "adım ne" in task
             or "ismim ne" in task
             or "ben kimim" in task
+
         ):
 
             return {
@@ -247,9 +272,13 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         if (
+
             "favori oyunum ne" in task
+
         ):
+
 
             return {
 
@@ -262,13 +291,18 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         #
-        # Save name
+        # Memory Save
         #
 
+
         if task.startswith(
+
             "benim adım "
+
         ):
+
 
             return {
 
@@ -277,23 +311,119 @@ class PlannerAgent(BaseAgent):
                 "key": "isim",
 
                 "value": task.replace(
+
                     "benim adım",
+
                     ""
-                ).strip()
+
+                ).strip(),
+
+                "category": "personal"
 
             }
 
 
 
 
+
+        if (
+
+            "favori oyunum" in task
+
+        ):
+
+
+            value = task.replace(
+
+                "favori oyunum",
+
+                ""
+
+            ).strip()
+
+
+
+            return {
+
+                "tool": "memory_save",
+
+                "key": "favori_oyun",
+
+                "value": value,
+
+                "category": "preference"
+
+            }
+
+
+
+
+
+        if (
+
+            "öğreniyorum" in task
+
+            or "ogreniyorum" in task
+
+        ):
+
+
+            value = task.replace(
+
+                "öğreniyorum",
+
+                ""
+
+            ).replace(
+
+                "ogreniyorum",
+
+                ""
+
+            ).strip()
+
+
+
+            return {
+
+                "tool": "memory_save",
+
+                "key": "öğreniyor",
+
+                "value": value,
+
+                "category": "interest"
+
+            }
+
+
+
+
+
+        #
+        # Save last task
+        #
+
         self.memory.save(
+
             "last_task",
-            task
+
+            task,
+
+            "system"
+
         )
 
 
 
+
+
+        #
+        # LLM Planner
+        #
+
         prompt = f"""
+
 You are an AI agent planner.
 
 Return JSON only.
@@ -320,21 +450,24 @@ Rules:
 
 - Return only JSON.
 - No explanations.
-- Use chat for normal conversation.
+- Use chat for normal conversations.
 
 
 User:
 
 {task}
+
 """
 
 
 
         try:
 
+
             response = self.llm.generate(
                 prompt
             )
+
 
 
             response = self.clean_json(
@@ -342,9 +475,11 @@ User:
             )
 
 
+
             plan = json.loads(
                 response
             )
+
 
 
             if "tool" not in plan:
@@ -352,16 +487,23 @@ User:
                 plan["tool"] = "chat"
 
 
+
             return plan
+
 
 
 
         except Exception as error:
 
+
             print(
+
                 "Planner error:",
+
                 error
+
             )
+
 
 
             return {

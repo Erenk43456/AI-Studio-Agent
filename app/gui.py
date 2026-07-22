@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QStackedWidget
 )
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 
 
 from tools.tool_registry import ToolRegistry
@@ -39,18 +39,25 @@ from app.sidebar import Sidebar
 from app.pages.memory_page import MemoryPage
 from app.pages.tools_page import ToolsPage
 from app.pages.settings_page import SettingsPage
+from app.pages.history_page import HistoryPage
+
 
 
 
 class AIWindow(QWidget):
 
+
     def __init__(self):
 
         super().__init__()
 
-        self.setup_window()
+
+        self.worker = None
 
         self.busy = False
+
+
+        self.setup_window()
 
         self.setup_backend()
 
@@ -62,9 +69,7 @@ class AIWindow(QWidget):
 
 
 
-    # -------------------------
-    # Window
-    # -------------------------
+
 
     def setup_window(self):
 
@@ -72,10 +77,12 @@ class AIWindow(QWidget):
             "AI-Studio-Agent"
         )
 
+
         self.resize(
             1000,
             700
         )
+
 
         self.setMinimumSize(
             800,
@@ -127,15 +134,17 @@ class AIWindow(QWidget):
 
 
 
-    # -------------------------
-    # Backend
-    # -------------------------
+
+
 
     def setup_backend(self):
 
+
         self.memory = Memory()
 
+
         self.conversation = ConversationMemory()
+
 
 
         self.planner = PlannerAgent(
@@ -143,7 +152,9 @@ class AIWindow(QWidget):
         )
 
 
+
         registry = ToolRegistry()
+
 
 
         registry.register(
@@ -169,49 +180,64 @@ class AIWindow(QWidget):
         self.registry = registry
 
 
+
         self.tool_agent = ToolAgent(
             registry,
             self.memory
         )
 
 
+
         self.chat_agent = ChatAgent(
             self.memory
         )
 
-            # -------------------------
-    # UI
-    # -------------------------
+
+
+
+
+
 
     def setup_ui(self):
+
 
         main_layout = QVBoxLayout()
 
 
+
         self.header = Header()
+
 
         main_layout.addWidget(
             self.header
         )
 
 
+
         content_layout = QHBoxLayout()
 
 
+
         self.sidebar = Sidebar()
+
 
         content_layout.addWidget(
             self.sidebar
         )
 
 
+
         self.pages = QStackedWidget()
+
 
 
         self.create_chat_page()
 
 
+
         self.memory_page = MemoryPage()
+
+        self.history_page = HistoryPage()
 
         self.tools_page = ToolsPage()
 
@@ -230,6 +256,11 @@ class AIWindow(QWidget):
 
 
         self.pages.addWidget(
+            self.history_page
+        )
+
+
+        self.pages.addWidget(
             self.tools_page
         )
 
@@ -239,9 +270,11 @@ class AIWindow(QWidget):
         )
 
 
+
         content_layout.addWidget(
             self.pages
         )
+
 
 
         main_layout.addLayout(
@@ -269,9 +302,11 @@ class AIWindow(QWidget):
         self.input = QLineEdit()
 
 
+
         self.input.setPlaceholderText(
             "Ask something..."
         )
+
 
 
         self.input.returnPressed.connect(
@@ -285,9 +320,11 @@ class AIWindow(QWidget):
         )
 
 
+
         self.button.clicked.connect(
             self.send_message
         )
+
 
 
         main_layout.addWidget(
@@ -300,6 +337,7 @@ class AIWindow(QWidget):
         )
 
 
+
         self.setLayout(
             main_layout
         )
@@ -307,12 +345,27 @@ class AIWindow(QWidget):
 
 
 
+
+
+
     def create_chat_page(self):
+
 
         self.chat_widget = QWidget()
 
 
         self.chat_layout = QVBoxLayout()
+
+        self.chat_layout.setSpacing(
+            12
+        )
+
+        self.chat_layout.setContentsMargins(
+            10,
+            10,
+            10,
+            10
+        )
 
 
         self.chat_layout.setAlignment(
@@ -323,6 +376,7 @@ class AIWindow(QWidget):
         self.chat_widget.setLayout(
             self.chat_layout
         )
+
 
 
         self.scroll = QScrollArea()
@@ -340,7 +394,11 @@ class AIWindow(QWidget):
 
 
 
+
+
+
     def show_welcome_message(self):
+
 
         self.add_message(
             """
@@ -348,7 +406,6 @@ class AIWindow(QWidget):
 
 Local AI Assistant Ready.
 
-Model: Qwen2.5 Local
 Runtime: Ollama
 
 How can I help you?
@@ -359,11 +416,11 @@ How can I help you?
 
 
 
-    # -------------------------
-    # Events
-    # -------------------------
+
+
 
     def connect_events(self):
+
 
         self.sidebar.chat_button.clicked.connect(
             lambda:
@@ -376,6 +433,11 @@ How can I help you?
         )
 
 
+        self.sidebar.history_button.clicked.connect(
+            self.show_history
+        )
+
+
         self.sidebar.tools_button.clicked.connect(
             self.show_tools
         )
@@ -383,21 +445,22 @@ How can I help you?
 
         self.sidebar.settings_button.clicked.connect(
             lambda:
-            self.pages.setCurrentIndex(3)
+            self.pages.setCurrentIndex(4)
         )
 
 
 
 
-    # -------------------------
-    # Chat
-    # -------------------------
+
+
+
 
     def add_message(
         self,
         text,
         user
     ):
+
 
         bubble = MessageBubble(
             text,
@@ -410,14 +473,17 @@ How can I help you?
         )
 
 
-        self.scroll.verticalScrollBar().setValue(
-            self.scroll.verticalScrollBar().maximum()
+        QTimer.singleShot(
+            50,
+            lambda:
+            self.scroll.verticalScrollBar().setValue(
+               self.scroll.verticalScrollBar().maximum()
+            )
         )
 
 
-
-
     def send_message(self):
+
 
         if self.busy:
 
@@ -428,13 +494,16 @@ How can I help you?
         message = self.input.text().strip()
 
 
+
         if not message:
 
             return
 
 
 
+
         self.busy = True
+
 
 
         self.button.setEnabled(
@@ -464,12 +533,19 @@ How can I help you?
 
 
 
+
         self.worker = AIWorker(
+
             self.planner,
+
             self.tool_agent,
+
             self.chat_agent,
+
             self.conversation,
+
             message
+
         )
 
 
@@ -479,7 +555,18 @@ How can I help you?
         )
 
 
+
+        self.worker.finished.connect(
+            self.worker.deleteLater
+        )
+
+
+
         self.worker.start()
+
+
+
+
 
 
 
@@ -489,10 +576,12 @@ How can I help you?
         response
     ):
 
+
         self.add_message(
-            str(response),
+            response,
             False
         )
+
 
 
         self.status.setText(
@@ -500,7 +589,9 @@ How can I help you?
         )
 
 
+
         self.busy = False
+
 
 
         self.button.setEnabled(
@@ -518,11 +609,11 @@ How can I help you?
 
 
 
-    # -------------------------
-    # Pages
-    # -------------------------
+
+
 
     def show_memory(self):
+
 
         self.memory_page.update_memory(
             self.memory.data
@@ -536,7 +627,25 @@ How can I help you?
 
 
 
+
+    def show_history(self):
+
+
+        self.history_page.update_history(
+            self.conversation.get()
+        )
+
+
+        self.pages.setCurrentWidget(
+            self.history_page
+        )
+
+
+
+
+
     def show_tools(self):
+
 
         self.tools_page.update_tools(
             self.registry.list_tools()
@@ -546,6 +655,29 @@ How can I help you?
         self.pages.setCurrentWidget(
             self.tools_page
         )
+
+
+
+
+
+
+    def closeEvent(self,event):
+
+
+        if self.worker:
+
+
+            if self.worker.isRunning():
+
+                self.worker.quit()
+
+                self.worker.wait()
+
+
+
+        event.accept()
+
+
 
 
 

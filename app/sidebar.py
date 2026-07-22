@@ -51,7 +51,7 @@ class Sidebar(QWidget):
 
                 color: white;
                 font-size: 16px;
-                font-weight: bold;
+                font-weight:bold;
 
             }
 
@@ -86,6 +86,7 @@ class Sidebar(QWidget):
 
 
 
+
         self.chat_button = QPushButton(
             "💬 Chat"
         )
@@ -93,6 +94,11 @@ class Sidebar(QWidget):
 
         self.memory_button = QPushButton(
             "🧠 Memory"
+        )
+
+
+        self.history_button = QPushButton(
+            "📜 History"
         )
 
 
@@ -107,6 +113,7 @@ class Sidebar(QWidget):
 
 
 
+
         layout.addWidget(
             self.chat_button
         )
@@ -118,6 +125,11 @@ class Sidebar(QWidget):
 
 
         layout.addWidget(
+            self.history_button
+        )
+
+
+        layout.addWidget(
             self.tools_button
         )
 
@@ -125,6 +137,7 @@ class Sidebar(QWidget):
         layout.addWidget(
             self.settings_button
         )
+
 
 
         layout.addStretch()
