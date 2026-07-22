@@ -3,7 +3,6 @@ import json
 import os
 
 
-
 class LLM:
 
 
@@ -79,7 +78,6 @@ class LLM:
         prompt
     ):
 
-
         try:
 
 
@@ -117,10 +115,13 @@ class LLM:
             data = response.json()
 
 
+
             return data.get(
                 "response",
                 ""
             ).strip()
+
+
 
 
 
@@ -131,6 +132,8 @@ class LLM:
 
 
 
+
+
         except requests.exceptions.ConnectionError:
 
 
@@ -138,10 +141,13 @@ class LLM:
 
 
 
+
+
         except Exception as error:
 
 
             return f"LLM_ERROR: {error}"
+
 
 
 
@@ -218,6 +224,8 @@ class LLM:
 
 
             return []
+
+
 
 
 

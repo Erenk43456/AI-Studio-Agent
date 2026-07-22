@@ -3,10 +3,12 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QPushButton,
-    QScrollArea
+    QScrollArea,
+    QLineEdit
 )
 
 from PySide6.QtCore import Qt
+
 
 
 
@@ -18,13 +20,21 @@ class HistoryPage(QWidget):
         super().__init__()
 
 
+
+        self.conversations = []
+
+
+
         layout = QVBoxLayout()
+
+
 
 
 
         title = QLabel(
             "📜 Conversation History"
         )
+
 
 
         title.setStyleSheet(
@@ -38,9 +48,38 @@ class HistoryPage(QWidget):
         )
 
 
+
         layout.addWidget(
             title
         )
+
+
+
+
+
+
+
+        self.search_box = QLineEdit()
+
+
+        self.search_box.setPlaceholderText(
+            "🔍 Search history..."
+        )
+
+
+        self.search_box.textChanged.connect(
+            self.search_history
+        )
+
+
+        layout.addWidget(
+            self.search_box
+        )
+
+
+
+
+
 
 
 
@@ -50,14 +89,17 @@ class HistoryPage(QWidget):
         )
 
 
+
         self.history_label.setAlignment(
             Qt.AlignTop
         )
 
 
+
         self.history_label.setWordWrap(
             True
         )
+
 
 
         self.history_label.setStyleSheet(
@@ -73,12 +115,20 @@ class HistoryPage(QWidget):
 
 
 
+
+
+
+
+
+
         self.scroll = QScrollArea()
+
 
 
         self.scroll.setWidgetResizable(
             True
         )
+
 
 
         self.scroll.setWidget(
@@ -95,6 +145,10 @@ class HistoryPage(QWidget):
 
 
 
+
+
+
+
         self.clear_button = QPushButton(
             "🗑 Clear History"
         )
@@ -106,9 +160,32 @@ class HistoryPage(QWidget):
 
 
 
+
+
+
+
+        self.export_button = QPushButton(
+            "📄 Export History"
+        )
+
+
+        layout.addWidget(
+            self.export_button
+        )
+
+
+
+
+
+
+
         self.setLayout(
             layout
         )
+
+
+
+
 
 
 
@@ -120,13 +197,101 @@ class HistoryPage(QWidget):
     ):
 
 
-        if not conversations:
+        self.conversations = conversations
 
-            self.history_label.setText(
-                "No conversations yet."
+
+
+        self.display_history(
+            conversations
+        )
+
+
+
+
+
+
+
+
+
+    def search_history(self):
+
+
+        query = self.search_box.text().lower()
+
+
+
+        if not query:
+
+            self.display_history(
+                self.conversations
             )
 
             return
+
+
+
+
+
+        filtered = []
+
+
+
+        for item in self.conversations:
+
+
+            user = item.get(
+                "user",
+                ""
+            ).lower()
+
+
+            assistant = item.get(
+                "assistant",
+                ""
+            ).lower()
+
+
+
+            if query in user or query in assistant:
+
+                filtered.append(
+                    item
+                )
+
+
+
+        self.display_history(
+            filtered
+        )
+
+
+
+
+
+
+
+
+
+    def display_history(
+        self,
+        conversations
+    ):
+
+
+
+        if not conversations:
+
+
+            self.history_label.setText(
+                "No conversations found."
+            )
+
+
+            return
+
+
+
+
 
 
 
@@ -134,9 +299,14 @@ class HistoryPage(QWidget):
 
 
 
+
+
+
+
         for item in reversed(
             conversations
         ):
+
 
 
             user = item.get(
@@ -158,12 +328,23 @@ class HistoryPage(QWidget):
 
 
 
+
+
             text += (
+
                 f"🕒 {time}\n\n"
+
                 f"👤 User:\n{user}\n\n"
+
                 f"🤖 AI:\n{assistant}\n"
+
                 f"\n----------------------\n\n"
+
             )
+
+
+
+
 
 
 
