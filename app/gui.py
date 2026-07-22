@@ -119,7 +119,7 @@ class AIWindow(QWidget):
 
 
         #
-        # Memory
+        # Memory System
         #
 
         self.memory = Memory()
@@ -172,7 +172,7 @@ class AIWindow(QWidget):
 
 
         #
-        # Ana düzen
+        # Main Layout
         #
 
         main_layout = QVBoxLayout()
@@ -193,7 +193,7 @@ class AIWindow(QWidget):
 
 
         #
-        # Sidebar
+        # Sidebar Connections
         #
 
         self.sidebar = Sidebar()
@@ -206,7 +206,7 @@ class AIWindow(QWidget):
 
 
         #
-        # Sayfalar
+        # Pages
         #
 
         self.pages = QStackedWidget()
@@ -285,8 +285,8 @@ class AIWindow(QWidget):
         main_layout.addLayout(
             content_layout
         )
-                #
-        # Sidebar bağlantıları
+        #
+        # Sidebar Connections
         #
 
         self.sidebar.chat_button.clicked.connect(
@@ -314,7 +314,7 @@ class AIWindow(QWidget):
 
 
         #
-        # Durum
+        # Status
         #
 
         self.status = QLabel(
@@ -335,7 +335,7 @@ class AIWindow(QWidget):
 
 
         #
-        # Input
+        # User Input
         #
 
         self.input = QLineEdit()
@@ -348,7 +348,7 @@ class AIWindow(QWidget):
 
 
         self.button = QPushButton(
-            "Gönder"
+            "Send"
         )
 
 
@@ -485,7 +485,7 @@ class AIWindow(QWidget):
 
 
         self.status.setText(
-            "🤖 AI düşünüyor..."
+            "🤖 AI is thinking..."
         )
 
 

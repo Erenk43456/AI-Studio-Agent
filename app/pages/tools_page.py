@@ -13,7 +13,7 @@ class ToolsPage(QWidget):
 
 
         self.label = QLabel(
-            "🛠 Araçlar"
+            "🛠 Tools"
         )
 
 
@@ -44,7 +44,7 @@ class ToolsPage(QWidget):
     ):
 
 
-        text = "🛠 Araçlar\n\n"
+        text = "🛠 Tools\n\n"
 
 
         for tool in tools:

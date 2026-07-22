@@ -12,7 +12,7 @@ class MemoryPage(QWidget):
 
 
         self.label = QLabel(
-            "🧠 Hafıza\n\nHenüz veri yok."
+            "🧠 Memory\n\nNo data available yet."
         )
 
 
@@ -42,7 +42,7 @@ class MemoryPage(QWidget):
         data
     ):
 
-        text = "🧠 Hafıza\n\n"
+        text = "🧠 Memory\n\n"
 
 
         for key,value in data.items():

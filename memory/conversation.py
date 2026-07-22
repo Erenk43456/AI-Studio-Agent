@@ -51,7 +51,7 @@ class ConversationMemory:
         )
 
 
-        # Son 10 konuşmayı sakla
+        # Keep the last 10 conversations
         self.data = self.data[-10:]
 
 

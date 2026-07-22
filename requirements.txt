@@ -1,4 +1,10 @@
 # AI-Studio-Agent Python Dependencies
 
+# Local LLM communication
 requests>=2.32.0
+
+# Desktop GUI
+PySide6>=6.8.0
+
+# Testing
 pytest>=8.0.0

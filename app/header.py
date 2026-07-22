@@ -21,7 +21,7 @@ class Header(QWidget):
 
 
         self.title = QLabel(
-            "🤖 AI-Studio-Agent"
+            "🤖 AI-Studio Agent"
         )
 
 
@@ -44,7 +44,7 @@ class Header(QWidget):
 
 
         self.model = QLabel(
-            "Qwen2.5:3b • Local AI Model"
+            "Qwen2.5:3b • Local LLM"
         )
 
 

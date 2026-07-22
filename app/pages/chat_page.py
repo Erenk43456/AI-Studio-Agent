@@ -12,7 +12,7 @@ class ChatPage(QWidget):
 
 
         label = QLabel(
-            "💬 Sohbet"
+            "💬 Chat"
         )
 
 

@@ -9,7 +9,7 @@ class LLM:
         url="http://localhost:11434/api/generate"
     ):
 
-        self.name = "Qwen2.5 Local"
+        self.name = "Qwen2.5 Local LLM"
         self.model = model
         self.url = url
 
@@ -58,13 +58,13 @@ class LLM:
 
         except requests.exceptions.Timeout:
 
-            return "LLM_ERROR: timeout"
+            return "LLM_ERROR: Request timeout."
 
 
 
         except requests.exceptions.ConnectionError:
 
-            return "LLM_ERROR: connection"
+            return "LLM_ERROR: Connection failed."
 
 
 

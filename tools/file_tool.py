@@ -10,11 +10,11 @@ class FileTool:
     ):
 
         """
-        Yeni dosya oluşturur.
+        Creates a new file.
         """
 
         if not filename:
-            return "Dosya adı belirtilmedi."
+            return "Filename not provided."
 
 
         try:
@@ -30,12 +30,12 @@ class FileTool:
                 )
 
 
-            return f"{filename} oluşturuldu."
+            return f"{filename} created successfully."
 
 
         except OSError as error:
 
-            return f"Dosya oluşturma hatası: {error}"
+            return f"File creation error: {error}"
 
 
 
@@ -45,15 +45,15 @@ class FileTool:
     ):
 
         """
-        Dosya içeriğini okur.
+        Reads file content.
         """
 
         if not filename:
-            return "Dosya adı belirtilmedi."
+            return "Filename not provided."
 
 
         if not os.path.exists(filename):
-            return "Dosya bulunamadı."
+            return "File not found."
 
 
         try:
@@ -69,4 +69,4 @@ class FileTool:
 
         except OSError as error:
 
-            return f"Dosya okuma hatası: {error}"
+            return f"File reading error: {error}"

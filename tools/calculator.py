@@ -55,7 +55,7 @@ class Calculator:
     ):
 
         if b == 0:
-            return "Sıfıra bölme yapılamaz."
+            return "Division by zero is not allowed."
 
 
         return self.clean_result(

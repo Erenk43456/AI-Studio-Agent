@@ -6,7 +6,11 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
+# =========================
 # Virtual Environment
+# =========================
+
 venv/
 .venv/
 env/
@@ -27,7 +31,6 @@ htmlcov/
 
 build/
 dist/
-*.spec
 
 # Executable files
 *.exe
@@ -44,9 +47,10 @@ release/
 # Local Data
 # =========================
 
+# User memory and conversation data
 data/*.json
 
-# Memory files
+# Local memory files
 memory/*.json
 
 
@@ -57,7 +61,11 @@ memory/*.json
 .vscode/
 .idea/
 
-# Windows
+
+# =========================
+# Operating System
+# =========================
+
 Thumbs.db
 Desktop.ini
 

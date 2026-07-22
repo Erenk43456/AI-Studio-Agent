@@ -13,6 +13,7 @@ class BaseAgent:
         self.memory = memory or Memory()
 
 
+
     def think(
         self,
         task
@@ -23,12 +24,14 @@ class BaseAgent:
             task
         )
 
-        return f"{self.name} düşünüyor: {task}"
+        return f"{self.name} is thinking: {task}"
+
 
 
     def remember(self):
 
         return self.memory.recall()
+
 
 
     def act(
@@ -41,4 +44,4 @@ class BaseAgent:
             task
         )
 
-        return f"{self.name} çalışıyor: {task}"
+        return f"{self.name} is executing: {task}"

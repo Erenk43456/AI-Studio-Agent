@@ -60,7 +60,7 @@ class MemoryTool:
         )
 
 
-        return f"{key} kaydedildi."
+        return f"{key} saved successfully."
 
 
 

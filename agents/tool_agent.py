@@ -24,7 +24,7 @@ class ToolAgent(BaseAgent):
     ):
 
         if not plan:
-            return "Geçersiz plan."
+            return "Invalid plan."
 
 
         tool_name = plan.get(
@@ -71,7 +71,7 @@ class ToolAgent(BaseAgent):
                     return value
 
 
-                return "Bilgi bulunamadı."
+                return "Information not found."
 
 
 
@@ -92,18 +92,18 @@ class ToolAgent(BaseAgent):
 
                 return plan.get(
                     "message",
-                    "Size nasıl yardımcı olabilirim?"
+                    "How can I help you?"
                 )
 
 
 
-            return "Bilinmeyen araç."
+            return "Unknown tool."
 
 
 
         except Exception as error:
 
-            return f"Araç hatası: {error}"
+            return f"Tool error: {error}"
 
 
 
@@ -119,7 +119,7 @@ class ToolAgent(BaseAgent):
 
 
         if tool is None:
-            return "Calculator bulunamadı."
+            return "Calculator tool not found."
 
 
         numbers = plan.get(
@@ -129,7 +129,7 @@ class ToolAgent(BaseAgent):
 
 
         if len(numbers) < 2:
-            return "İki sayı gerekli."
+            return "Two numbers are required."
 
 
         a = float(numbers[0])
@@ -149,4 +149,4 @@ class ToolAgent(BaseAgent):
             return tool.multiply(a,b)
 
 
-        return "Desteklenmeyen işlem."
+        return "Unsupported operation."

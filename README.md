@@ -1,10 +1,10 @@
 # AI-Studio-Agent 🤖
 
-> **A modular desktop AI assistant powered by local LLMs, intelligent agents, persistent memory, and tool execution.**
+> ** A modular local AI agent framework combining LLM reasoning, task planning, memory management, and tool execution.**
 
 AI-Studio-Agent is a modular AI assistant framework developed in Python.
 
-The project combines multiple autonomous agents, persistent memory, local Large Language Models (LLMs), and a modern desktop interface to provide a fully local and privacy-focused AI assistant.
+The project combines multiple specialized AI agents, persistent memory, local Large Language Models (LLMs), and a modern desktop interface to provide a Local-First & Privacy Focused AI assistant.
 
 Unlike cloud-based AI services, all conversations, memory, and user data remain on the user's machine.
 
@@ -25,27 +25,37 @@ Unlike cloud-based AI services, all conversations, memory, and user data remain 
 - ⚡ Background Processing using QThread
 - 🧪 Automated Testing with Pytest
 - 📦 Windows Executable Support
-- 🔒 Fully Local & Privacy Focused
+- 🔒 Local-First & Privacy Focused
+- 📋 Structured JSON Task Planning
 
 ---
 
 # 🏗 Architecture
 
 ```text
-                User
-                  │
-                  ▼
-          Desktop Interface
-                  │
-                  ▼
-           Planner Agent
-          ┌───────┴────────┐
-          ▼                ▼
-     Tool Agent      Chat Agent
-          │
-   ┌──────┼────────────┐
-   ▼      ▼            ▼
-Memory  Calculator   File Tool
+                 User
+                   |
+                   ▼
+             PySide6 GUI
+                   |
+                   ▼
+            Planner Agent
+                   |
+        ┌──────────┴──────────┐
+        ▼                     ▼
+   Tool Agent             Chat Agent
+        |
+ ┌──────┼───────────┐
+ ▼      ▼           ▼
+Memory Calculator File Tool
+        |
+        ▼
+   Local JSON Storage
+
+Chat Agent
+        |
+        ▼
+ Ollama + Qwen2.5
 ```
 
 ---
@@ -264,12 +274,15 @@ Planned features:
 - API Support
 - Cross-Platform Support
 - Optional Cloud Synchronization
+- Automatic Memory Extraction
+- Semantic Memory with Embeddings
+- Vector Database Integration
 
 ---
 
 # 🎯 Project Vision
 
-The long-term goal of AI-Studio-Agent is to evolve into a modular AI ecosystem capable of planning tasks, interacting with external tools, managing long-term memory, and collaborating between specialized AI agents while running entirely on local hardware.
+The long-term goal is to build a local AI ecosystem where specialized agents can reason, plan tasks, use external tools, maintain long-term memory, and collaborate through a unified architecture.
 
 ---
 

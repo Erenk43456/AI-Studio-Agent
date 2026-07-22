@@ -49,7 +49,7 @@ def main():
 
 
     chat_agent = ChatAgent(
-    memory
+        memory
     )
 
 
@@ -63,7 +63,7 @@ def main():
 
 
     print(
-        "Kayıtlı araçlar:"
+        "Registered tools:"
     )
 
     print(
@@ -72,7 +72,7 @@ def main():
 
 
     request = input(
-        "\nİstek:\n"
+        "\nRequest:\n"
     ).strip()
 
 
@@ -87,7 +87,7 @@ def main():
     if history:
 
         print(
-            "\nSon konuşma:"
+            "\nPrevious conversation:"
         )
 
         last = history[-1]
@@ -112,6 +112,7 @@ def main():
     )
 
 
+
     if plan.get("tool") == "chat":
 
         result = chat_agent.respond(
@@ -125,8 +126,9 @@ def main():
         )
 
 
+
     print(
-        "\nSonuç:"
+        "\nResult:"
     )
 
     print(

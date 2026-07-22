@@ -12,19 +12,19 @@ class SettingsPage(QWidget):
 
 
         label = QLabel(
-            """
-⚙ Ayarlar
+    """
+⚙ Settings
 
 
 Model:
-Qwen2.5:3b
+Qwen2.5:3B
 
 
-Çalışma:
+Runtime:
 Local AI
 
 
-Sunucu:
+Server:
 localhost:11434
 """
         )

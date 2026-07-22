@@ -56,7 +56,7 @@ class PlannerAgent(BaseAgent):
 
 
         #
-        # Normal sohbet / selamlaşma
+        # Normal conversation / greetings
         #
 
         greetings = [
@@ -91,8 +91,9 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         #
-        # Matematik algılama
+        # Math detection
         #
 
         numbers = re.findall(
@@ -161,8 +162,9 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         #
-        # Hafıza sorguları
+        # Memory queries
         #
 
         if (
@@ -175,6 +177,7 @@ class PlannerAgent(BaseAgent):
                 "tool": "memory_get",
                 "key": "isim"
             }
+
 
 
 
@@ -192,8 +195,9 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         #
-        # İsim kaydetme
+        # Name storage
         #
 
         if task.startswith(
@@ -216,8 +220,9 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         #
-        # Son görev kaydı
+        # Save last task
         #
 
         self.memory.save(
@@ -228,17 +233,18 @@ class PlannerAgent(BaseAgent):
 
 
 
+
         prompt = f"""
-Sen bir AI agent planlayıcısısın.
+You are an AI agent planner.
 
-Sadece JSON döndür.
+Return JSON only.
 
-Araçlar:
+Available tools:
 
 calculator:
-Matematik işlemleri için.
+Used for mathematical operations.
 
-Örnek:
+Example:
 
 {{
 "tool":"calculator",
@@ -248,30 +254,31 @@ Matematik işlemleri için.
 
 
 memory_save:
-Yeni bilgi kaydetmek için.
+Used to store new information.
 
 
 memory_get:
-Kayıtlı bilgi almak için.
+Used to retrieve stored information.
 
 
 file:
-Dosya işlemleri için.
+Used for file operations.
 
 
 chat:
-Normal konuşmalar için.
+Used for normal conversations.
 
 
-Kurallar:
+Rules:
 
-- Sadece JSON döndür.
-- Açıklama yazma.
-- Normal sohbetlerde chat kullan.
-- Bilgi kaydetme isteği yoksa memory kullanma.
+- Return JSON only.
+- Do not write explanations.
+- Use chat for normal conversations.
+- Do not use memory unless the user wants to save or retrieve information.
+- Always select the most appropriate tool.
 
 
-Kullanıcı:
+User request:
 
 {task}
 """
@@ -287,7 +294,7 @@ Kullanıcı:
 
 
             print(
-                "\nLLM cevabı:"
+                "\nLLM response:"
             )
 
             print(response)
@@ -320,7 +327,7 @@ Kullanıcı:
         except Exception as error:
 
             print(
-                "Planner hatası:",
+                "Planner error:",
                 error
             )
 

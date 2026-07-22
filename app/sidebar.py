@@ -65,7 +65,7 @@ class Sidebar(QWidget):
 
 
         title = QLabel(
-            "🤖 AI Studio"
+            "🤖 AI-Studio Agent"
         )
 
 
@@ -87,22 +87,22 @@ class Sidebar(QWidget):
 
 
         self.chat_button = QPushButton(
-            "💬 Sohbet"
+            "💬 Chat"
         )
 
 
         self.memory_button = QPushButton(
-            "🧠 Hafıza"
+            "🧠 Memory"
         )
 
 
         self.tools_button = QPushButton(
-            "🛠 Araçlar"
+            "🛠 Tools"
         )
 
 
         self.settings_button = QPushButton(
-            "⚙ Ayarlar"
+            "⚙ Settings"
         )
 
 

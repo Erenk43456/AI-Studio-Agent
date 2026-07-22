@@ -1,7 +1,9 @@
 class ToolRegistry:
 
     def __init__(self):
+
         self.tools = {}
+
 
 
     def register(
@@ -11,11 +13,14 @@ class ToolRegistry:
     ):
 
         if name in self.tools:
+
             raise ValueError(
-                f"{name} zaten kayıtlı."
+                f"{name} is already registered."
             )
 
+
         self.tools[name] = tool
+
 
 
     def get(
@@ -26,12 +31,14 @@ class ToolRegistry:
         return self.tools.get(name)
 
 
+
     def has(
         self,
         name
     ):
 
         return name in self.tools
+
 
 
     def list_tools(self):
@@ -41,10 +48,12 @@ class ToolRegistry:
         )
 
 
+
     def remove(
         self,
         name
     ):
 
         if name in self.tools:
+
             del self.tools[name]
