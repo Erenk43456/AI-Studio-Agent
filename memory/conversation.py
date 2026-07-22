@@ -2,12 +2,20 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+from app.core.logger import AppLogger
+
+
 
 
 class ConversationMemory:
 
 
     def __init__(self):
+
+
+        self.logger = AppLogger()
+
+
 
         self.data_dir = Path("data")
 
@@ -21,37 +29,80 @@ class ConversationMemory:
 
 
 
+
+
         if self.file.exists():
 
             try:
 
+
                 with open(
+
                     self.file,
+
                     "r",
+
                     encoding="utf-8"
+
                 ) as f:
+
 
                     self.data = json.load(f)
 
 
-            except json.JSONDecodeError:
+
+                self.logger.info(
+
+                    "Conversation history loaded."
+
+                )
+
+
+
+            except json.JSONDecodeError as error:
+
+
+                self.logger.error(
+
+                    f"Conversation JSON error: {error}"
+
+                )
+
 
                 self.data = []
 
 
+
         else:
 
+
             self.data = []
+
+
+            self.logger.info(
+
+                "New conversation history created."
+
+            )
+
+
+
+
 
 
 
 
 
     def add(
+
         self,
+
         user,
+
         assistant
+
     ):
+
 
 
         self.data.append(
@@ -63,12 +114,16 @@ class ConversationMemory:
                 "assistant": assistant,
 
                 "time": datetime.now().strftime(
+
                     "%Y-%m-%d %H:%M:%S"
+
                 )
 
             }
 
         )
+
+
 
 
 
@@ -82,32 +137,58 @@ class ConversationMemory:
 
 
 
+        self.logger.info(
+
+            "Conversation added."
+
+        )
+
+
+
+
+
+
 
 
 
     def save(self):
 
 
-        with open(
-
-            self.file,
-
-            "w",
-
-            encoding="utf-8"
-
-        ) as f:
+        try:
 
 
-            json.dump(
+            with open(
 
-                self.data,
+                self.file,
 
-                f,
+                "w",
 
-                ensure_ascii=False,
+                encoding="utf-8"
 
-                indent=4
+            ) as f:
+
+
+
+                json.dump(
+
+                    self.data,
+
+                    f,
+
+                    ensure_ascii=False,
+
+                    indent=4
+
+                )
+
+
+
+        except Exception as error:
+
+
+            self.logger.error(
+
+                f"Conversation save error: {error}"
 
             )
 
@@ -116,9 +197,17 @@ class ConversationMemory:
 
 
 
+
+
+
     def get(self):
 
+
         return self.data
+
+
+
+
 
 
 
@@ -131,3 +220,11 @@ class ConversationMemory:
 
 
         self.save()
+
+
+
+        self.logger.info(
+
+            "Conversation history cleared."
+
+        )
