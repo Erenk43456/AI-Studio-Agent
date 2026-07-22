@@ -6,6 +6,7 @@ from app.core.logger import AppLogger
 
 
 
+
 class LLM:
 
 
@@ -13,7 +14,6 @@ class LLM:
 
 
         self.name = "Qwen2.5 Local LLM"
-
 
 
         self.config = ConfigManager()
@@ -34,7 +34,6 @@ class LLM:
         )
 
 
-
         self.url = self.config.get(
 
             "ollama_url",
@@ -44,18 +43,11 @@ class LLM:
         )
 
 
+        self.base_url = self.url.replace(
 
-        self.base_url = (
+            "/api/generate",
 
-            self.url
-
-            .replace(
-
-                "/api/generate",
-
-                ""
-
-            )
+            ""
 
         )
 
@@ -70,7 +62,6 @@ class LLM:
         )
 
 
-
         self.num_predict = self.config.get(
 
             "num_predict",
@@ -81,11 +72,9 @@ class LLM:
 
 
 
-
-
         self.logger.info(
 
-            f"LLM initialized with model: {self.model}"
+            f"LLM initialized: {self.model}"
 
         )
 
@@ -109,16 +98,24 @@ class LLM:
         try:
 
 
+            if not self.check_connection():
+
+
+                return "LLM_ERROR: Ollama is not running."
+
+
+
+
+
             self.logger.info(
 
-                f"LLM request started. Model: {self.model}"
+                "Generating response."
 
             )
 
 
 
             response = requests.post(
-
 
                 self.url,
 
@@ -143,14 +140,13 @@ class LLM:
 
                         "num_predict": self.num_predict
 
-                    }
 
+                    }
 
                 },
 
 
                 timeout=120
-
 
             )
 
@@ -174,6 +170,22 @@ class LLM:
 
 
 
+            if not result:
+
+
+                self.logger.warning(
+
+                    "LLM returned empty response."
+
+                )
+
+
+                return "LLM_ERROR: Empty response."
+
+
+
+
+
             self.logger.info(
 
                 "LLM response completed."
@@ -188,12 +200,14 @@ class LLM:
 
 
 
-        except requests.exceptions.Timeout as error:
+
+
+        except requests.exceptions.Timeout:
 
 
             self.logger.error(
 
-                f"LLM timeout: {error}"
+                "LLM request timeout."
 
             )
 
@@ -205,13 +219,12 @@ class LLM:
 
 
 
-
-        except requests.exceptions.ConnectionError as error:
+        except requests.exceptions.ConnectionError:
 
 
             self.logger.error(
 
-                f"LLM connection failed: {error}"
+                "Ollama connection failed."
 
             )
 
@@ -223,13 +236,12 @@ class LLM:
 
 
 
-
         except Exception as error:
 
 
             self.logger.error(
 
-                f"LLM unexpected error: {error}"
+                f"LLM error: {error}"
 
             )
 
@@ -260,35 +272,13 @@ class LLM:
 
 
 
-            if response.status_code == 200:
-
-
-                self.logger.info(
-
-                    "Ollama connection successful."
-
-                )
-
-
-                return True
-
-
-
-
-            return False
+            return response.status_code == 200
 
 
 
 
 
-        except Exception as error:
-
-
-            self.logger.error(
-
-                f"Ollama connection check failed: {error}"
-
-            )
+        except Exception:
 
 
             return False
@@ -310,15 +300,11 @@ class LLM:
 
             response = requests.get(
 
-
                 self.base_url + "/api/tags",
-
 
                 timeout=5
 
-
             )
-
 
 
             response.raise_for_status()
@@ -329,32 +315,19 @@ class LLM:
 
 
 
-            models = []
+            return [
 
+                model.get("name")
 
+                for model in data.get(
 
-            for model in data.get(
+                    "models",
 
-                "models",
-
-                []
-
-            ):
-
-
-                models.append(
-
-                    model.get(
-
-                        "name"
-
-                    )
+                    []
 
                 )
 
-
-
-            return models
+            ]
 
 
 
@@ -371,6 +344,23 @@ class LLM:
 
 
             return []
+
+
+
+
+
+
+
+
+
+    def has_model(self):
+
+
+        models = self.get_models()
+
+
+        return self.model in models
+
 
 
 
