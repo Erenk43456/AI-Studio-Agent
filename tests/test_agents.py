@@ -1,4 +1,6 @@
 from agents.planner_agent import PlannerAgent
+from agents.decision_agent import DecisionAgent
+
 
 
 
@@ -8,6 +10,7 @@ class DummyMemory:
     def __init__(self):
 
         self.data = {}
+
 
 
 
@@ -22,6 +25,13 @@ class DummyMemory:
 
 
 
+
+
+
+
+#
+# PlannerAgent Tests
+#
 
 
 def test_planner_calculator():
@@ -48,7 +58,12 @@ def test_planner_calculator():
     assert plan["operation"] == "add"
 
 
-    assert plan["numbers"] == [15, 20]
+    assert plan["numbers"] == [
+
+        15,
+        20
+
+    ]
 
 
 
@@ -90,6 +105,7 @@ def test_planner_memory_save():
 
 
 
+
 def test_planner_memory_get():
 
 
@@ -120,6 +136,7 @@ def test_planner_memory_get():
 
 
 
+
 def test_planner_chat():
 
 
@@ -139,3 +156,92 @@ def test_planner_chat():
 
 
     assert plan["tool"] == "chat"
+
+
+
+
+
+
+
+
+
+#
+# DecisionAgent Tests
+#
+
+
+def test_decision_name_save():
+
+
+    memory = DummyMemory()
+
+
+    decision = DecisionAgent(
+        memory
+    )
+
+
+    result = decision.process(
+
+        "Benim adım Eren"
+
+    )
+
+
+    assert result == "memory_save"
+
+
+
+
+
+
+
+
+
+def test_decision_name_get():
+
+
+    memory = DummyMemory()
+
+
+    decision = DecisionAgent(
+        memory
+    )
+
+
+    result = decision.process(
+
+        "ismim ne"
+
+    )
+
+
+    assert result == "memory_get"
+
+
+
+
+
+
+
+
+
+def test_decision_calculator():
+
+
+    memory = DummyMemory()
+
+
+    decision = DecisionAgent(
+        memory
+    )
+
+
+    result = decision.process(
+
+        "15 ile 20 topla"
+
+    )
+
+
+    assert result == "calculator"

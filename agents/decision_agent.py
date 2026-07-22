@@ -1,7 +1,9 @@
 from agents.base_agent import BaseAgent
 
 
+
 class DecisionAgent(BaseAgent):
+
 
     def __init__(self, memory):
 
@@ -13,9 +15,14 @@ class DecisionAgent(BaseAgent):
 
 
 
+
+
     def process(self, request):
 
+
         request = request.lower().strip()
+
+
 
 
 
@@ -23,9 +30,16 @@ class DecisionAgent(BaseAgent):
         # Name query
         #
 
-        if "adım ne" in request:
+        if (
+            "adım ne" in request
+            or "ismim ne" in request
+            or "ben kimim" in request
+        ):
 
             return "memory_get"
+
+
+
 
 
 
@@ -36,21 +50,11 @@ class DecisionAgent(BaseAgent):
 
         if "benim adım" in request:
 
-            name = request.replace(
-                "benim adım",
-                ""
-            ).strip()
-
-
-            if name:
-
-                self.memory.save(
-                    "isim",
-                    name
-                )
-
 
             return "memory_save"
+
+
+
 
 
 
@@ -62,7 +66,11 @@ class DecisionAgent(BaseAgent):
 
         if "ne öğreniyorum" in request:
 
+
             return "memory_get_learning"
+
+
+
 
 
 
@@ -72,27 +80,16 @@ class DecisionAgent(BaseAgent):
         # Learning storage
         #
 
-        if "öğreniyorum" in request:
-
-            value = request.replace(
-                "öğreniyorum",
-                ""
-            ).replace(
-                "ben",
-                ""
-            ).strip()
-
-
-
-            if value:
-
-                self.memory.save(
-                    "öğreniyor",
-                    value
-                )
+        if (
+            "öğreniyorum" in request
+            or "ogreniyorum" in request
+        ):
 
 
             return "memory_save"
+
+
+
 
 
 
@@ -104,7 +101,11 @@ class DecisionAgent(BaseAgent):
 
         if "favori oyunum ne" in request:
 
+
             return "memory_get"
+
+
+
 
 
 
@@ -116,22 +117,12 @@ class DecisionAgent(BaseAgent):
 
         if "favori oyunum" in request:
 
-            value = request.replace(
-                "benim favori oyunum",
-                ""
-            ).strip()
-
-
-
-            if value:
-
-                self.memory.save(
-                    "favori_oyun",
-                    value
-                )
-
 
             return "memory_save"
+
+
+
+
 
 
 
@@ -142,20 +133,33 @@ class DecisionAgent(BaseAgent):
         #
 
         calculation_words = [
+
             "topla",
             "çıkar",
+            "cikar",
             "çarp",
-            "böl"
+            "carp",
+            "böl",
+            "bol"
+
         ]
 
 
 
         if any(
+
             word in request
+
             for word in calculation_words
+
         ):
 
+
             return "calculator"
+
+
+
+
 
 
 
@@ -166,19 +170,30 @@ class DecisionAgent(BaseAgent):
         #
 
         file_words = [
+
             "dosya",
             "oluştur",
+            "olustur",
             "yaz"
+
         ]
 
 
 
         if any(
+
             word in request
+
             for word in file_words
+
         ):
 
+
             return "file"
+
+
+
+
 
 
 

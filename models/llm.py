@@ -1,6 +1,8 @@
 import requests
 
 from config.config_manager import ConfigManager
+from app.core.logger import AppLogger
+
 
 
 
@@ -15,6 +17,11 @@ class LLM:
 
 
         self.config = ConfigManager()
+
+
+        self.logger = AppLogger()
+
+
 
 
 
@@ -76,6 +83,16 @@ class LLM:
 
 
 
+        self.logger.info(
+
+            f"LLM initialized with model: {self.model}"
+
+        )
+
+
+
+
+
 
 
 
@@ -90,6 +107,13 @@ class LLM:
 
 
         try:
+
+
+            self.logger.info(
+
+                f"LLM request started. Model: {self.model}"
+
+            )
 
 
 
@@ -119,7 +143,6 @@ class LLM:
 
                         "num_predict": self.num_predict
 
-
                     }
 
 
@@ -141,7 +164,7 @@ class LLM:
 
 
 
-            return data.get(
+            result = data.get(
 
                 "response",
 
@@ -151,9 +174,28 @@ class LLM:
 
 
 
+            self.logger.info(
+
+                "LLM response completed."
+
+            )
 
 
-        except requests.exceptions.Timeout:
+
+            return result
+
+
+
+
+
+        except requests.exceptions.Timeout as error:
+
+
+            self.logger.error(
+
+                f"LLM timeout: {error}"
+
+            )
 
 
             return "LLM_ERROR: Request timeout."
@@ -162,7 +204,16 @@ class LLM:
 
 
 
-        except requests.exceptions.ConnectionError:
+
+
+        except requests.exceptions.ConnectionError as error:
+
+
+            self.logger.error(
+
+                f"LLM connection failed: {error}"
+
+            )
 
 
             return "LLM_ERROR: Connection failed."
@@ -171,7 +222,16 @@ class LLM:
 
 
 
+
+
         except Exception as error:
+
+
+            self.logger.error(
+
+                f"LLM unexpected error: {error}"
+
+            )
 
 
             return f"LLM_ERROR: {error}"
@@ -200,16 +260,41 @@ class LLM:
 
 
 
-            return response.status_code == 200
+            if response.status_code == 200:
 
 
+                self.logger.info(
+
+                    "Ollama connection successful."
+
+                )
 
 
+                return True
 
-        except:
+
 
 
             return False
+
+
+
+
+
+        except Exception as error:
+
+
+            self.logger.error(
+
+                f"Ollama connection check failed: {error}"
+
+            )
+
+
+            return False
+
+
+
 
 
 
@@ -275,7 +360,14 @@ class LLM:
 
 
 
-        except:
+        except Exception as error:
+
+
+            self.logger.error(
+
+                f"Model list error: {error}"
+
+            )
 
 
             return []
