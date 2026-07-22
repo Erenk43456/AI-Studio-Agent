@@ -1,9 +1,11 @@
 from PySide6.QtCore import QThread, Signal
 
 
+
 class AIWorker(QThread):
 
     finished = Signal(str)
+
 
 
     def __init__(
@@ -17,6 +19,7 @@ class AIWorker(QThread):
 
         super().__init__()
 
+
         self.planner = planner
         self.tool_agent = tool_agent
         self.chat_agent = chat_agent
@@ -25,37 +28,86 @@ class AIWorker(QThread):
 
 
 
+
+
     def run(self):
 
-        plan = self.planner.create_plan(
-            self.message
-        )
+        try:
 
-
-        if plan["tool"] == "chat":
-
-            result = self.chat_agent.chat(
+            plan = self.planner.create_plan(
                 self.message
             )
 
 
-        else:
 
-            result = self.tool_agent.execute(
-                plan
+            if plan.get("tool") == "chat":
+
+
+                result = self.chat_agent.chat(
+                    self.message
+                )
+
+
+
+            else:
+
+
+                result = self.tool_agent.execute(
+                    plan
+                )
+
+
+
+            result = str(result)
+
+
+
+        except ConnectionError:
+
+
+            result = (
+                "⚠️ Ollama bağlantısı kurulamadı.\n\n"
+                "Lütfen Ollama'nın çalıştığından emin olun."
             )
 
 
 
-        # Konuşmayı kaydet
+        except Exception as error:
 
-        self.conversation.add(
-            self.message,
-            str(result)
-        )
+
+            print(
+                "AI Worker Error:",
+                error
+            )
+
+
+            result = (
+                "⚠️ Bir hata oluştu:\n"
+                f"{error}"
+            )
+
+
+
+
+        try:
+
+            self.conversation.add(
+                self.message,
+                result
+            )
+
+
+        except Exception as error:
+
+
+            print(
+                "Conversation save error:",
+                error
+            )
+
 
 
 
         self.finished.emit(
-            str(result)
+            result
         )

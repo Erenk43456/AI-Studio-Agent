@@ -6,9 +6,28 @@ class Calculator:
         if isinstance(value, float):
 
             if value.is_integer():
+
                 return int(value)
 
         return value
+
+
+
+
+    def validate_numbers(self, a, b):
+
+        if not isinstance(a, (int, float)):
+
+            return False
+
+
+        if not isinstance(b, (int, float)):
+
+            return False
+
+
+        return True
+
 
 
 
@@ -18,9 +37,15 @@ class Calculator:
         b
     ):
 
+        if not self.validate_numbers(a, b):
+
+            return "Invalid numbers."
+
+
         return self.clean_result(
             a + b
         )
+
 
 
 
@@ -30,9 +55,15 @@ class Calculator:
         b
     ):
 
+        if not self.validate_numbers(a, b):
+
+            return "Invalid numbers."
+
+
         return self.clean_result(
             a - b
         )
+
 
 
 
@@ -42,9 +73,15 @@ class Calculator:
         b
     ):
 
+        if not self.validate_numbers(a, b):
+
+            return "Invalid numbers."
+
+
         return self.clean_result(
             a * b
         )
+
 
 
 
@@ -54,7 +91,13 @@ class Calculator:
         b
     ):
 
+        if not self.validate_numbers(a, b):
+
+            return "Invalid numbers."
+
+
         if b == 0:
+
             return "Division by zero is not allowed."
 
 

@@ -1,4 +1,8 @@
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PySide6.QtWidgets import (
+    QWidget,
+    QVBoxLayout,
+    QLabel
+)
 
 
 class ToolsPage(QWidget):
@@ -11,17 +15,16 @@ class ToolsPage(QWidget):
         layout = QVBoxLayout()
 
 
-
-        self.label = QLabel(
-            "🛠 Tools"
-        )
+        self.label = QLabel()
 
 
         self.label.setStyleSheet(
             """
             QLabel {
-                font-size:18px;
+
+                font-size:16px;
                 color:white;
+
             }
             """
         )
@@ -37,6 +40,10 @@ class ToolsPage(QWidget):
         )
 
 
+        self.update_tools([])
+
+
+
 
     def update_tools(
         self,
@@ -44,12 +51,67 @@ class ToolsPage(QWidget):
     ):
 
 
-        text = "🛠 Tools\n\n"
+        text = """
+🛠 Available Tools
+
+
+"""
 
 
         for tool in tools:
 
-            text += "✓ " + tool + "\n"
+
+            if tool == "calculator":
+
+                text += """
+🧮 Calculator
+
+Status:
+🟢 Active
+
+Operations:
++  -  *  /
+
+"""
+
+
+            elif tool == "file":
+
+                text += """
+📁 File Manager
+
+Status:
+🟢 Active
+
+Capabilities:
+Read / Write Files
+
+"""
+
+
+            elif tool == "memory":
+
+                text += """
+🧠 Memory System
+
+Status:
+🟢 Active
+
+Storage:
+Local JSON
+
+"""
+
+
+            else:
+
+                text += f"""
+🔧 {tool}
+
+Status:
+🟢 Active
+
+"""
 
 
 
