@@ -47,11 +47,22 @@ release/
 # Local Data
 # =========================
 
-# User memory and conversation data
+# User chat data
+data/chats/
+
+# Local json databases
 data/*.json
 
 # Local memory files
 memory/*.json
+
+
+# =========================
+# Logs
+# =========================
+
+logs/
+*.log
 
 
 # =========================
@@ -68,13 +79,6 @@ memory/*.json
 
 Thumbs.db
 Desktop.ini
-
-
-# =========================
-# Logs
-# =========================
-
-*.log
 
 
 # =========================
