@@ -2,7 +2,8 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QPushButton,
-    QLabel
+    QLabel,
+    QListWidget
 )
 
 from PySide6.QtCore import Qt
@@ -10,6 +11,7 @@ from PySide6.QtCore import Qt
 
 
 class Sidebar(QWidget):
+
 
     def __init__(self):
 
@@ -86,6 +88,42 @@ class Sidebar(QWidget):
 
 
 
+        self.new_chat_button = QPushButton(
+            "➕ New Chat"
+        )
+
+
+        self.chat_list = QListWidget()
+
+
+        self.chat_list.setStyleSheet(
+            """
+            QListWidget {
+
+                background-color: #202020;
+                color: white;
+                border: none;
+
+            }
+
+
+            QListWidget::item {
+
+                padding: 8px;
+
+            }
+
+
+            QListWidget::item:selected {
+
+                background-color: #333333;
+
+            }
+
+            """
+        )
+
+
 
         self.chat_button = QPushButton(
             "💬 Chat"
@@ -111,6 +149,16 @@ class Sidebar(QWidget):
             "⚙ Settings"
         )
 
+
+
+        layout.addWidget(
+            self.new_chat_button
+        )
+
+
+        layout.addWidget(
+            self.chat_list
+        )
 
 
 

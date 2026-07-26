@@ -86,6 +86,60 @@ class ChatController:
 
 
 
+        #
+        # Chat başlığı oluştur
+        #
+
+        chat = window.chat_manager.get_chat(
+
+            window.current_chat
+
+        )
+
+
+
+        if chat:
+
+
+            if (
+
+                chat.title == "New Chat"
+
+                or
+
+                chat.title.startswith("Chat")
+
+            ):
+
+
+                chat.rename(
+
+                    message
+
+                )
+
+
+                window.chat_manager.save()
+
+
+
+                from app.window.sidebar_controller import SidebarController
+
+
+                SidebarController.refresh_chat_list(
+
+                    window
+
+                )
+
+
+
+
+
+        window.last_user_message = message
+
+
+
         window.busy = True
 
 
@@ -102,9 +156,13 @@ class ChatController:
 
 
         ChatController.add_message(
+
             window,
+
             message,
+
             True
+
         )
 
 
@@ -114,7 +172,9 @@ class ChatController:
 
 
         window.status.setText(
+
             "🤖 AI Thinking..."
+
         )
 
 
@@ -142,8 +202,11 @@ class ChatController:
             lambda response:
 
             ChatController.show_response(
+
                 window,
+
                 response
+
             )
 
         )
@@ -168,9 +231,26 @@ class ChatController:
 
     @staticmethod
     def show_response(
+
         window,
+
         response
+
     ):
+
+
+        #
+        # Hafızaya kaydet
+        #
+
+        window.conversation.add(
+
+            window.last_user_message,
+
+            response
+
+        )
+
 
 
         ChatController.add_message(
@@ -186,8 +266,11 @@ class ChatController:
 
 
         window.status.setText(
+
             "🟢 Ready"
+
         )
+
 
 
         window.busy = False
@@ -195,12 +278,16 @@ class ChatController:
 
 
         window.button.setEnabled(
+
             True
+
         )
 
 
         window.input.setEnabled(
+
             True
+
         )
 
 

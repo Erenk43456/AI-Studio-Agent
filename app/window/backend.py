@@ -12,7 +12,7 @@ from agents.chat_agent import ChatAgent
 
 from memory.memory import Memory
 from memory.conversation import ConversationMemory
-
+from memory.chat_manager import ChatManager
 
 
 class Backend:
@@ -25,8 +25,26 @@ class Backend:
         window.memory = Memory()
 
 
-        window.conversation = ConversationMemory()
+        window.chat_manager = ChatManager()
 
+
+        chats = window.chat_manager.list_chats()
+
+
+        if chats:
+
+            chat = chats[0]
+
+        else:
+
+            chat = window.chat_manager.create_chat()
+
+
+
+        window.current_chat = chat.id
+
+
+        window.conversation = chat.conversation
 
 
         window.planner = PlannerAgent(
@@ -34,9 +52,7 @@ class Backend:
         )
 
 
-
         registry = ToolRegistry()
-
 
 
         registry.register(
