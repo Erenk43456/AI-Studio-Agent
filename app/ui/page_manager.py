@@ -5,13 +5,13 @@ from app.pages.memory_page import MemoryPage
 from app.pages.history_page import HistoryPage
 from app.pages.tools_page import ToolsPage
 from app.pages.settings_page import SettingsPage
+from app.pages.formatter_page import FormatterPage
 
 
 
 
 
 class PageManager:
-
 
 
     @staticmethod
@@ -33,6 +33,8 @@ class PageManager:
         window.tools_page = ToolsPage()
 
         window.settings_page = SettingsPage()
+
+        window.formatter_page = FormatterPage()
 
 
 
@@ -60,6 +62,11 @@ class PageManager:
 
         window.pages.addWidget(
             window.settings_page
+        )
+
+
+        window.pages.addWidget(
+            window.formatter_page
         )
 
 

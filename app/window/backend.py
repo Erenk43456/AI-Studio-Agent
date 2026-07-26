@@ -3,6 +3,8 @@ from tools.tool_registry import ToolRegistry
 from tools.calculator import Calculator
 from tools.file_tool import FileTool
 from tools.memory_tool import MemoryTool
+from tools.formatter_tool import FormatterTool
+from tools.code_repair_tool import CodeRepairTool
 
 
 from agents.planner_agent import PlannerAgent
@@ -74,6 +76,16 @@ class Backend:
             )
         )
 
+
+        registry.register(
+            "formatter",
+            FormatterTool()
+        )
+
+        registry.register(
+            "code_repair",
+            CodeRepairTool()
+        )
 
 
         window.registry = registry

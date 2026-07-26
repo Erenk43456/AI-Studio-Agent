@@ -2,13 +2,12 @@ from agents.base_agent import BaseAgent
 from models.llm import LLM
 from app.core.logger import AppLogger
 
-
+from agents.planner.code_repair_parser import parse_code_repair
+from agents.planner.formatter_parser import parse_formatter
 from agents.planner.calculator_parser import parse_calculator
 from agents.planner.memory_parser import parse_memory
 from agents.planner.greeting_parser import parse_greeting
 from agents.planner.llm_planner import create_llm_plan
-
-
 
 
 
@@ -19,7 +18,6 @@ class PlannerAgent(BaseAgent):
         self,
         memory=None
     ):
-
 
         super().__init__(
             "Planner Agent",
@@ -35,8 +33,6 @@ class PlannerAgent(BaseAgent):
 
 
 
-
-
     def create_plan(
         self,
         task
@@ -46,11 +42,9 @@ class PlannerAgent(BaseAgent):
         task = task.lower().strip()
 
 
-
         self.logger.info(
             f"Creating plan for: {task}"
         )
-
 
 
 
@@ -58,21 +52,39 @@ class PlannerAgent(BaseAgent):
 
 
 
-            greeting_plan = parse_greeting(
+            code_repair_plan = parse_code_repair(
                 task
             )
 
 
-            if greeting_plan:
+            if code_repair_plan:
 
 
                 self.logger.info(
-                    "Plan selected: greeting"
+                    "Plan selected: code_repair"
                 )
 
 
-                return greeting_plan
+                return code_repair_plan
 
+
+
+
+
+            formatter_plan = parse_formatter(
+                task
+            )
+
+
+            if formatter_plan:
+
+
+                self.logger.info(
+                    "Plan selected: formatter"
+                )
+
+
+                return formatter_plan
 
 
 
@@ -97,7 +109,6 @@ class PlannerAgent(BaseAgent):
 
 
 
-
             memory_plan = parse_memory(
                 task
             )
@@ -117,6 +128,22 @@ class PlannerAgent(BaseAgent):
 
 
 
+            greeting_plan = parse_greeting(
+                task
+            )
+
+
+            if greeting_plan:
+
+
+                self.logger.info(
+                    "Plan selected: greeting"
+                )
+
+
+                return greeting_plan
+
+
 
 
 
@@ -124,17 +151,10 @@ class PlannerAgent(BaseAgent):
 
 
                 self.memory.save(
-
                     "last_task",
-
                     task,
-
                     "system"
-
                 )
-
-
-
 
 
 
@@ -158,14 +178,11 @@ class PlannerAgent(BaseAgent):
 
 
 
-
         except Exception as error:
 
 
             self.logger.error(
-
                 f"Planner error: {error}"
-
             )
 
 

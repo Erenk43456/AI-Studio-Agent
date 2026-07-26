@@ -3,7 +3,6 @@ from app.core.logger import AppLogger
 
 
 
-
 class ToolAgent(BaseAgent):
 
 
@@ -47,11 +46,9 @@ class ToolAgent(BaseAgent):
 
 
 
-
         tool_name = plan.get(
             "tool"
         )
-
 
 
         self.logger.info(
@@ -59,7 +56,6 @@ class ToolAgent(BaseAgent):
             f"Executing tool: {tool_name}"
 
         )
-
 
 
 
@@ -74,8 +70,6 @@ class ToolAgent(BaseAgent):
                 return self.run_calculator(
                     plan
                 )
-
-
 
 
 
@@ -114,14 +108,12 @@ class ToolAgent(BaseAgent):
 
 
 
-
             if tool_name == "memory_get":
 
 
                 tool = self.registry.get(
                     "memory"
                 )
-
 
 
                 if tool is None:
@@ -136,7 +128,6 @@ class ToolAgent(BaseAgent):
                     plan.get("key")
 
                 )
-
 
 
                 if value:
@@ -154,14 +145,12 @@ class ToolAgent(BaseAgent):
 
 
 
-
             if tool_name == "file":
 
 
                 tool = self.registry.get(
                     "file"
                 )
-
 
 
                 if tool is None:
@@ -171,18 +160,171 @@ class ToolAgent(BaseAgent):
 
 
 
-                return tool.create_file(
+                action = plan.get(
 
-                    plan.get("filename"),
+                    "action",
 
-                    plan.get("content")
+                    "create"
 
                 )
 
 
 
+                if action == "create":
 
 
+                    return tool.create_file(
+
+                        plan.get("filename"),
+
+                        plan.get("content")
+
+                    )
+
+
+
+                if action == "write":
+
+
+                    return tool.write_file(
+
+                        plan.get("filename"),
+
+                        plan.get("content")
+
+                    )
+
+
+
+                if action == "read":
+
+
+                    return tool.read_file(
+
+                        plan.get("filename")
+
+                    )
+
+
+
+                return "Geçersiz file işlemi."
+
+
+
+
+
+
+
+
+            if tool_name == "formatter":
+
+
+                tool = self.registry.get(
+                    "formatter"
+                )
+
+
+
+                if tool is None:
+
+
+                    return "Formatter tool bulunamadı."
+
+
+
+                action = plan.get(
+
+                    "action",
+
+                    "code"
+
+                )
+
+
+
+                if action == "code":
+
+
+                    result = tool.format_code(
+
+                        plan.get(
+
+                            "code",
+
+                            ""
+
+                        )
+
+                    )
+
+
+
+                    if result["success"]:
+
+
+                        return result["code"]
+
+
+
+                    return result["message"]
+
+
+
+
+
+
+                if action == "file":
+
+
+                    result = tool.format_file(
+
+                        plan.get(
+
+                            "filename"
+
+                        )
+
+                    )
+
+
+
+                    return result["message"]
+
+
+
+                return "Geçersiz formatter işlemi."
+
+
+
+
+            if tool_name == "code_repair":
+
+                tool = self.registry.get(
+                    "code_repair"
+                )
+
+
+                if tool is None:
+
+                    return "Code repair tool bulunamadı."
+
+
+                result = tool.repair_code(
+
+                    plan.get(
+                        "code",
+                        ""
+                    )
+
+                )
+
+
+                if result["success"]:
+
+                    return result["code"]
+
+
+                return result["message"]
 
 
 
@@ -202,12 +344,12 @@ class ToolAgent(BaseAgent):
 
 
 
-
             self.logger.warning(
 
                 f"Unknown tool requested: {tool_name}"
 
             )
+
 
 
             return "Bilinmeyen araç."
@@ -244,7 +386,6 @@ class ToolAgent(BaseAgent):
     ):
 
 
-
         tool = self.registry.get(
 
             "calculator"
@@ -252,12 +393,10 @@ class ToolAgent(BaseAgent):
         )
 
 
-
         if tool is None:
 
 
             return "Calculator bulunamadı."
-
 
 
 
@@ -276,8 +415,6 @@ class ToolAgent(BaseAgent):
 
 
             return "İki sayı gerekli."
-
-
 
 
 
@@ -321,7 +458,6 @@ class ToolAgent(BaseAgent):
 
 
 
-
         if operation == "subtract":
 
 
@@ -332,7 +468,6 @@ class ToolAgent(BaseAgent):
                 b
 
             )
-
 
 
 
@@ -351,7 +486,6 @@ class ToolAgent(BaseAgent):
 
 
 
-
         if operation == "divide":
 
 
@@ -362,8 +496,6 @@ class ToolAgent(BaseAgent):
                 b
 
             )
-
-
 
 
 

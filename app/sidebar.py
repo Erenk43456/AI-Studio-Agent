@@ -145,6 +145,11 @@ class Sidebar(QWidget):
         )
 
 
+        self.formatter_button = QPushButton(
+            "🧹 Formatter"
+        )
+
+
         self.settings_button = QPushButton(
             "⚙ Settings"
         )
@@ -179,6 +184,11 @@ class Sidebar(QWidget):
 
         layout.addWidget(
             self.tools_button
+        )
+
+
+        layout.addWidget(
+            self.formatter_button
         )
 
 

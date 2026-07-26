@@ -56,6 +56,15 @@ class SidebarController:
         )
 
 
+        window.sidebar.formatter_button.clicked.connect(
+
+            lambda:
+
+            window.pages.setCurrentIndex(5)
+
+        )
+
+
         window.sidebar.settings_button.clicked.connect(
 
             lambda:
@@ -63,6 +72,7 @@ class SidebarController:
             window.pages.setCurrentIndex(4)
 
         )
+
 
 
         SidebarController.refresh_chat_list(
@@ -100,6 +110,9 @@ class SidebarController:
             window.sidebar.chat_list.addItem(
                 item
             )
+
+
+
 
 
     @staticmethod
