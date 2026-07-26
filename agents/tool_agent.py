@@ -27,6 +27,87 @@ class ToolAgent(BaseAgent):
 
 
 
+    def execute_steps(
+        self,
+        plan
+    ):
+
+
+        if not plan:
+
+
+            self.logger.warning(
+                "Empty multi-step plan received."
+            )
+
+
+            return "Invalid plan."
+
+
+
+
+
+        steps = plan.get(
+            "steps",
+            []
+        )
+
+
+
+        # eski tek tool plan desteği
+
+        if not steps:
+
+
+            return self.execute(
+                plan
+            )
+
+
+
+
+
+        results = []
+
+
+
+        for index, step in enumerate(steps):
+
+
+            self.logger.info(
+
+                f"Executing step {index + 1}/{len(steps)}: {step.get('tool')}"
+
+            )
+
+
+
+            result = self.execute(
+                step
+            )
+
+
+
+            results.append({
+
+                "step": index + 1,
+
+                "tool": step.get("tool"),
+
+                "result": result
+
+            })
+
+
+
+        return results
+
+
+
+
+
+
+
     def execute(
         self,
         plan
@@ -41,7 +122,7 @@ class ToolAgent(BaseAgent):
             )
 
 
-            return "Geçersiz plan."
+            return "Invalid plan."
 
 
 
@@ -51,11 +132,13 @@ class ToolAgent(BaseAgent):
         )
 
 
+
         self.logger.info(
 
             f"Executing tool: {tool_name}"
 
         )
+
 
 
 
@@ -75,6 +158,7 @@ class ToolAgent(BaseAgent):
 
 
 
+
             if tool_name == "memory_save":
 
 
@@ -85,8 +169,7 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
-
-                    return "Memory tool bulunamadı."
+                    return "Memory tool not found."
 
 
 
@@ -108,6 +191,7 @@ class ToolAgent(BaseAgent):
 
 
 
+
             if tool_name == "memory_get":
 
 
@@ -118,8 +202,7 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
-
-                    return "Memory tool bulunamadı."
+                    return "Memory tool not found."
 
 
 
@@ -132,12 +215,11 @@ class ToolAgent(BaseAgent):
 
                 if value:
 
-
                     return value
 
 
 
-                return "Bilgi bulunamadı."
+                return "Information not found."
 
 
 
@@ -155,8 +237,7 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
-
-                    return "File tool bulunamadı."
+                    return "File tool not found."
 
 
 
@@ -207,8 +288,7 @@ class ToolAgent(BaseAgent):
 
 
 
-                return "Geçersiz file işlemi."
-
+                return "Invalid file operation."
 
 
 
@@ -227,77 +307,46 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
-
-                    return "Formatter tool bulunamadı."
-
+                    return "Formatter tool not found."
 
 
-                action = plan.get(
 
-                    "action",
+                result = tool.format_code(
 
-                    "code"
+                    plan.get(
+
+                        "code",
+
+                        plan.get (
+
+                            "input",
+
+                            ""
+                        )
+
+                    )
 
                 )
 
 
 
-                if action == "code":
+                if result["success"]:
 
 
-                    result = tool.format_code(
-
-                        plan.get(
-
-                            "code",
-
-                            ""
-
-                        )
-
-                    )
+                    return result["code"]
 
 
 
-                    if result["success"]:
-
-
-                        return result["code"]
+                return result["message"]
 
 
 
-                    return result["message"]
-
-
-
-
-
-
-                if action == "file":
-
-
-                    result = tool.format_file(
-
-                        plan.get(
-
-                            "filename"
-
-                        )
-
-                    )
-
-
-
-                    return result["message"]
-
-
-
-                return "Geçersiz formatter işlemi."
 
 
 
 
             if tool_name == "code_repair":
+
 
                 tool = self.registry.get(
                     "code_repair"
@@ -306,17 +355,27 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
-                    return "Code repair tool bulunamadı."
+                    return "Code repair tool not found."
+
 
 
                 result = tool.repair_code(
 
                     plan.get(
+
                         "code",
-                        ""
+
+                        plan.get (
+
+                            "input",
+
+                            ""
+                        )
+
                     )
 
                 )
+
 
 
                 if result["success"]:
@@ -324,14 +383,22 @@ class ToolAgent(BaseAgent):
                     return result["code"]
 
 
+
                 return result["message"]
+
+
+
+
+
 
 
             if tool_name == "code_analyzer":
 
+
                 tool = self.registry.get(
                     "code_analyzer"
                 )
+
 
 
                 if tool is None:
@@ -339,14 +406,24 @@ class ToolAgent(BaseAgent):
                     return "Code analyzer tool not found."
 
 
+
                 result = tool.analyze_code(
 
                     plan.get(
+
                         "code",
-                        ""
+
+                        plan.get (
+
+                            "input",
+
+                            ""
+                        )
+
                     )
 
                 )
+
 
 
                 if result["success"]:
@@ -354,7 +431,15 @@ class ToolAgent(BaseAgent):
                     return result["analysis"]
 
 
+
                 return result["message"]
+
+
+
+
+
+
+
 
             if tool_name == "chat":
 
@@ -363,9 +448,16 @@ class ToolAgent(BaseAgent):
 
                     "message",
 
-                    "Size nasıl yardımcı olabilirim?"
+                    plan.get(
+
+                        "input",
+
+                        "How can I help you?"
+
+                    )
 
                 )
+
 
 
 
@@ -379,8 +471,8 @@ class ToolAgent(BaseAgent):
             )
 
 
+            return "Unknown tool."
 
-            return "Bilinmeyen araç."
 
 
 
@@ -398,7 +490,7 @@ class ToolAgent(BaseAgent):
             )
 
 
-            return f"Araç hatası: {error}"
+            return f"Tool error: {error}"
 
 
 
@@ -414,6 +506,7 @@ class ToolAgent(BaseAgent):
     ):
 
 
+
         tool = self.registry.get(
 
             "calculator"
@@ -421,10 +514,12 @@ class ToolAgent(BaseAgent):
         )
 
 
+
         if tool is None:
 
 
-            return "Calculator bulunamadı."
+            return "Calculator not found."
+
 
 
 
@@ -442,7 +537,8 @@ class ToolAgent(BaseAgent):
         if len(numbers) < 2:
 
 
-            return "İki sayı gerekli."
+            return "Two numbers required."
+
 
 
 
@@ -486,6 +582,7 @@ class ToolAgent(BaseAgent):
 
 
 
+
         if operation == "subtract":
 
 
@@ -496,6 +593,7 @@ class ToolAgent(BaseAgent):
                 b
 
             )
+
 
 
 
@@ -514,6 +612,7 @@ class ToolAgent(BaseAgent):
 
 
 
+
         if operation == "divide":
 
 
@@ -527,4 +626,6 @@ class ToolAgent(BaseAgent):
 
 
 
-        return "Desteklenmeyen işlem."
+
+
+        return "Unsupported operation."

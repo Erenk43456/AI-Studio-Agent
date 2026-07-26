@@ -3,7 +3,6 @@ import re
 
 
 
-
 def clean_json(text):
 
     text = text.strip()
@@ -53,6 +52,8 @@ You are an AI agent planner.
 
 Return JSON only.
 
+You can create single-step or multi-step plans.
+
 Available tools:
 
 calculator:
@@ -67,15 +68,66 @@ Retrieve information.
 file:
 File operations.
 
+code_analyzer:
+Analyze source code.
+
+code_repair:
+Fix programming errors.
+
+formatter:
+Format code.
+
 chat:
 Normal conversation.
 
 
 Rules:
 
-- Return only JSON.
-- No explanations.
-- Use chat for normal conversations.
+- Return only valid JSON.
+- Never add explanations.
+- For simple requests use one step.
+- For complex tasks create multiple steps.
+- Steps must be executed in order.
+- Always include required parameters.
+- For code tools include the full source code in the "code" field.
+- Never leave required fields empty.
+
+Important:
+
+- Never modify user input.
+- Preserve the original code exactly.
+- Put the original source code in the "code" field or "input" field.
+- Do not fix, format, or rewrite code inside the plan.
+
+
+JSON formats:
+
+Single tool:
+
+{{
+    "steps": [
+        {{
+            "tool": "chat",
+            "input": "message"
+        }}
+    ]
+}}
+
+
+Multiple tools:
+
+{{
+    "steps": [
+        {{
+            "tool": "code_analyzer",
+            "input": "analyze code"
+        }},
+        {{
+            "tool": "code_repair",
+            "input": "fix code"
+        }}
+    ]
+}}
 
 
 User:
@@ -100,16 +152,49 @@ User:
         )
 
 
-
         plan = json.loads(
             response
         )
 
 
 
-        if "tool" not in plan:
+        # eski sistem uyumluluğu
 
-            plan["tool"] = "chat"
+        if "steps" not in plan:
+
+
+            if "tool" in plan:
+
+
+                plan = {
+
+                    "steps": [
+
+                        plan
+
+                    ]
+
+                }
+
+
+            else:
+
+
+                plan = {
+
+                    "steps": [
+
+                        {
+
+                            "tool": "chat",
+
+                            "input": task
+
+                        }
+
+                    ]
+
+                }
 
 
 
@@ -123,8 +208,16 @@ User:
 
         return {
 
-            "tool": "chat",
+            "steps": [
 
-            "message": task
+                {
+
+                    "tool": "chat",
+
+                    "input": task
+
+                }
+
+            ]
 
         }

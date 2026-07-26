@@ -37,49 +37,110 @@ class AIWorker(QThread):
     def run(self):
 
 
-        plan = self.planner.create_plan(
-            self.message
-        )
+        try:
 
 
-
-        if plan.get("tool") == "chat":
-
-
-            result = self.chat_agent.chat(
+            plan = self.planner.create_plan(
                 self.message
             )
 
 
+            print("\n===== GENERATED PLAN =====")
+            print(plan)
+            print("==========================\n")
 
-        else:
 
 
-            result = self.tool_agent.execute(
-                plan
+            steps = plan.get(
+                "steps",
+                []
+            )
+
+
+
+            # Multi-step plan yoksa eski sistemi destekle
+
+            if not steps:
+
+
+                if plan.get("tool") == "chat":
+
+
+                    result = self.chat_agent.chat(
+                        self.message
+                    )
+
+
+                else:
+
+
+                    result = self.tool_agent.execute(
+                        plan
+                    )
+
+
+
+            else:
+
+
+
+                # Tek adımlı chat ise ChatAgent kullan
+
+                if (
+                    len(steps) == 1
+                    and steps[0].get("tool") == "chat"
+                ):
+
+
+                    result = self.chat_agent.chat(
+
+                        self.message
+
+                    )
+
+
+
+                else:
+
+
+                    result = self.tool_agent.execute_steps(
+
+                        plan
+
+                    )
+
+
+
+
+
+            self.conversation.add(
+
+                self.message,
+
+                str(result)
+
+            )
+
+
+
+            self.finished.emit(
+
+                str(result)
+
             )
 
 
 
 
-
-        self.conversation.add(
-
-            self.message,
-
-            str(result)
-
-        )
+        except Exception as error:
 
 
+            self.finished.emit(
 
+                f"AI Error: {error}"
 
+            )
 
-        self.finished.emit(
-
-            str(result)
-
-        )
 
 
 
@@ -90,6 +151,7 @@ class AIWorker(QThread):
 
 
         if self.isRunning():
+
 
             self.quit()
 

@@ -17,14 +17,10 @@ def parse_greeting(task):
     ]
 
 
-    if any(
 
-        word in task
+    # Mesaj doğrudan selamlama ise çalışsın
 
-        for word in greetings
-
-    ):
-
+    if task in greetings:
 
         return {
 
@@ -33,6 +29,33 @@ def parse_greeting(task):
             "message": task
 
         }
+
+
+
+    # kısa selamlama cümleleri
+
+    words = task.split()
+
+
+
+    if len(words) <= 3:
+
+
+        if any(
+
+            word in greetings
+
+            for word in words
+
+        ):
+
+            return {
+
+                "tool": "chat",
+
+                "message": task
+
+            }
 
 
 
