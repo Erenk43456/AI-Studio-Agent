@@ -5,6 +5,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
 
 
 # =========================
@@ -23,6 +24,8 @@ env/
 .pytest_cache/
 .coverage
 htmlcov/
+.mypy_cache/
+.ruff_cache/
 
 
 # =========================
@@ -31,6 +34,8 @@ htmlcov/
 
 build/
 dist/
+
+*.egg-info/
 
 # Executable files
 *.exe
@@ -50,11 +55,25 @@ release/
 # User chat data
 data/chats/
 
-# Local json databases
+# Local databases
 data/*.json
 
-# Local memory files
+# Memory files
 memory/*.json
+
+
+# =========================
+# Configuration Secrets
+# =========================
+
+.env
+.env.*
+
+# Local user settings
+config/settings.json
+
+# Keep example config
+!config/settings.example.json
 
 
 # =========================
@@ -82,11 +101,15 @@ Desktop.ini
 
 
 # =========================
-# Environment Variables
+# AI / Model Files
 # =========================
 
-.env
-.env.*
+models/*.bin
+models/*.gguf
+models/*.pt
+models/*.safetensors
+
+ollama/
 
 
 # =========================
@@ -96,3 +119,4 @@ Desktop.ini
 *.tmp
 *.bak
 *.swp
+*.old

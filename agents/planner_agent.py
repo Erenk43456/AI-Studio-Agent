@@ -1,5 +1,8 @@
 from agents.base_agent import BaseAgent
-from models.llm import LLM
+
+from models.llm_provider import LLMProvider
+from config.config_manager import ConfigManager
+
 from app.core.logger import AppLogger
 
 from agents.planner.code_repair_parser import parse_code_repair
@@ -19,13 +22,20 @@ class PlannerAgent(BaseAgent):
         memory=None
     ):
 
+
         super().__init__(
             "Planner Agent",
             memory
         )
 
 
-        self.llm = LLM()
+        config = ConfigManager()
+
+
+        self.llm = LLMProvider(
+            config
+        )
+
 
         self.logger = AppLogger()
 
@@ -47,9 +57,7 @@ class PlannerAgent(BaseAgent):
         )
 
 
-
         try:
-
 
 
             code_repair_plan = parse_code_repair(
@@ -59,11 +67,9 @@ class PlannerAgent(BaseAgent):
 
             if code_repair_plan:
 
-
                 self.logger.info(
                     "Plan selected: code_repair"
                 )
-
 
                 return code_repair_plan
 
@@ -78,11 +84,9 @@ class PlannerAgent(BaseAgent):
 
             if formatter_plan:
 
-
                 self.logger.info(
                     "Plan selected: formatter"
                 )
-
 
                 return formatter_plan
 
@@ -97,11 +101,9 @@ class PlannerAgent(BaseAgent):
 
             if calculator_plan:
 
-
                 self.logger.info(
                     "Plan selected: calculator"
                 )
-
 
                 return calculator_plan
 
@@ -116,11 +118,9 @@ class PlannerAgent(BaseAgent):
 
             if memory_plan:
 
-
                 self.logger.info(
                     "Plan selected: memory"
                 )
-
 
                 return memory_plan
 
@@ -135,11 +135,9 @@ class PlannerAgent(BaseAgent):
 
             if greeting_plan:
 
-
                 self.logger.info(
                     "Plan selected: greeting"
                 )
-
 
                 return greeting_plan
 
@@ -148,7 +146,6 @@ class PlannerAgent(BaseAgent):
 
 
             if self.memory:
-
 
                 self.memory.save(
                     "last_task",
@@ -165,13 +162,9 @@ class PlannerAgent(BaseAgent):
             )
 
 
-
             return create_llm_plan(
-
                 self.llm,
-
                 task
-
             )
 
 

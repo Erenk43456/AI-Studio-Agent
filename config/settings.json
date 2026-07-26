@@ -1,5 +1,8 @@
 {
+    "llm_provider": "api",
     "model": "qwen2.5:3b",
+    "api_model": "meta/llama-3.1-8b-instruct",
+    "api_url": "https://integrate.api.nvidia.com/v1/chat/completions",
     "temperature": 0.3,
     "num_predict": 150,
     "ollama_url": "http://localhost:11434/api/generate"

@@ -1,24 +1,49 @@
-from models.llm import LLM
+from models.llm_provider import LLMProvider
+from config.config_manager import ConfigManager
+
 from app.core.logger import AppLogger
+
 
 
 class CodeAnalyzerTool:
 
+
     def __init__(self):
 
-        self.llm = LLM()
+
+        config = ConfigManager()
+
+
+        self.llm = LLMProvider(
+            config
+        )
+
 
         self.logger = AppLogger()
 
 
-    def analyze_code(self, code):
+
+
+
+    def analyze_code(
+        self,
+        code
+    ):
+
 
         if not code:
 
+
             return {
+
                 "success": False,
+
                 "message": "Code is empty."
+
             }
+
+
+
 
 
         prompt = f"""
@@ -45,11 +70,15 @@ Code:
 """
 
 
+
+
         try:
+
 
             result = self.llm.generate(
                 prompt
             )
+
 
 
             return {
@@ -61,6 +90,9 @@ Code:
             }
 
 
+
+
+
         except Exception as error:
 
 
@@ -69,6 +101,7 @@ Code:
                 f"Code analyzer error: {error}"
 
             )
+
 
 
             return {

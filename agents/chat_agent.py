@@ -1,21 +1,40 @@
 from agents.base_agent import BaseAgent
-from models.llm import LLM
+
+from models.llm_provider import LLMProvider
+from config.config_manager import ConfigManager
+
 
 
 class ChatAgent(BaseAgent):
 
-    def __init__(self, memory=None):
+
+    def __init__(
+        self,
+        memory=None
+    ):
+
 
         super().__init__(
             "Chat Agent",
             memory
         )
 
-        self.llm = LLM()
+
+        config = ConfigManager()
+
+
+        self.llm = LLMProvider(
+            config
+        )
 
 
 
-    def chat(self, message):
+
+    def chat(
+        self,
+        message
+    ):
+
 
         return self.respond(
             message
@@ -23,14 +42,22 @@ class ChatAgent(BaseAgent):
 
 
 
-    def respond(self, message):
+
+
+    def respond(
+        self,
+        message
+    ):
+
 
         if self.memory:
+
 
             self.memory.save(
                 "last_message",
                 message
             )
+
 
 
         prompt = f"""
@@ -51,6 +78,7 @@ User:
 
 Response:
 """
+
 
 
         return self.llm.generate(

@@ -24,8 +24,6 @@ class ConfigManager:
 
 
 
-
-
     def load(self):
 
 
@@ -106,6 +104,11 @@ class ConfigManager:
         self.data[key] = value
 
 
+        self.save()
+
+
+
+
 
 
 
@@ -125,6 +128,9 @@ class ConfigManager:
             values
 
         )
+
+
+        self.save()
 
 
 
