@@ -66,7 +66,7 @@ class LLM:
 
             "num_predict",
 
-            150
+            800
 
         )
 

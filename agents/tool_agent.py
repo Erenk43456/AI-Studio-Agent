@@ -327,6 +327,34 @@ class ToolAgent(BaseAgent):
                 return result["message"]
 
 
+            if tool_name == "code_analyzer":
+
+                tool = self.registry.get(
+                    "code_analyzer"
+                )
+
+
+                if tool is None:
+
+                    return "Code analyzer tool not found."
+
+
+                result = tool.analyze_code(
+
+                    plan.get(
+                        "code",
+                        ""
+                    )
+
+                )
+
+
+                if result["success"]:
+
+                    return result["analysis"]
+
+
+                return result["message"]
 
             if tool_name == "chat":
 
