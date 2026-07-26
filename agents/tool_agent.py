@@ -70,6 +70,11 @@ class ToolAgent(BaseAgent):
         results = []
 
 
+        context = ""
+
+
+
+
 
         for index, step in enumerate(steps):
 
@@ -82,9 +87,41 @@ class ToolAgent(BaseAgent):
 
 
 
+            #
+            # Önceki agent çıktısını sonraki agente aktar
+            #
+
+            if context:
+
+
+                if "input" not in step:
+
+
+                    step["input"] = context
+
+
+                else:
+
+
+                    step["input"] += (
+
+                        "\n\nPrevious result:\n"
+
+                        + context
+
+                    )
+
+
+
+
+
             result = self.execute(
                 step
             )
+
+
+
+            context = str(result)
 
 
 
@@ -97,6 +134,8 @@ class ToolAgent(BaseAgent):
                 "result": result
 
             })
+
+
 
 
 
@@ -123,6 +162,7 @@ class ToolAgent(BaseAgent):
 
 
             return "Invalid plan."
+
 
 
 
@@ -159,6 +199,7 @@ class ToolAgent(BaseAgent):
 
 
 
+
             if tool_name == "memory_save":
 
 
@@ -168,6 +209,7 @@ class ToolAgent(BaseAgent):
 
 
                 if tool is None:
+
 
                     return "Memory tool not found."
 
@@ -192,6 +234,8 @@ class ToolAgent(BaseAgent):
 
 
 
+
+
             if tool_name == "memory_get":
 
 
@@ -201,6 +245,7 @@ class ToolAgent(BaseAgent):
 
 
                 if tool is None:
+
 
                     return "Memory tool not found."
 
@@ -213,13 +258,17 @@ class ToolAgent(BaseAgent):
                 )
 
 
+
                 if value:
+
 
                     return value
 
 
 
                 return "Information not found."
+
+
 
 
 
@@ -235,7 +284,9 @@ class ToolAgent(BaseAgent):
                 )
 
 
+
                 if tool is None:
+
 
                     return "File tool not found."
 
@@ -264,6 +315,7 @@ class ToolAgent(BaseAgent):
 
 
 
+
                 if action == "write":
 
 
@@ -274,6 +326,7 @@ class ToolAgent(BaseAgent):
                         plan.get("content")
 
                     )
+
 
 
 
@@ -296,6 +349,8 @@ class ToolAgent(BaseAgent):
 
 
 
+
+
             if tool_name == "formatter":
 
 
@@ -307,6 +362,7 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
+
                     return "Formatter tool not found."
 
 
@@ -317,11 +373,12 @@ class ToolAgent(BaseAgent):
 
                         "code",
 
-                        plan.get (
+                        plan.get(
 
                             "input",
 
                             ""
+
                         )
 
                     )
@@ -338,6 +395,9 @@ class ToolAgent(BaseAgent):
 
 
                 return result["message"]
+
+
+
 
 
 
@@ -355,6 +415,7 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
+
                     return "Code repair tool not found."
 
 
@@ -365,11 +426,12 @@ class ToolAgent(BaseAgent):
 
                         "code",
 
-                        plan.get (
+                        plan.get(
 
                             "input",
 
                             ""
+
                         )
 
                     )
@@ -380,11 +442,15 @@ class ToolAgent(BaseAgent):
 
                 if result["success"]:
 
+
                     return result["code"]
 
 
 
                 return result["message"]
+
+
+
 
 
 
@@ -403,6 +469,7 @@ class ToolAgent(BaseAgent):
 
                 if tool is None:
 
+
                     return "Code analyzer tool not found."
 
 
@@ -413,11 +480,12 @@ class ToolAgent(BaseAgent):
 
                         "code",
 
-                        plan.get (
+                        plan.get(
 
                             "input",
 
                             ""
+
                         )
 
                     )
@@ -428,11 +496,14 @@ class ToolAgent(BaseAgent):
 
                 if result["success"]:
 
+
                     return result["analysis"]
 
 
 
                 return result["message"]
+
+
 
 
 
