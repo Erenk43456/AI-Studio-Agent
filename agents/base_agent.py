@@ -1,7 +1,5 @@
-from memory.memory import Memory
-
-
 class BaseAgent:
+
 
     def __init__(
         self,
@@ -10,38 +8,43 @@ class BaseAgent:
     ):
 
         self.name = name
-        self.memory = memory or Memory()
+
+        self.memory = memory
 
 
 
-    def think(
+    def remember(
+        self,
+        key,
+        value
+    ):
+
+        if self.memory:
+
+            self.memory.save(
+                f"{self.name}:{key}",
+                value
+            )
+
+
+
+    def recall(
+        self
+    ):
+
+        if self.memory:
+
+            return self.memory.recall()
+
+        return None
+
+
+
+    def run(
         self,
         task
     ):
 
-        self.memory.save(
-            "last_thought",
-            task
+        raise NotImplementedError(
+            "Agent must implement run()"
         )
-
-        return f"{self.name} is thinking: {task}"
-
-
-
-    def remember(self):
-
-        return self.memory.recall()
-
-
-
-    def act(
-        self,
-        task
-    ):
-
-        self.memory.save(
-            "last_action",
-            task
-        )
-
-        return f"{self.name} is executing: {task}"

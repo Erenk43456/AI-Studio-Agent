@@ -1,32 +1,121 @@
+from app.core.logger import AppLogger
+
+
+
 class Calculator:
 
 
-    def clean_result(self, value):
+    def __init__(self):
 
-        if isinstance(value, float):
-
-            if value.is_integer():
-
-                return int(value)
-
-        return value
+        self.logger = AppLogger()
 
 
 
 
-    def validate_numbers(self, a, b):
 
-        if not isinstance(a, (int, float)):
-
-            return False
-
-
-        if not isinstance(b, (int, float)):
-
-            return False
+    def execute(
+        self,
+        plan
+    ):
 
 
-        return True
+        operation = plan.get(
+            "operation"
+        )
+
+
+        numbers = plan.get(
+            "numbers",
+            []
+        )
+
+
+
+        if len(numbers) < 2:
+
+
+            return "Two numbers required."
+
+
+
+
+
+        try:
+
+
+            a = float(
+                numbers[0]
+            )
+
+
+            b = float(
+                numbers[1]
+            )
+
+
+
+
+
+            if operation == "add":
+
+                return self.add(
+                    a,
+                    b
+                )
+
+
+
+            if operation == "subtract":
+
+                return self.subtract(
+                    a,
+                    b
+                )
+
+
+
+            if operation == "multiply":
+
+                return self.multiply(
+                    a,
+                    b
+                )
+
+
+
+            if operation == "divide":
+
+                return self.divide(
+                    a,
+                    b
+                )
+
+
+
+
+
+            return "Unsupported operation."
+
+
+
+
+
+        except Exception as error:
+
+
+            self.logger.error(
+
+                f"Calculator error: {error}"
+
+            )
+
+
+            return f"Calculator error: {error}"
+
+
+
+
+
 
 
 
@@ -37,14 +126,12 @@ class Calculator:
         b
     ):
 
-        if not self.validate_numbers(a, b):
 
-            return "Invalid numbers."
+        return a + b
 
 
-        return self.clean_result(
-            a + b
-        )
+
+
 
 
 
@@ -55,14 +142,12 @@ class Calculator:
         b
     ):
 
-        if not self.validate_numbers(a, b):
 
-            return "Invalid numbers."
+        return a - b
 
 
-        return self.clean_result(
-            a - b
-        )
+
+
 
 
 
@@ -73,14 +158,12 @@ class Calculator:
         b
     ):
 
-        if not self.validate_numbers(a, b):
 
-            return "Invalid numbers."
+        return a * b
 
 
-        return self.clean_result(
-            a * b
-        )
+
+
 
 
 
@@ -91,16 +174,12 @@ class Calculator:
         b
     ):
 
-        if not self.validate_numbers(a, b):
-
-            return "Invalid numbers."
-
 
         if b == 0:
 
-            return "Division by zero is not allowed."
+
+            return "Cannot divide by zero."
 
 
-        return self.clean_result(
-            a / b
-        )
+
+        return a / b

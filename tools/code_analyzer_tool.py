@@ -1,7 +1,6 @@
 from models.llm_provider import LLMProvider
 from config.config_manager import ConfigManager
 
-from app.core.logger import AppLogger
 
 
 
@@ -19,7 +18,19 @@ class CodeAnalyzerTool:
         )
 
 
-        self.logger = AppLogger()
+
+
+
+    def execute(
+        self,
+        code
+    ):
+
+
+        return self.analyze_code(
+            code
+        )
+
 
 
 
@@ -30,6 +41,9 @@ class CodeAnalyzerTool:
         code
     ):
 
+
+        if isinstance(code, dict):
+            code = code.get("code") or code.get("input") or code.get("context") or ""
 
         if not code:
 
@@ -46,23 +60,20 @@ class CodeAnalyzerTool:
 
 
 
+
+
         prompt = f"""
 You are a professional Python code analyzer.
 
-Analyze the following Python code.
+Analyze this Python code.
 
-Check:
+Return a detailed report containing:
 
 1. Syntax errors
 2. Logical errors
-3. Security issues
-4. Performance problems
-5. Code quality issues
-6. Possible improvements
-
-Explain each issue clearly.
-
-Provide a structured analysis with sections.
+3. Security problems
+4. Performance issues
+5. Code quality improvements
 
 Code:
 
@@ -72,42 +83,37 @@ Code:
 
 
 
-        try:
 
-
-            result = self.llm.generate(
-                prompt
-            )
-
-
-
-            return {
-
-                "success": True,
-
-                "analysis": result
-
-            }
+        response = self.llm.generate(
+            prompt
+        )
 
 
 
 
 
-        except Exception as error:
-
-
-            self.logger.error(
-
-                f"Code analyzer error: {error}"
-
-            )
-
+        if response.startswith(
+            "LLM_ERROR"
+        ):
 
 
             return {
 
                 "success": False,
 
-                "message": str(error)
+                "message": response
 
             }
+
+
+
+
+
+
+        return {
+
+            "success": True,
+
+            "analysis": response
+
+        }

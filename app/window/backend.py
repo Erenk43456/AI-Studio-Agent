@@ -14,8 +14,9 @@ from agents.chat_agent import ChatAgent
 
 
 from memory.memory import Memory
-from memory.conversation import ConversationMemory
 from memory.chat_manager import ChatManager
+
+
 
 
 class Backend:
@@ -25,18 +26,32 @@ class Backend:
     def setup(window):
 
 
+        # -------------------------
+        # Memory
+        # -------------------------
+
         window.memory = Memory()
 
 
+
+
+
+        # -------------------------
+        # Chat Manager
+        # -------------------------
+
         window.chat_manager = ChatManager()
+
 
 
         chats = window.chat_manager.list_chats()
 
 
+
         if chats:
 
             chat = chats[0]
+
 
         else:
 
@@ -44,67 +59,184 @@ class Backend:
 
 
 
-        window.current_chat = chat.id
 
+
+        window.current_chat = chat.id
 
         window.conversation = chat.conversation
 
 
+
+
+
+
+
+        # -------------------------
+        # Planner Agent
+        # -------------------------
+
         window.planner = PlannerAgent(
+
             window.memory
+
         )
 
+
+
+
+
+
+
+
+
+        # -------------------------
+        # Tool Registry
+        # -------------------------
 
         registry = ToolRegistry()
 
 
+
+        calculator = Calculator()
+
+        file_tool = FileTool()
+
+        memory_tool = MemoryTool(
+
+            window.memory
+
+        )
+
+        formatter = FormatterTool()
+
+        code_repair = CodeRepairTool()
+
+        code_analyzer = CodeAnalyzerTool()
+
+
+
+
+
+
+
         registry.register(
+
             "calculator",
-            Calculator()
+
+            calculator
+
         )
 
 
+
         registry.register(
+
             "file",
-            FileTool()
+
+            file_tool
+
         )
 
 
+
         registry.register(
+
             "memory",
-            MemoryTool(
-                window.memory
-            )
+
+            memory_tool
+
         )
 
 
+
         registry.register(
+
+            "memory_save",
+
+            memory_tool
+
+        )
+
+
+
+        registry.register(
+
+            "memory_get",
+
+            memory_tool
+
+        )
+
+
+
+        registry.register(
+
             "formatter",
-            FormatterTool()
+
+            formatter
+
         )
 
+
+
         registry.register(
+
             "code_repair",
-            CodeRepairTool()
+
+            code_repair
+
         )
 
+
+
         registry.register(
+
             "code_analyzer",
-            CodeAnalyzerTool()
+
+            code_analyzer
+
         )
+
+
+
+
+
 
 
         window.registry = registry
 
 
 
-        window.tool_agent = ToolAgent(
-            registry,
+
+
+
+
+        # -------------------------
+        # Chat Agent
+        # -------------------------
+
+        window.chat_agent = ChatAgent(
+
             window.memory
+
         )
 
 
 
-        window.chat_agent = ChatAgent(
-            window.memory
+
+
+
+
+        # -------------------------
+        # Tool Agent
+        # -------------------------
+
+        window.tool_agent = ToolAgent(
+
+            registry,
+
+            window.memory,
+
+            window.chat_agent
+
         )

@@ -1,4 +1,4 @@
-from memory.memory import Memory
+from app.core.logger import AppLogger
 
 
 
@@ -7,46 +7,111 @@ class MemoryTool:
 
     def __init__(
         self,
-        memory=None
+        memory
     ):
 
-        self.memory = memory or Memory()
+
+        self.memory = memory
+
+        self.logger = AppLogger()
 
 
 
 
-    def normalize(
+
+    def execute(
         self,
-        value
+        plan
     ):
 
 
-        value = value.lower().strip()
+        if not plan:
+
+            return "Empty memory request."
 
 
 
-        replacements = {
-
-            "hio4": "hoi4",
-            "hıo4": "hoi4",
-            "hoı4": "hoi4"
-
-        }
+        tool_name = plan.get(
+            "tool"
+        )
 
 
+        action = plan.get(
+            "action"
+        )
 
-        return replacements.get(
-            value,
-            value
+
+
+        self.logger.info(
+            f"Memory request: {tool_name or action}"
         )
 
 
 
 
 
-    def remember(self):
+        #
+        # SAVE
+        #
 
-        return self.memory.recall()
+        if (
+
+            tool_name == "memory_save"
+
+            or
+
+            action == "save"
+
+        ):
+
+
+            return self.save_info(
+
+                plan.get("key"),
+
+                plan.get("value"),
+
+                plan.get(
+                    "category",
+                    "general"
+                )
+
+            )
+
+
+
+
+
+        #
+        # GET
+        #
+
+        if (
+
+            tool_name == "memory_get"
+
+            or
+
+            action == "get"
+
+        ):
+
+
+            return self.get_info(
+
+                plan.get("key")
+
+            )
+
+
+
+
+
+        return "Invalid memory action."
+
+
+
+
 
 
 
@@ -60,26 +125,59 @@ class MemoryTool:
     ):
 
 
-        key = key.lower().strip()
+        if not key or value is None:
 
 
-        value = self.normalize(
-            value
-        )
-
-
-
-        self.memory.save(
-            key,
-            value,
-            category
-        )
+            return "Memory key or value missing."
 
 
 
-        return (
-            f"{key} saved successfully."
-        )
+
+
+        try:
+
+
+            self.memory.save(
+
+                key,
+
+                value,
+
+                category
+
+            )
+
+
+
+            self.logger.info(
+
+                f"Memory saved successfully: {key}"
+
+            )
+
+
+
+            return f"Saved: {key}"
+
+
+
+
+
+        except Exception as error:
+
+
+            self.logger.error(
+
+                f"Memory save error: {error}"
+
+            )
+
+
+            return f"Memory save error: {error}"
+
+
+
+
 
 
 
@@ -91,46 +189,67 @@ class MemoryTool:
     ):
 
 
-        return self.memory.get(
-            key
-        )
+        if not key:
+
+
+            return "Memory key missing."
 
 
 
 
 
-    def get_details(
-        self,
-        key
-    ):
+        try:
 
 
-        return self.memory.get_full(
-            key
-        )
+            self.logger.info(
 
+                f"Searching memory: {key}"
 
-
-
-
-    def delete_info(
-        self,
-        key
-    ):
-
-
-        result = self.memory.delete(
-            key
-        )
-
-
-        if result:
-
-            return (
-                f"{key} deleted successfully."
             )
 
 
-        return (
-            f"{key} not found."
-        )
+
+            data = self.memory.get(
+
+                key
+
+            )
+
+
+
+            self.logger.info(
+
+                f"Memory result: {data}"
+
+            )
+
+
+
+
+
+            if data is None:
+
+
+                return "Information not found."
+
+
+
+
+
+            return str(data)
+
+
+
+
+
+        except Exception as error:
+
+
+            self.logger.error(
+
+                f"Memory get error: {error}"
+
+            )
+
+
+            return f"Memory get error: {error}"

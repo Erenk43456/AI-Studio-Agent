@@ -5,8 +5,8 @@ from app.chat_widget import MessageBubble
 
 
 
-class ChatController:
 
+class ChatController:
 
 
     @staticmethod
@@ -21,6 +21,7 @@ class ChatController:
         window.button.clicked.connect(
             window.send_message
         )
+
 
 
 
@@ -45,7 +46,6 @@ class ChatController:
         )
 
 
-
         QTimer.singleShot(
 
             50,
@@ -59,6 +59,7 @@ class ChatController:
             )
 
         )
+
 
 
 
@@ -85,10 +86,6 @@ class ChatController:
             return
 
 
-
-        #
-        # Chat başlığı oluştur
-        #
 
         chat = window.chat_manager.get_chat(
 
@@ -136,22 +133,16 @@ class ChatController:
 
 
 
-        window.last_user_message = message
 
+        window.last_user_message = message
 
 
         window.busy = True
 
 
+        window.button.setEnabled(False)
 
-        window.button.setEnabled(
-            False
-        )
-
-
-        window.input.setEnabled(
-            False
-        )
+        window.input.setEnabled(False)
 
 
 
@@ -164,7 +155,6 @@ class ChatController:
             True
 
         )
-
 
 
         window.input.clear()
@@ -188,7 +178,7 @@ class ChatController:
 
             window.chat_agent,
 
-            window.conversation,
+            chat.conversation,
 
             message
 
@@ -212,13 +202,11 @@ class ChatController:
         )
 
 
-
         window.worker.finished.connect(
 
             window.worker.deleteLater
 
         )
-
 
 
         window.worker.start()
@@ -239,17 +227,24 @@ class ChatController:
     ):
 
 
-        #
-        # Hafızaya kaydet
-        #
 
-        window.conversation.add(
+        chat = window.chat_manager.get_chat(
 
-            window.last_user_message,
-
-            response
+            window.current_chat
 
         )
+
+
+        if chat:
+
+
+            chat.conversation.add(
+
+                window.last_user_message,
+
+                response
+
+            )
 
 
 
@@ -272,9 +267,7 @@ class ChatController:
         )
 
 
-
         window.busy = False
-
 
 
         window.button.setEnabled(

@@ -1,8 +1,17 @@
+from app.core.logger import AppLogger
+
+
+
 class ToolRegistry:
+
 
     def __init__(self):
 
         self.tools = {}
+
+        self.logger = AppLogger()
+
+
 
 
 
@@ -12,14 +21,20 @@ class ToolRegistry:
         tool
     ):
 
-        if name in self.tools:
-
-            raise ValueError(
-                f"{name} is already registered."
-            )
-
 
         self.tools[name] = tool
+
+
+        self.logger.info(
+
+            f"Tool registered: {name}"
+
+        )
+
+
+
+
+
 
 
 
@@ -28,20 +43,22 @@ class ToolRegistry:
         name
     ):
 
-        return self.tools.get(name)
+
+        return self.tools.get(
+            name
+        )
 
 
 
-    def has(
-        self,
-        name
+
+
+
+
+
+    def list_tools(
+        self
     ):
 
-        return name in self.tools
-
-
-
-    def list_tools(self):
 
         return list(
             self.tools.keys()
@@ -49,11 +66,45 @@ class ToolRegistry:
 
 
 
-    def remove(
+
+
+
+
+
+    def execute(
         self,
-        name
+        name,
+        data
     ):
 
-        if name in self.tools:
 
-            del self.tools[name]
+        tool = self.get(
+            name
+        )
+
+
+
+        if tool is None:
+
+
+            return f"Tool not found: {name}"
+
+
+
+
+
+        if hasattr(
+            tool,
+            "execute"
+        ):
+
+
+            return tool.execute(
+                data
+            )
+
+
+
+
+
+        return f"Tool {name} has no execute method."

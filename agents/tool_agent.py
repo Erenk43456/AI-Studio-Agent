@@ -9,7 +9,8 @@ class ToolAgent(BaseAgent):
     def __init__(
         self,
         registry,
-        memory=None
+        memory=None,
+        chat_agent=None
     ):
 
         super().__init__(
@@ -20,8 +21,11 @@ class ToolAgent(BaseAgent):
 
         self.registry = registry
 
+        self.chat_agent = chat_agent
 
         self.logger = AppLogger()
+
+
 
 
 
@@ -35,15 +39,7 @@ class ToolAgent(BaseAgent):
 
         if not plan:
 
-
-            self.logger.warning(
-                "Empty multi-step plan received."
-            )
-
-
             return "Invalid plan."
-
-
 
 
 
@@ -54,10 +50,7 @@ class ToolAgent(BaseAgent):
 
 
 
-        # eski tek tool plan desteği
-
         if not steps:
-
 
             return self.execute(
                 plan
@@ -69,7 +62,6 @@ class ToolAgent(BaseAgent):
 
         results = []
 
-
         context = ""
 
 
@@ -79,37 +71,24 @@ class ToolAgent(BaseAgent):
         for index, step in enumerate(steps):
 
 
+            tool_name = step.get(
+                "tool"
+            )
+
+
             self.logger.info(
 
-                f"Executing step {index + 1}/{len(steps)}: {step.get('tool')}"
+                f"Executing step {index + 1}/{len(steps)}: {tool_name}"
 
             )
 
 
 
-            #
-            # Önceki agent çıktısını sonraki agente aktar
-            #
+
 
             if context:
 
-
-                if "input" not in step:
-
-
-                    step["input"] = context
-
-
-                else:
-
-
-                    step["input"] += (
-
-                        "\n\nPrevious result:\n"
-
-                        + context
-
-                    )
+                step["context"] = context
 
 
 
@@ -129,7 +108,7 @@ class ToolAgent(BaseAgent):
 
                 "step": index + 1,
 
-                "tool": step.get("tool"),
+                "tool": tool_name,
 
                 "result": result
 
@@ -147,6 +126,10 @@ class ToolAgent(BaseAgent):
 
 
 
+
+
+
+
     def execute(
         self,
         plan
@@ -154,12 +137,6 @@ class ToolAgent(BaseAgent):
 
 
         if not plan:
-
-
-            self.logger.warning(
-                "Empty tool plan received."
-            )
-
 
             return "Invalid plan."
 
@@ -183,367 +160,146 @@ class ToolAgent(BaseAgent):
 
 
 
-        try:
+        if not tool_name:
 
+            return "Tool name missing."
 
 
-            if tool_name == "calculator":
 
 
-                return self.run_calculator(
-                    plan
-                )
 
 
 
+        tool = self.registry.get(
 
+            tool_name
 
+        )
 
 
-            if tool_name == "memory_save":
 
 
-                tool = self.registry.get(
-                    "memory"
-                )
 
 
-                if tool is None:
 
+        #
+        # Memory alias desteği
+        #
 
-                    return "Memory tool not found."
+        if tool is None and tool_name in [
 
+            "memory_save",
 
+            "memory_get"
 
-                return tool.save_info(
+        ]:
 
-                    plan.get("key"),
 
-                    plan.get("value"),
+            tool = self.registry.get(
 
-                    plan.get(
-                        "category",
-                        "general"
-                    )
-
-                )
-
-
-
-
-
-
-
-
-
-            if tool_name == "memory_get":
-
-
-                tool = self.registry.get(
-                    "memory"
-                )
-
-
-                if tool is None:
-
-
-                    return "Memory tool not found."
-
-
-
-                value = tool.get_info(
-
-                    plan.get("key")
-
-                )
-
-
-
-                if value:
-
-
-                    return value
-
-
-
-                return "Information not found."
-
-
-
-
-
-
-
-
-
-            if tool_name == "file":
-
-
-                tool = self.registry.get(
-                    "file"
-                )
-
-
-
-                if tool is None:
-
-
-                    return "File tool not found."
-
-
-
-                action = plan.get(
-
-                    "action",
-
-                    "create"
-
-                )
-
-
-
-                if action == "create":
-
-
-                    return tool.create_file(
-
-                        plan.get("filename"),
-
-                        plan.get("content")
-
-                    )
-
-
-
-
-                if action == "write":
-
-
-                    return tool.write_file(
-
-                        plan.get("filename"),
-
-                        plan.get("content")
-
-                    )
-
-
-
-
-                if action == "read":
-
-
-                    return tool.read_file(
-
-                        plan.get("filename")
-
-                    )
-
-
-
-                return "Invalid file operation."
-
-
-
-
-
-
-
-
-
-            if tool_name == "formatter":
-
-
-                tool = self.registry.get(
-                    "formatter"
-                )
-
-
-
-                if tool is None:
-
-
-                    return "Formatter tool not found."
-
-
-
-                result = tool.format_code(
-
-                    plan.get(
-
-                        "code",
-
-                        plan.get(
-
-                            "input",
-
-                            ""
-
-                        )
-
-                    )
-
-                )
-
-
-
-                if result["success"]:
-
-
-                    return result["code"]
-
-
-
-                return result["message"]
-
-
-
-
-
-
-
-
-
-
-            if tool_name == "code_repair":
-
-
-                tool = self.registry.get(
-                    "code_repair"
-                )
-
-
-                if tool is None:
-
-
-                    return "Code repair tool not found."
-
-
-
-                result = tool.repair_code(
-
-                    plan.get(
-
-                        "code",
-
-                        plan.get(
-
-                            "input",
-
-                            ""
-
-                        )
-
-                    )
-
-                )
-
-
-
-                if result["success"]:
-
-
-                    return result["code"]
-
-
-
-                return result["message"]
-
-
-
-
-
-
-
-
-
-
-            if tool_name == "code_analyzer":
-
-
-                tool = self.registry.get(
-                    "code_analyzer"
-                )
-
-
-
-                if tool is None:
-
-
-                    return "Code analyzer tool not found."
-
-
-
-                result = tool.analyze_code(
-
-                    plan.get(
-
-                        "code",
-
-                        plan.get(
-
-                            "input",
-
-                            ""
-
-                        )
-
-                    )
-
-                )
-
-
-
-                if result["success"]:
-
-
-                    return result["analysis"]
-
-
-
-                return result["message"]
-
-
-
-
-
-
-
-
-
-
-            if tool_name == "chat":
-
-
-                return plan.get(
-
-                    "message",
-
-                    plan.get(
-
-                        "input",
-
-                        "How can I help you?"
-
-                    )
-
-                )
-
-
-
-
-
-
-
-            self.logger.warning(
-
-                f"Unknown tool requested: {tool_name}"
+                "memory"
 
             )
 
 
-            return "Unknown tool."
 
+
+
+
+
+        if tool is None:
+
+
+            self.logger.warning(
+
+                f"Tool not found: {tool_name}"
+
+            )
+
+
+            return f"Tool not found: {tool_name}"
+
+
+
+
+
+
+
+
+        try:
+
+
+            if hasattr(
+
+                tool,
+
+                "execute"
+
+            ):
+
+
+                result = tool.execute(
+
+                    plan
+
+                )
+
+
+
+
+
+                #
+                # Tool sonucunu doğal cevaba çevir
+                #
+
+                if self.chat_agent and tool_name != "chat":
+
+
+                    user_message = plan.get(
+
+                        "user_message",
+
+                        ""
+
+                    )
+
+
+
+                    return self.chat_agent.respond(
+
+                        f"""
+
+Kullanıcı mesajı:
+
+{user_message}
+
+
+
+Araç sonucu:
+
+{result}
+
+
+
+Bu sonucu kullanarak kullanıcıya doğal,
+
+kısa ve anlaşılır Türkçe cevap ver.
+
+"""
+
+                    )
+
+
+
+
+
+                return result
+
+
+
+
+
+            return f"Tool {tool_name} does not support execute()."
 
 
 
@@ -562,141 +318,3 @@ class ToolAgent(BaseAgent):
 
 
             return f"Tool error: {error}"
-
-
-
-
-
-
-
-
-
-    def run_calculator(
-        self,
-        plan
-    ):
-
-
-
-        tool = self.registry.get(
-
-            "calculator"
-
-        )
-
-
-
-        if tool is None:
-
-
-            return "Calculator not found."
-
-
-
-
-
-        numbers = plan.get(
-
-            "numbers",
-
-            []
-
-        )
-
-
-
-        if len(numbers) < 2:
-
-
-            return "Two numbers required."
-
-
-
-
-
-        a = float(
-
-            numbers[0]
-
-        )
-
-
-        b = float(
-
-            numbers[1]
-
-        )
-
-
-
-        operation = plan.get(
-
-            "operation"
-
-        )
-
-
-
-
-
-        if operation == "add":
-
-
-            return tool.add(
-
-                a,
-
-                b
-
-            )
-
-
-
-
-
-        if operation == "subtract":
-
-
-            return tool.subtract(
-
-                a,
-
-                b
-
-            )
-
-
-
-
-
-        if operation == "multiply":
-
-
-            return tool.multiply(
-
-                a,
-
-                b
-
-            )
-
-
-
-
-
-        if operation == "divide":
-
-
-            return tool.divide(
-
-                a,
-
-                b
-
-            )
-
-
-
-
-
-        return "Unsupported operation."

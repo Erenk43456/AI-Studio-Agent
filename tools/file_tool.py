@@ -1,22 +1,147 @@
 import os
-import subprocess
-import sys
+
+from app.core.logger import AppLogger
 
 
 
 class FileTool:
 
 
+    def __init__(self):
+
+
+        self.base_path = "data/files"
+
+        self.logger = AppLogger()
+
+
+        os.makedirs(
+
+            self.base_path,
+
+            exist_ok=True
+
+        )
+
+
+
+
+
+
+
+
+    def execute(
+        self,
+        plan
+    ):
+
+
+        action = plan.get(
+
+            "action",
+
+            "create"
+
+        )
+
+
+
+
+        if action == "create":
+
+
+            return self.create_file(
+
+                plan.get("filename"),
+
+                plan.get("content")
+
+            )
+
+
+
+
+
+        if action == "write":
+
+
+            return self.write_file(
+
+                plan.get("filename"),
+
+                plan.get("content")
+
+            )
+
+
+
+
+
+        if action == "read":
+
+
+            return self.read_file(
+
+                plan.get("filename")
+
+            )
+
+
+
+
+
+        return "Invalid file action."
+
+
+
+
+
+
+
+
+
+    def get_path(
+        self,
+        filename
+    ):
+
+
+        return os.path.join(
+
+            self.base_path,
+
+            filename
+
+        )
+
+
+
+
+
+
+
+
+
     def create_file(
         self,
         filename,
-        content
+        content=""
     ):
 
 
         if not filename:
 
-            return "Filename not provided."
+
+            return "Filename missing."
+
+
+
+
+        path = self.get_path(
+
+            filename
+
+        )
 
 
 
@@ -24,37 +149,47 @@ class FileTool:
 
 
             with open(
-                filename,
+
+                path,
+
                 "w",
+
                 encoding="utf-8"
+
             ) as file:
 
+
                 file.write(
+
                     content or ""
+
                 )
 
 
 
-            format_result = self.format_file(
-                filename
+
+            self.logger.info(
+
+                f"File created: {filename}"
+
             )
 
 
 
-            if format_result:
-
-                return format_result
+            return f"File created: {filename}"
 
 
 
-            return f"{filename} created successfully."
 
 
 
-        except OSError as error:
+        except Exception as error:
 
 
-            return f"File creation error: {error}"
+            return f"File error: {error}"
+
+
+
 
 
 
@@ -70,7 +205,18 @@ class FileTool:
 
         if not filename:
 
-            return "Filename not provided."
+
+            return "Filename missing."
+
+
+
+
+        path = self.get_path(
+
+            filename
+
+        )
+
 
 
 
@@ -78,37 +224,46 @@ class FileTool:
 
 
             with open(
-                filename,
+
+                path,
+
                 "w",
+
                 encoding="utf-8"
+
             ) as file:
 
+
                 file.write(
-                    content
+
+                    content or ""
+
                 )
 
 
 
-            format_result = self.format_file(
-                filename
+
+            self.logger.info(
+
+                f"File written: {filename}"
+
             )
 
 
 
-            if format_result:
-
-                return format_result
+            return f"File updated: {filename}"
 
 
 
-            return f"{filename} updated successfully."
 
 
 
-        except OSError as error:
+        except Exception as error:
 
 
-            return f"File writing error: {error}"
+            return f"File error: {error}"
+
+
 
 
 
@@ -124,13 +279,17 @@ class FileTool:
 
         if not filename:
 
-            return "Filename not provided."
+
+            return "Filename missing."
 
 
 
-        if not os.path.exists(filename):
 
-            return "File not found."
+        path = self.get_path(
+
+            filename
+
+        )
 
 
 
@@ -138,76 +297,34 @@ class FileTool:
 
 
             with open(
-                filename,
+
+                path,
+
                 "r",
+
                 encoding="utf-8"
+
             ) as file:
+
 
                 return file.read()
 
 
 
-        except OSError as error:
-
-
-            return f"File reading error: {error}"
 
 
 
+        except FileNotFoundError:
+
+
+            return "File not found."
 
 
 
-
-
-    def format_file(
-        self,
-        filename
-    ):
-
-
-        if not filename.endswith(".py"):
-
-            return None
-
-
-
-        try:
-
-
-            result = subprocess.run(
-
-                [
-                    sys.executable,
-                    "-m",
-                    "black",
-                    filename
-                ],
-
-                capture_output=True,
-
-                text=True
-
-            )
-
-
-
-            if result.returncode != 0:
-
-
-                return (
-                    f"Formatting failed:\n"
-                    f"{result.stderr}"
-                )
-
-
-
-            return None
 
 
 
         except Exception as error:
 
 
-            return (
-                f"Formatter error: {error}"
-            )
+            return f"File error: {error}"

@@ -5,12 +5,17 @@ from config.config_manager import ConfigManager
 
 from app.core.logger import AppLogger
 
+
 from agents.planner.code_repair_parser import parse_code_repair
 from agents.planner.formatter_parser import parse_formatter
 from agents.planner.calculator_parser import parse_calculator
 from agents.planner.memory_parser import parse_memory
 from agents.planner.greeting_parser import parse_greeting
 from agents.planner.llm_planner import create_llm_plan
+from agents.planner.code_analyzer_parser import parse_code_analyzer
+from agents.planner.file_parser import parse_file
+
+
 
 
 
@@ -43,103 +48,115 @@ class PlannerAgent(BaseAgent):
 
 
 
+
+
     def create_plan(
         self,
         task
     ):
 
 
-        task = task.lower().strip()
+        original_task = task.strip()
+
 
 
         self.logger.info(
-            f"Creating plan for: {task}"
+
+            f"Creating plan for: {original_task}"
+
         )
+
+
+
 
 
         try:
 
 
-            code_repair_plan = parse_code_repair(
-                task
-            )
+
+            parsers = [
 
 
-            if code_repair_plan:
+                (
+                    "code_repair",
+                    parse_code_repair
+                ),
 
-                self.logger.info(
-                    "Plan selected: code_repair"
+
+                (
+                    "formatter",
+                    parse_formatter
+                ),
+
+
+                (
+                    "calculator",
+                    parse_calculator
+                ),
+
+
+                (
+                    "memory",
+                    parse_memory
+                ),
+
+
+                (
+                    "greeting",
+                    parse_greeting
                 )
 
-                return code_repair_plan
+                (
+                    "code_analyzer",
+                    parse_code_analyzer
+                ),
+
+                (
+                    "file",
+                    parse_file
+                ),
+
+            ]
 
 
 
 
 
-            formatter_plan = parse_formatter(
-                task
-            )
 
 
-            if formatter_plan:
 
-                self.logger.info(
-                    "Plan selected: formatter"
+            for name, parser in parsers:
+
+
+                plan = parser(
+
+                    original_task
+
                 )
 
-                return formatter_plan
+
+
+                if plan:
+
+
+                    self.logger.info(
+
+                        f"Plan selected: {name}"
+
+                    )
+
+
+                    #
+                    # Kullanıcı mesajını plana ekle
+                    #
+
+                    plan["user_message"] = original_task
 
 
 
+                    return plan
 
 
-            calculator_plan = parse_calculator(
-                task
-            )
-
-
-            if calculator_plan:
-
-                self.logger.info(
-                    "Plan selected: calculator"
-                )
-
-                return calculator_plan
-
-
-
-
-
-            memory_plan = parse_memory(
-                task
-            )
-
-
-            if memory_plan:
-
-                self.logger.info(
-                    "Plan selected: memory"
-                )
-
-                return memory_plan
-
-
-
-
-
-            greeting_plan = parse_greeting(
-                task
-            )
-
-
-            if greeting_plan:
-
-                self.logger.info(
-                    "Plan selected: greeting"
-                )
-
-                return greeting_plan
 
 
 
@@ -147,25 +164,58 @@ class PlannerAgent(BaseAgent):
 
             if self.memory:
 
+
                 self.memory.save(
+
                     "last_task",
-                    task,
+
+                    original_task,
+
                     "system"
+
                 )
 
 
 
 
 
+
+
+
+
             self.logger.info(
+
                 "No parser matched. Using LLM planner."
+
             )
 
 
-            return create_llm_plan(
+
+
+
+            plan = create_llm_plan(
+
                 self.llm,
-                task
+
+                original_task
+
             )
+
+
+
+            #
+            # LLM planına da ekle
+            #
+
+            if isinstance(plan, dict):
+
+                plan["user_message"] = original_task
+
+
+
+            return plan
+
+
 
 
 
@@ -175,14 +225,21 @@ class PlannerAgent(BaseAgent):
 
 
             self.logger.error(
+
                 f"Planner error: {error}"
+
             )
 
 
             return {
 
+
                 "tool": "chat",
 
-                "message": task
+
+                "message": original_task,
+
+
+                "user_message": original_task
 
             }
