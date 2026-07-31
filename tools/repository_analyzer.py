@@ -7,6 +7,7 @@ LLM provider, memory, tool registry, GUI structure, and known issues.
 
 import ast
 import re
+import tokenize
 from datetime import datetime
 from pathlib import Path
 
@@ -33,6 +34,14 @@ SKIP_DIRS = {
 }
 
 IGNORED_FILES = {"__init__.py"}
+
+# Analyzer implementation files that scan the codebase for markers;
+# scanning them would only report their own detection logic.
+MARKER_SCAN_EXCLUDES = {
+    "tools/repository_analyzer.py",
+}
+
+MARKER_PATTERN = re.compile(r"\b(?:TODO|FIXME|XXX)\b")
 
 MODULE_ROLES = {
     "app/core/container.py": "Dependency injection composition root",
@@ -242,12 +251,26 @@ class RepositoryAnalyzerTool:
     def _issues(self, root):
         markers = []
         for path in self._iter_python_files(root):
-            for number, line in enumerate(self._read(path).splitlines(), 1):
-                if re.search(r"TODO|FIXME|XXX", line):
+            rel = path.relative_to(root).as_posix()
+            if rel in MARKER_SCAN_EXCLUDES:
+                continue
+            for number, line in self._iter_comment_lines(path):
+                if MARKER_PATTERN.search(line):
                     markers.append(
-                        f"- {path.as_posix()}:{number}: {line.strip()[:80]}"
+                        f"- {rel}:{number}: {line.strip()[:80]}"
                     )
         return "\n".join(markers[:15]) if markers else "- No TODO/FIXME markers found."
+
+    def _iter_comment_lines(self, path):
+        """Yield (line_number, content) for real comments only."""
+        try:
+            with path.open("rb") as file:
+                tokens = tokenize.tokenize(file.readline)
+                for token in tokens:
+                    if token.type == tokenize.COMMENT:
+                        yield token.start[0], token.line
+        except (tokenize.TokenError, IndentationError, SyntaxError, OSError):
+            return
 
     # ------------------------------------------------------------------
     # public
