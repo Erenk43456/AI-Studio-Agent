@@ -77,6 +77,9 @@ Fix programming errors.
 formatter:
 Format code.
 
+repository_analyzer:
+Analyze the AI-Studio-Agent repository.
+
 chat:
 Normal conversation.
 

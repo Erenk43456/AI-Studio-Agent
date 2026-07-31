@@ -10,6 +10,7 @@ from agents.planner.memory_parser import parse_memory
 from agents.planner.greeting_parser import parse_greeting
 from agents.planner.llm_planner import create_llm_plan
 from agents.planner.code_analyzer_parser import parse_code_analyzer
+from agents.planner.repository_analyzer_parser import parse_repository_analyzer
 from agents.planner.file_parser import parse_file
 
 
@@ -103,6 +104,12 @@ class PlannerAgent(BaseAgent):
                 (
                     "code_analyzer",
                     parse_code_analyzer
+                ),
+
+
+                (
+                    "repository_analyzer",
+                    parse_repository_analyzer
                 ),
 
 

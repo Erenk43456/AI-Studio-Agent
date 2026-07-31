@@ -6,6 +6,7 @@ from tools.memory_tool import MemoryTool
 from tools.formatter_tool import FormatterTool
 from tools.code_repair_tool import CodeRepairTool
 from tools.code_analyzer_tool import CodeAnalyzerTool
+from tools.repository_analyzer import RepositoryAnalyzerTool
 
 
 from agents.planner_agent import PlannerAgent
@@ -230,5 +231,15 @@ class AIContainer:
                 self.llm
 
             )
+
+        )
+
+
+
+        self.registry.register(
+
+            "repository_analyzer",
+
+            RepositoryAnalyzerTool()
 
         )

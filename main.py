@@ -2,6 +2,7 @@ from tools.tool_registry import ToolRegistry
 from tools.calculator import Calculator
 from tools.file_tool import FileTool
 from tools.memory_tool import MemoryTool
+from tools.repository_analyzer import RepositoryAnalyzerTool
 
 from agents.tool_agent import ToolAgent
 from agents.planner_agent import PlannerAgent
@@ -48,6 +49,11 @@ def main():
     registry.register(
         "memory",
         memory_tool
+    )
+
+    registry.register(
+        "repository_analyzer",
+        RepositoryAnalyzerTool()
     )
 
 
