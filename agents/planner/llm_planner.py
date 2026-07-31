@@ -95,6 +95,16 @@ Rules:
 - For code tools include the full source code in the "code" field.
 - Never leave required fields empty.
 
+Planning rules:
+
+- Use only the minimum required tools.
+- Do not call unrelated tools after a successful analysis.
+- repository_analyzer results should normally be returned to the user or passed to chat.
+- Never use calculator unless the user asks for calculations.
+- Never use memory_save unless the user explicitly asks to remember something.
+- Never use memory_get unless the user asks about stored information.
+- chat is not a tool. Normal conversation should be handled by ChatAgent.
+
 Important:
 
 - Never modify user input.
