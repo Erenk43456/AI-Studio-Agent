@@ -1,8 +1,9 @@
 """Static analyzer for the AI-Studio-Agent repository.
 
-Follows the existing tool convention: classes expose execute(plan).
-Performs offline (LLM-free) analysis of architecture, agent flow, DI,
-LLM provider, memory, tool registry, GUI structure, and known issues.
+Follows the existing tool convention: the class exposes execute(plan).
+Analysis is collected into a structured RepositoryAnalysis (data
+layer) and rendered to the human-readable text report by
+RepositoryReportFormatter (presentation layer).
 """
 
 import ast
@@ -12,6 +13,9 @@ from datetime import datetime
 from pathlib import Path
 
 from app.core.logger import AppLogger
+
+from tools.repository_analysis import RepositoryAnalysis
+from tools.repository_report import RepositoryReportFormatter
 
 
 SKIP_DIRS = {
@@ -34,6 +38,15 @@ SKIP_DIRS = {
 }
 
 IGNORED_FILES = {"__init__.py"}
+
+# Files under tools/ that are not tool implementations themselves.
+TOOL_LIST_EXCLUDES = {
+    "__init__.py",
+    "tool_registry.py",
+    "base_tool.py",
+    "repository_analysis.py",
+    "repository_report.py",
+}
 
 # Analyzer implementation files that scan the codebase for markers;
 # scanning them would only report their own detection logic.
@@ -64,7 +77,7 @@ MODULE_ROLES = {
     "app/worker.py": "Background QThread for AI requests",
 }
 
-# (label, relative file, ordered substrings) -> reported OK/FAIL
+# (label, relative file, ordered substrings) -> wiring check
 CHECKS = [
     (
         "Container wires PlannerAgent(llm, memory)",
@@ -110,7 +123,12 @@ CHECKS = [
 
 
 class RepositoryAnalyzerTool:
-    """Analyzes the AI-Studio-Agent codebase and returns a text report."""
+    """Analyzes the AI-Studio-Agent codebase.
+
+    ``execute(plan)`` returns the human-readable text report (same
+    contract as before). ``analyze(root)`` returns the structured
+    RepositoryAnalysis for programmatic consumers.
+    """
 
     name = "repository_analyzer"
     description = (
@@ -129,13 +147,40 @@ class RepositoryAnalyzerTool:
             if action != "analyze":
                 return "Unsupported repository action."
             root = Path(plan.get("path") or self.root)
-            return self.analyze(root)
+            result = self.analyze(root)
+            if isinstance(result, str):
+                return result
+            return RepositoryReportFormatter.render(result)
         except Exception as error:
             self.logger.error(f"Repository analysis error: {error}")
             return f"Repository analysis error: {error}"
 
     # ------------------------------------------------------------------
-    # helpers
+    # public analysis entry point
+    # ------------------------------------------------------------------
+
+    def analyze(self, root):
+        root = Path(root)
+        if not root.exists():
+            return f"Path not found: {root}"
+        if not (root / "main.py").exists():
+            return f"Not an AI-Studio-Agent repository root: {root}"
+
+        tools, registry_names = self._collect_tools(root)
+
+        return RepositoryAnalysis(
+            generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            overview=self._collect_overview(root),
+            module_roles=self._collect_module_roles(root),
+            definitions=self._collect_definitions(root),
+            tools=tools,
+            registry_names=registry_names,
+            wiring_checks=self._collect_wiring_checks(root),
+            issues=self._collect_issues(root),
+        )
+
+    # ------------------------------------------------------------------
+    # data collection (returns plain structures)
     # ------------------------------------------------------------------
 
     def _iter_python_files(self, root):
@@ -170,96 +215,109 @@ class RepositoryAnalyzerTool:
                 defs.append(f"def {node.name}(")
         return defs
 
-    # ------------------------------------------------------------------
-    # report sections
-    # ------------------------------------------------------------------
-
-    def _overview(self, root):
+    def _collect_overview(self, root):
         files = list(self._iter_python_files(root))
         total_lines = sum(
-            len(self._read(p).splitlines())
-            for p in files
+            len(self._read(path).splitlines())
+            for path in files
         )
-        lines = [
-            f"- Repository root: {root.resolve()}",
-            f"- Python files: {len(files)}",
-            f"- Total lines: {total_lines}",
-            "- Top-level modules: "
-            + ", ".join(p.name for p in sorted(root.iterdir()) if p.is_dir() and p.name not in SKIP_DIRS),
-        ]
         biggest = sorted(
             files,
-            key=lambda p: len(self._read(p).splitlines()),
+            key=lambda path: len(self._read(path).splitlines()),
             reverse=True,
         )[:5]
-        lines.append(
-            "- Largest files: "
-            + ", ".join(f"{p} ({len(self._read(p).splitlines())} lines)" for p in biggest)
-        )
-        return "\n".join(lines)
+        return {
+            "root": str(root.resolve()),
+            "python_files": len(files),
+            "total_lines": total_lines,
+            "top_level_modules": sorted(
+                path.name
+                for path in root.iterdir()
+                if path.is_dir() and path.name not in SKIP_DIRS
+            ),
+            "largest_files": [
+                {
+                    "file": path.as_posix(),
+                    "lines": len(self._read(path).splitlines()),
+                }
+                for path in biggest
+            ],
+        }
 
-    def _module_roles(self, root):
-        found = []
-        for rel, role in MODULE_ROLES.items():
-            if (root / rel).exists():
-                found.append(f"- {rel}\n    -> {role}")
-        return "\n".join(found)
+    def _collect_module_roles(self, root):
+        return {
+            rel: role
+            for rel, role in MODULE_ROLES.items()
+            if (root / rel).exists()
+        }
 
-    def _definitions(self, root):
-        sections = []
+    def _collect_definitions(self, root):
+        definitions = {}
         for rel in MODULE_ROLES:
             path = root / rel
             if not path.exists():
                 continue
             defs = self._top_level_defs(self._read(path))
             if defs:
-                sections.append(f"- {rel}:")
-                sections.append("    " + ", ".join(defs))
-        return "\n".join(sections)
+                definitions[rel] = defs
+        return definitions
 
-    def _tool_overview(self, root):
+    def _collect_tools(self, root):
+        tools = []
         tool_dir = root / "tools"
-        if not tool_dir.is_dir():
-            return "tools/ directory not found."
-        lines = ["Registered tool implementations (tools/):"]
-        for path in sorted(tool_dir.glob("*.py")):
-            if path.name in {"__init__.py", "tool_registry.py", "base_tool.py"}:
-                continue
-            has_execute = bool(re.search(r"def execute\(", self._read(path)))
-            status = "execute(): OK" if has_execute else "execute(): MISSING"
-            lines.append(f"- {path.name}: {status}")
-        container = self._read(root / "app/core/container.py")
-        names = re.findall(
-            r'registry\.register\(\s*"([^"]+)"\s*,',
-            container,
-        )
-        lines.append(f"\nRegistered names in AIContainer: {', '.join(names)}")
-        return "\n".join(lines)
+        if tool_dir.is_dir():
+            for path in sorted(tool_dir.glob("*.py")):
+                if path.name in TOOL_LIST_EXCLUDES:
+                    continue
+                tools.append(
+                    {
+                        "file": path.name,
+                        "has_execute": bool(
+                            re.search(r"def execute\(", self._read(path))
+                        ),
+                    }
+                )
+        container = root / "app/core/container.py"
+        registry_names = []
+        if container.exists():
+            registry_names = re.findall(
+                r'registry\.register\(\s*"([^"]+)"\s*,',
+                self._read(container),
+            )
+        return tools, registry_names
 
-    def _architecture_checks(self, root):
-        lines = []
+    def _collect_wiring_checks(self, root):
+        checks = []
         for label, rel, needles in CHECKS:
             path = root / rel
             if not path.exists():
-                lines.append(f"- [FAIL] {label} (missing file {rel})")
+                checks.append({"label": label, "ok": False})
                 continue
             source = self._read(path)
-            ok = all(needle in source for needle in needles)
-            lines.append(f"- [{'OK' if ok else 'FAIL'}] {label}")
-        return "\n".join(lines)
+            checks.append(
+                {
+                    "label": label,
+                    "ok": all(needle in source for needle in needles),
+                }
+            )
+        return checks
 
-    def _issues(self, root):
-        markers = []
+    def _collect_issues(self, root):
+        issues = []
         for path in self._iter_python_files(root):
             rel = path.relative_to(root).as_posix()
             if rel in MARKER_SCAN_EXCLUDES:
                 continue
             for number, line in self._iter_comment_lines(path):
                 if MARKER_PATTERN.search(line):
-                    markers.append(
-                        f"- {rel}:{number}: {line.strip()[:80]}"
+                    issues.append(
+                        {
+                            "file": rel,
+                            "line": number,
+                            "message": line.strip()[:80],
+                        }
                     )
-        return "\n".join(markers[:15]) if markers else "- No TODO/FIXME markers found."
+        return issues
 
     def _iter_comment_lines(self, path):
         """Yield (line_number, content) for real comments only."""
@@ -271,43 +329,3 @@ class RepositoryAnalyzerTool:
                         yield token.start[0], token.line
         except (tokenize.TokenError, IndentationError, SyntaxError, OSError):
             return
-
-    # ------------------------------------------------------------------
-    # public
-    # ------------------------------------------------------------------
-
-    def analyze(self, root):
-        if not root.exists():
-            return f"Path not found: {root}"
-        if not (root / "main.py").exists():
-            return f"Not an AI-Studio-Agent repository root: {root}"
-
-        report = [
-            "=" * 60,
-            "AI-Studio-Agent Repository Analysis",
-            "=" * 60,
-            f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            "",
-            "[1] Overview",
-            self._overview(root),
-            "",
-            "[2] Module Roles (architecture)",
-            self._module_roles(root),
-            "",
-            "[3] Key Definitions",
-            self._definitions(root),
-            "",
-            "[4] Tool Registry",
-            self._tool_overview(root),
-            "",
-            "[5] Architecture & Wiring Checks",
-            self._architecture_checks(root),
-            "",
-            "[6] TODO / FIXME Markers",
-            self._issues(root),
-            "",
-            "=" * 60,
-            "Analysis complete.",
-            "=" * 60,
-        ]
-        return "\n".join(report)
