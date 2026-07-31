@@ -172,11 +172,7 @@ class ChatController:
 
         window.worker = AIWorker(
 
-            window.planner,
-
-            window.tool_agent,
-
-            window.chat_agent,
+            window.orchestrator,
 
             chat.conversation,
 

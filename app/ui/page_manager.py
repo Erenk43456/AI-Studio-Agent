@@ -15,7 +15,9 @@ class PageManager:
 
 
     @staticmethod
-    def create(window):
+    def create(
+        window
+    ):
 
 
         window.pages = QStackedWidget()
@@ -26,19 +28,35 @@ class PageManager:
 
 
 
+
+
+
         window.memory_page = MemoryPage()
+
 
         window.history_page = HistoryPage()
 
+
         window.tools_page = ToolsPage()
 
-        window.settings_page = SettingsPage()
+
+        window.settings_page = SettingsPage(
+            window.container.llm
+        )
+
 
         window.formatter_page = FormatterPage()
 
 
 
 
+
+
+
+        #
+        # Sıra önemli
+        # Sidebar indexleri buna bağlı
+        #
 
         window.pages.addWidget(
             window.scroll
@@ -68,6 +86,7 @@ class PageManager:
         window.pages.addWidget(
             window.formatter_page
         )
+
 
 
 

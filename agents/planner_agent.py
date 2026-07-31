@@ -1,8 +1,5 @@
 from agents.base_agent import BaseAgent
 
-from models.llm_provider import LLMProvider
-from config.config_manager import ConfigManager
-
 from app.core.logger import AppLogger
 
 
@@ -24,6 +21,7 @@ class PlannerAgent(BaseAgent):
 
     def __init__(
         self,
+        llm,
         memory=None
     ):
 
@@ -34,12 +32,7 @@ class PlannerAgent(BaseAgent):
         )
 
 
-        config = ConfigManager()
-
-
-        self.llm = LLMProvider(
-            config
-        )
+        self.llm = llm
 
 
         self.logger = AppLogger()
@@ -104,20 +97,21 @@ class PlannerAgent(BaseAgent):
                 (
                     "greeting",
                     parse_greeting
-                )
+                ),
+
 
                 (
                     "code_analyzer",
                     parse_code_analyzer
                 ),
 
+
                 (
                     "file",
                     parse_file
-                ),
+                )
 
             ]
-
 
 
 
@@ -146,9 +140,6 @@ class PlannerAgent(BaseAgent):
                     )
 
 
-                    #
-                    # Kullanıcı mesajını plana ekle
-                    #
 
                     plan["user_message"] = original_task
 
@@ -181,8 +172,6 @@ class PlannerAgent(BaseAgent):
 
 
 
-
-
             self.logger.info(
 
                 "No parser matched. Using LLM planner."
@@ -203,13 +192,14 @@ class PlannerAgent(BaseAgent):
 
 
 
-            #
-            # LLM planına da ekle
-            #
+
+
 
             if isinstance(plan, dict):
 
                 plan["user_message"] = original_task
+
+
 
 
 
@@ -229,6 +219,7 @@ class PlannerAgent(BaseAgent):
                 f"Planner error: {error}"
 
             )
+
 
 
             return {

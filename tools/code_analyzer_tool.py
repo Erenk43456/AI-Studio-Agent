@@ -1,21 +1,14 @@
-from models.llm_provider import LLMProvider
-from config.config_manager import ConfigManager
-
-
-
-
 class CodeAnalyzerTool:
 
 
-    def __init__(self):
+    def __init__(
+        self,
+        llm
+    ):
+
+        self.llm = llm
 
 
-        config = ConfigManager()
-
-
-        self.llm = LLMProvider(
-            config
-        )
 
 
 
@@ -23,13 +16,31 @@ class CodeAnalyzerTool:
 
     def execute(
         self,
-        code
+        plan
     ):
 
 
+        code = plan
+
+
+        if isinstance(code, dict):
+
+            code = (
+                code.get("code")
+                or code.get("input")
+                or code.get("context")
+                or ""
+            )
+
+
+
         return self.analyze_code(
+
             code
+
         )
+
+
 
 
 
@@ -41,9 +52,6 @@ class CodeAnalyzerTool:
         code
     ):
 
-
-        if isinstance(code, dict):
-            code = code.get("code") or code.get("input") or code.get("context") or ""
 
         if not code:
 
@@ -85,15 +93,20 @@ Code:
 
 
         response = self.llm.generate(
+
             prompt
+
         )
 
 
 
 
 
+
         if response.startswith(
+
             "LLM_ERROR"
+
         ):
 
 

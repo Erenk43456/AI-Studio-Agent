@@ -1,8 +1,19 @@
 from app.core.logger import AppLogger
 
+from tools.base_tool import BaseTool
 
 
-class Calculator:
+
+class Calculator(BaseTool):
+
+
+    name = "calculator"
+
+    description = (
+        "Performs basic mathematical operations "
+        "such as addition, subtraction, multiplication and division."
+    )
+
 
 
     def __init__(self):
@@ -135,7 +146,6 @@ class Calculator:
 
 
 
-
     def subtract(
         self,
         a,
@@ -151,7 +161,6 @@ class Calculator:
 
 
 
-
     def multiply(
         self,
         a,
@@ -160,7 +169,6 @@ class Calculator:
 
 
         return a * b
-
 
 
 

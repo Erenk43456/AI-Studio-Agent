@@ -1,22 +1,18 @@
-from models.llm_provider import LLMProvider
-from config.config_manager import ConfigManager
 from tools.formatter_tool import FormatterTool
+
+
 
 
 
 class CodeRepairTool:
 
 
-    def __init__(self):
+    def __init__(
+        self,
+        llm
+    ):
 
-
-        config = ConfigManager()
-
-
-        self.llm = LLMProvider(
-            config
-        )
-
+        self.llm = llm
 
         self.formatter = FormatterTool()
 
@@ -24,15 +20,34 @@ class CodeRepairTool:
 
 
 
+
     def execute(
         self,
-        code
+        plan
     ):
 
 
+        code = plan
+
+
+        if isinstance(code, dict):
+
+            code = (
+                code.get("code")
+                or code.get("input")
+                or code.get("context")
+                or ""
+            )
+
+
+
         return self.repair_code(
+
             code
+
         )
+
+
 
 
 
@@ -45,9 +60,6 @@ class CodeRepairTool:
     ):
 
 
-        if isinstance(code, dict):
-            code = code.get("code") or code.get("input") or code.get("context") or ""
-
         if not code:
 
 
@@ -58,6 +70,7 @@ class CodeRepairTool:
                 "message": "Code is empty."
 
             }
+
 
 
 
@@ -84,14 +97,19 @@ Code:
 
 
         response = self.llm.generate(
+
             prompt
+
         )
 
 
 
 
+
         if response.startswith(
+
             "LLM_ERROR"
+
         ):
 
 
@@ -109,9 +127,17 @@ Code:
 
 
         formatted = self.formatter.format_code(
+
             response
+
         )
 
 
 
-        return formatted
+        return {
+
+            "success": True,
+
+            "code": formatted
+
+        }

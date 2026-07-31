@@ -1,4 +1,5 @@
 from agents.base_agent import BaseAgent
+
 from app.core.logger import AppLogger
 
 
@@ -9,8 +10,7 @@ class ToolAgent(BaseAgent):
     def __init__(
         self,
         registry,
-        memory=None,
-        chat_agent=None
+        memory=None
     ):
 
         super().__init__(
@@ -21,11 +21,7 @@ class ToolAgent(BaseAgent):
 
         self.registry = registry
 
-        self.chat_agent = chat_agent
-
         self.logger = AppLogger()
-
-
 
 
 
@@ -126,10 +122,6 @@ class ToolAgent(BaseAgent):
 
 
 
-
-
-
-
     def execute(
         self,
         plan
@@ -147,7 +139,6 @@ class ToolAgent(BaseAgent):
         tool_name = plan.get(
             "tool"
         )
-
 
 
         self.logger.info(
@@ -175,8 +166,6 @@ class ToolAgent(BaseAgent):
             tool_name
 
         )
-
-
 
 
 
@@ -245,61 +234,13 @@ class ToolAgent(BaseAgent):
                 )
 
 
-
-
-
-                #
-                # Tool sonucunu doğal cevaba çevir
-                #
-
-                if self.chat_agent and tool_name != "chat":
-
-
-                    user_message = plan.get(
-
-                        "user_message",
-
-                        ""
-
-                    )
-
-
-
-                    return self.chat_agent.respond(
-
-                        f"""
-
-Kullanıcı mesajı:
-
-{user_message}
-
-
-
-Araç sonucu:
-
-{result}
-
-
-
-Bu sonucu kullanarak kullanıcıya doğal,
-
-kısa ve anlaşılır Türkçe cevap ver.
-
-"""
-
-                    )
-
-
-
-
-
                 return result
 
 
 
 
 
-            return f"Tool {tool_name} does not support execute()."
+            return f"Tool {tool_name} does not support execute method."
 
 
 

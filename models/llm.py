@@ -1,27 +1,25 @@
 import requests
 
-from config.config_manager import ConfigManager
 from app.core.logger import AppLogger
-
-
 
 
 
 class LLM:
 
 
-    def __init__(self):
+    def __init__(
+        self,
+        config
+    ):
 
 
         self.name = "Qwen2.5 Local LLM"
 
 
-        self.config = ConfigManager()
+        self.config = config
 
 
         self.logger = AppLogger()
-
-
 
 
 
@@ -34,6 +32,7 @@ class LLM:
         )
 
 
+
         self.url = self.config.get(
 
             "ollama_url",
@@ -41,6 +40,7 @@ class LLM:
             "http://localhost:11434/api/generate"
 
         )
+
 
 
         self.base_url = self.url.replace(
@@ -60,6 +60,7 @@ class LLM:
             0.3
 
         )
+
 
 
         self.num_predict = self.config.get(
@@ -84,14 +85,9 @@ class LLM:
 
 
 
-
-
     def generate(
-
         self,
-
         prompt
-
     ):
 
 
@@ -106,16 +102,8 @@ class LLM:
 
 
 
-
-            self.logger.info(
-
-                "Generating response."
-
-            )
-
-
-
             response = requests.post(
+
 
                 self.url,
 
@@ -139,7 +127,6 @@ class LLM:
 
 
                         "num_predict": self.num_predict
-
 
                     }
 
@@ -173,24 +160,7 @@ class LLM:
             if not result:
 
 
-                self.logger.warning(
-
-                    "LLM returned empty response."
-
-                )
-
-
                 return "LLM_ERROR: Empty response."
-
-
-
-
-
-            self.logger.info(
-
-                "LLM response completed."
-
-            )
 
 
 
@@ -200,20 +170,14 @@ class LLM:
 
 
 
-
-
         except requests.exceptions.Timeout:
 
 
             self.logger.error(
-
                 "LLM request timeout."
-
             )
 
-
             return "LLM_ERROR: Request timeout."
-
 
 
 
@@ -223,14 +187,10 @@ class LLM:
 
 
             self.logger.error(
-
                 "Ollama connection failed."
-
             )
 
-
             return "LLM_ERROR: Connection failed."
-
 
 
 
@@ -254,8 +214,6 @@ class LLM:
 
 
 
-
-
     def check_connection(self):
 
 
@@ -271,7 +229,6 @@ class LLM:
             )
 
 
-
             return response.status_code == 200
 
 
@@ -282,9 +239,6 @@ class LLM:
 
 
             return False
-
-
-
 
 
 
@@ -351,19 +305,10 @@ class LLM:
 
 
 
-
-
     def has_model(self):
 
 
-        models = self.get_models()
-
-
-        return self.model in models
-
-
-
-
+        return self.model in self.get_models()
 
 
 

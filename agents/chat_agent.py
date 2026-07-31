@@ -1,8 +1,5 @@
 from agents.base_agent import BaseAgent
 
-from models.llm_provider import LLMProvider
-from config.config_manager import ConfigManager
-
 from app.core.logger import AppLogger
 
 
@@ -14,24 +11,23 @@ class ChatAgent(BaseAgent):
 
     def __init__(
         self,
+        llm,
         memory=None,
         conversation=None
     ):
 
 
         super().__init__(
+
             "Chat Agent",
+
             memory
+
         )
 
 
-        config = ConfigManager()
 
-
-        self.llm = LLMProvider(
-            config
-        )
-
+        self.llm = llm
 
         self.conversation = conversation
 
@@ -51,9 +47,10 @@ class ChatAgent(BaseAgent):
 
 
         return self.respond(
-            message
-        )
 
+            message
+
+        )
 
 
 
@@ -78,17 +75,12 @@ class ChatAgent(BaseAgent):
 
         memory_context = ""
 
-
-
         conversation_context = ""
 
 
 
 
 
-        #
-        # Kullanıcı bilgileri
-        #
 
         if self.memory:
 
@@ -121,7 +113,6 @@ class ChatAgent(BaseAgent):
 
 
 
-
                 if important:
 
 
@@ -149,10 +140,6 @@ class ChatAgent(BaseAgent):
 
 
 
-        #
-        # Konuşma geçmişi
-        #
-
         if self.conversation:
 
 
@@ -164,7 +151,6 @@ class ChatAgent(BaseAgent):
                     5
 
                 )
-
 
 
                 conversation_context = str(
@@ -192,12 +178,9 @@ class ChatAgent(BaseAgent):
 
 
         prompt = f"""
-
 You are AI-Studio Agent.
 
 You are a helpful AI assistant.
-
-
 
 Rules:
 
@@ -205,10 +188,8 @@ Rules:
 - Turkish user -> Turkish.
 - English user -> English.
 - Be natural and friendly.
-- Use known information when relevant.
+- Give useful answers.
 - Do not mention internal systems.
-- Do not reveal memory details unless useful.
-
 
 
 Known user information:
@@ -230,7 +211,6 @@ Current user message:
 
 
 Assistant response:
-
 """
 
 

@@ -5,9 +5,8 @@ from PySide6.QtWidgets import (
 )
 
 
-from models.llm_provider import LLMProvider
-
 from config.config_manager import ConfigManager
+
 
 from app.pages.settings.model_section import ModelSection
 from app.pages.settings.ollama_section import OllamaSection
@@ -22,7 +21,11 @@ from app.pages.settings.api_section import APISection
 class SettingsPage(QWidget):
 
 
-    def __init__(self):
+    def __init__(
+        self,
+        llm
+    ):
+
 
         super().__init__()
 
@@ -31,16 +34,17 @@ class SettingsPage(QWidget):
         self.config = ConfigManager()
 
 
+        self.llm = llm
 
-        self.llm = LLMProvider(
-            self.config
-        )
+
 
 
 
 
 
         layout = QVBoxLayout()
+
+
 
 
 
@@ -66,6 +70,9 @@ class SettingsPage(QWidget):
         layout.addWidget(
             title
         )
+
+
+
 
 
 
@@ -104,9 +111,17 @@ class SettingsPage(QWidget):
 
 
 
+
+
+
         self.provider_section.provider_changed.connect(
+
             self.change_provider
+
         )
+
+
+
 
 
 
@@ -142,9 +157,15 @@ class SettingsPage(QWidget):
 
 
 
+
+
         self.setLayout(
             layout
         )
+
+
+
+
 
 
 
@@ -160,6 +181,8 @@ class SettingsPage(QWidget):
             )
 
         )
+
+
 
 
 

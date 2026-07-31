@@ -1,26 +1,19 @@
-import os
 import requests
 
-from dotenv import load_dotenv
-
-from config.config_manager import ConfigManager
 from app.core.logger import AppLogger
-
-
-
-load_dotenv()
-
-
 
 
 
 class APILLM:
 
 
-    def __init__(self):
+    def __init__(
+        self,
+        config
+    ):
 
 
-        self.config = ConfigManager()
+        self.config = config
 
 
         self.logger = AppLogger()
@@ -47,9 +40,9 @@ class APILLM:
 
 
 
-        self.api_key = os.getenv(
+        self.api_key = self.config.get(
 
-            "NVIDIA_API_KEY",
+            "api_key",
 
             ""
 
@@ -71,10 +64,9 @@ class APILLM:
 
             "num_predict",
 
-            150
+            1200
 
         )
-
 
 
 
@@ -91,23 +83,18 @@ class APILLM:
 
 
     def generate(
-
         self,
-
         prompt
-
     ):
 
 
         try:
 
 
-
             if not self.url:
 
 
                 return "LLM_ERROR: API URL missing."
-
 
 
 
@@ -132,8 +119,6 @@ class APILLM:
 
 
 
-
-
             if self.api_key:
 
 
@@ -142,6 +127,7 @@ class APILLM:
                     f"Bearer {self.api_key}"
 
                 )
+
 
 
 
@@ -173,16 +159,12 @@ class APILLM:
 
                             "content": prompt
 
-
                         }
-
 
                     ],
 
 
-
                     "temperature": self.temperature,
-
 
 
                     "max_tokens": self.num_predict
@@ -198,16 +180,11 @@ class APILLM:
 
 
 
-
             response.raise_for_status()
 
 
 
-
-
             data = response.json()
-
-
 
 
 
@@ -229,9 +206,7 @@ class APILLM:
 
                 ""
 
-            )
-
-
+            ).strip()
 
 
 
@@ -253,8 +228,6 @@ class APILLM:
 
 
 
-
-
         except requests.exceptions.RequestException as error:
 
 
@@ -266,8 +239,6 @@ class APILLM:
 
 
             return f"LLM_ERROR: {error}"
-
-
 
 
 

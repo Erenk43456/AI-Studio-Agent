@@ -6,7 +6,10 @@ from models.api_llm import APILLM
 class LLMProvider:
 
 
-    def __init__(self, config):
+    def __init__(
+        self,
+        config
+    ):
 
 
         provider = config.get(
@@ -17,11 +20,18 @@ class LLMProvider:
 
         if provider == "api":
 
-            self.llm = APILLM()
+
+            self.llm = APILLM(
+                config
+            )
+
 
         else:
 
-            self.llm = LLM()
+
+            self.llm = LLM(
+                config
+            )
 
 
 
@@ -31,6 +41,7 @@ class LLMProvider:
         self,
         prompt
     ):
+
 
         return self.llm.generate(
             prompt
@@ -42,12 +53,15 @@ class LLMProvider:
 
     def get_models(self):
 
+
         if hasattr(
             self.llm,
             "get_models"
         ):
 
+
             return self.llm.get_models()
+
 
         return []
 
@@ -57,12 +71,15 @@ class LLMProvider:
 
     def has_model(self):
 
+
         if hasattr(
             self.llm,
             "has_model"
         ):
 
+
             return self.llm.has_model()
+
 
         return False
 
@@ -72,12 +89,15 @@ class LLMProvider:
 
     def get_current_model(self):
 
+
         if hasattr(
             self.llm,
             "get_current_model"
         ):
 
+
             return self.llm.get_current_model()
+
 
         return None
 
@@ -87,11 +107,14 @@ class LLMProvider:
 
     def check_connection(self):
 
+
         if hasattr(
             self.llm,
             "check_connection"
         ):
 
+
             return self.llm.check_connection()
+
 
         return False
