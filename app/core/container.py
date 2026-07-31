@@ -83,9 +83,9 @@ class AIContainer:
 
         self.planner = PlannerAgent(
 
-            self.memory,
+            self.llm,
 
-            self.llm
+            self.memory
 
         )
 
@@ -93,9 +93,9 @@ class AIContainer:
 
         self.chat_agent = ChatAgent(
 
-            self.memory,
+            self.llm,
 
-            self.llm
+            self.memory
 
         )
 

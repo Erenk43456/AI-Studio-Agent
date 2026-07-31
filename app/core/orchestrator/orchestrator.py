@@ -90,6 +90,12 @@ class Orchestrator:
 
 
 
+                if conversation is not None:
+
+                    agent.conversation = conversation
+
+
+
                 return agent.chat(
                     message
                 )
@@ -139,6 +145,12 @@ class Orchestrator:
             if not agent:
 
                 return "Chat agent not available."
+
+
+
+            if conversation is not None:
+
+                agent.conversation = conversation
 
 
 

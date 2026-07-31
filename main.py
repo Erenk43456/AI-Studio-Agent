@@ -10,9 +10,18 @@ from agents.chat_agent import ChatAgent
 from memory.memory import Memory
 from memory.conversation import ConversationMemory
 
+from models.llm_provider import LLMProvider
+from config.config_manager import ConfigManager
+
 
 
 def main():
+
+    config = ConfigManager()
+
+    llm = LLMProvider(
+        config
+    )
 
     memory = Memory()
 
@@ -48,19 +57,20 @@ def main():
     )
 
 
+    conversation = ConversationMemory()
+
+
     chat_agent = ChatAgent(
-        memory
+        llm,
+        memory,
+        conversation=conversation
     )
 
 
     planner_agent = PlannerAgent(
+        llm,
         memory
     )
-
-
-    conversation = ConversationMemory()
-
-
 
     print(
         "Registered tools:"
@@ -118,6 +128,25 @@ def main():
         result = chat_agent.respond(
             plan.get("message", request)
         )
+
+    elif plan.get("steps"):
+
+        steps = plan["steps"]
+
+        if (
+            len(steps) == 1
+            and steps[0].get("tool") == "chat"
+        ):
+
+            result = chat_agent.respond(
+                request
+            )
+
+        else:
+
+            result = tool_agent.execute_steps(
+                plan
+            )
 
     else:
 

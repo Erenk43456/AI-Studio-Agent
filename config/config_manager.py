@@ -1,5 +1,8 @@
 import json
+import os
 from pathlib import Path
+
+from dotenv import load_dotenv
 
 
 
@@ -7,6 +10,10 @@ class ConfigManager:
 
 
     def __init__(self):
+
+        # Load environment variables from .env
+        load_dotenv()
+
 
         self.file = Path(
             "config/settings.json"
@@ -21,6 +28,7 @@ class ConfigManager:
         self.data = self.load()
 
 
+        self.load_environment()
 
 
 
@@ -60,6 +68,47 @@ class ConfigManager:
 
 
 
+    def load_environment(self):
+
+
+        """
+        Environment variables override config file values.
+        Sensitive data should stay in .env.
+        """
+
+
+        env_mapping = {
+
+
+            "NVIDIA_API_KEY": "api_key",
+
+
+            "NVIDIA_API_URL": "api_url",
+
+
+            "NVIDIA_MODEL": "model",
+
+
+            "LLM_PROVIDER": "llm_provider"
+
+
+        }
+
+
+
+        for env_key, config_key in env_mapping.items():
+
+
+            value = os.getenv(env_key)
+
+
+            if value:
+
+
+                self.data[config_key] = value
+
+
+
 
 
 
@@ -89,7 +138,6 @@ class ConfigManager:
 
 
 
-
     def set(
 
         self,
@@ -105,8 +153,6 @@ class ConfigManager:
 
 
         self.save()
-
-
 
 
 
@@ -131,8 +177,6 @@ class ConfigManager:
 
 
         self.save()
-
-
 
 
 
@@ -165,8 +209,6 @@ class ConfigManager:
                 ensure_ascii=False
 
             )
-
-
 
 
 

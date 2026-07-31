@@ -120,3 +120,4 @@ ollama/
 *.bak
 *.swp
 *.old
+.aider*

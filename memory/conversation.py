@@ -143,6 +143,14 @@ class ConversationMemory:
         return self.data
 
 
+    def get_last(
+        self,
+        count=5
+    ):
+
+        return self.data[-count:]
+
+
 
 
     def clear(self):
