@@ -9,6 +9,8 @@ class ToolRegistry:
 
         self.tools = {}
 
+        self.metadata = {}
+
         self.logger = AppLogger()
 
 
@@ -18,11 +20,25 @@ class ToolRegistry:
     def register(
         self,
         name,
-        tool
+        tool,
+        metadata=None
     ):
 
 
         self.tools[name] = tool
+
+
+        self.metadata[name] = metadata or {
+
+            "description": "No description provided.",
+
+            "purpose": "Unknown",
+
+            "safe": True,
+
+            "modifies_files": False
+
+        }
 
 
         self.logger.info(
@@ -30,6 +46,7 @@ class ToolRegistry:
             f"Tool registered: {name}"
 
         )
+
 
 
 
@@ -55,14 +72,98 @@ class ToolRegistry:
 
 
 
+
+    def get_metadata(
+        self,
+        name
+    ):
+
+
+        return self.metadata.get(
+
+            name
+
+        )
+
+
+
+
+
+
+
+
+
+    def get_tool_descriptions(
+        self
+    ):
+
+
+        descriptions = []
+
+
+        for name, data in self.metadata.items():
+
+
+            descriptions.append({
+
+                "name": name,
+
+                "description": data.get(
+
+                    "description",
+
+                    ""
+
+                ),
+
+                "purpose": data.get(
+
+                    "purpose",
+
+                    ""
+
+                ),
+
+                "safe": data.get(
+
+                    "safe",
+
+                    True
+
+                ),
+
+                "modifies_files": data.get(
+
+                    "modifies_files",
+
+                    False
+
+                )
+
+            })
+
+
+        return descriptions
+
+
+
+
+
+
+
+
+
     def list_tools(
         self
     ):
 
 
         return list(
+
             self.tools.keys()
+
         )
+
 
 
 
@@ -79,7 +180,9 @@ class ToolRegistry:
 
 
         tool = self.get(
+
             name
+
         )
 
 
@@ -94,13 +197,18 @@ class ToolRegistry:
 
 
         if hasattr(
+
             tool,
+
             "execute"
+
         ):
 
 
             return tool.execute(
+
                 data
+
             )
 
 

@@ -1,12 +1,20 @@
+from pathlib import Path
+
+
+
 class CodeAnalyzerTool:
 
 
     def __init__(
         self,
-        llm
+        llm,
+        workspace=None
     ):
 
+
         self.llm = llm
+
+        self.workspace = workspace
 
 
 
@@ -20,17 +28,73 @@ class CodeAnalyzerTool:
     ):
 
 
-        code = plan
+        if isinstance(plan, dict):
 
 
-        if isinstance(code, dict):
+            filename = plan.get(
+                "filename"
+            )
+
+
+            if filename and self.workspace:
+
+
+                file_path = (
+
+                    Path(self.workspace)
+                    /
+                    filename
+
+                )
+
+
+                if file_path.exists():
+
+
+                    code = file_path.read_text(
+
+                        encoding="utf-8"
+
+                    )
+
+
+                    result = self.analyze_code(
+
+                        code
+
+                    )
+
+
+                    result["file"] = str(
+
+                        file_path
+
+                    )
+
+
+                    return result
+
+
+
+
 
             code = (
-                code.get("code")
-                or code.get("input")
-                or code.get("context")
+
+                plan.get("code")
+                or plan.get("input")
+                or plan.get("context")
                 or ""
+
             )
+
+
+
+        else:
+
+
+            code = plan
+
+
 
 
 
@@ -39,6 +103,7 @@ class CodeAnalyzerTool:
             code
 
         )
+
 
 
 
@@ -63,6 +128,7 @@ class CodeAnalyzerTool:
                 "message": "Code is empty."
 
             }
+
 
 
 
@@ -103,6 +169,7 @@ Code:
 
 
 
+
         if response.startswith(
 
             "LLM_ERROR"
@@ -117,6 +184,7 @@ Code:
                 "message": response
 
             }
+
 
 
 

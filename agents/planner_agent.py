@@ -15,15 +15,14 @@ from agents.planner.file_parser import parse_file
 
 
 
-
-
 class PlannerAgent(BaseAgent):
 
 
     def __init__(
         self,
         llm,
-        memory=None
+        memory=None,
+        registry=None
     ):
 
 
@@ -35,9 +34,10 @@ class PlannerAgent(BaseAgent):
 
         self.llm = llm
 
+        self.registry = registry
+
 
         self.logger = AppLogger()
-
 
 
 
@@ -70,7 +70,10 @@ class PlannerAgent(BaseAgent):
 
             parsers = [
 
-
+                (
+                    "file",
+                    parse_file
+                ),
                 (
                     "code_repair",
                     parse_code_repair
@@ -110,12 +113,6 @@ class PlannerAgent(BaseAgent):
                 (
                     "repository_analyzer",
                     parse_repository_analyzer
-                ),
-
-
-                (
-                    "file",
-                    parse_file
                 )
 
             ]
@@ -147,12 +144,11 @@ class PlannerAgent(BaseAgent):
                     )
 
 
-
                     plan["user_message"] = original_task
 
 
-
                     return plan
+
 
 
 
@@ -187,15 +183,28 @@ class PlannerAgent(BaseAgent):
 
 
 
+            tool_descriptions = None
+
+
+            if self.registry:
+
+
+                tool_descriptions = self.registry.get_tool_descriptions()
+
+
+
 
 
             plan = create_llm_plan(
 
                 self.llm,
 
-                original_task
+                original_task,
+
+                tool_descriptions
 
             )
+
 
 
 

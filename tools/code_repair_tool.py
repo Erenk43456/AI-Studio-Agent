@@ -1,6 +1,6 @@
+from pathlib import Path
+
 from tools.formatter_tool import FormatterTool
-
-
 
 
 
@@ -9,15 +9,20 @@ class CodeRepairTool:
 
     def __init__(
         self,
-        llm
+        llm,
+        workspace=None
     ):
+
 
         self.llm = llm
 
-        self.formatter = FormatterTool()
+        self.workspace = workspace
 
+        self.formatter = FormatterTool(
 
-
+            workspace
+            
+        )
 
 
 
@@ -27,17 +32,83 @@ class CodeRepairTool:
     ):
 
 
-        code = plan
+        if isinstance(plan, dict):
 
 
-        if isinstance(code, dict):
+            filename = plan.get(
+                "filename"
+            )
+
+
+            if filename and self.workspace:
+
+
+                file_path = (
+
+                    Path(self.workspace)
+                    /
+                    filename
+
+                )
+
+
+                if file_path.exists():
+
+
+                    code = file_path.read_text(
+
+                        encoding="utf-8"
+
+                    )
+
+
+                    result = self.repair_code(
+
+                        code
+
+                    )
+
+
+                    if result.get("success"):
+
+
+                        file_path.write_text(
+
+                            result["code"],
+
+                            encoding="utf-8"
+
+                        )
+
+
+                        result["file"] = str(
+
+                            file_path
+
+                        )
+
+
+                    return result
+
+
+
 
             code = (
-                code.get("code")
-                or code.get("input")
-                or code.get("context")
+
+                plan.get("code")
+                or plan.get("input")
+                or plan.get("context")
                 or ""
+
             )
+
+
+        else:
+
+
+            code = plan
+
+
 
 
 
@@ -76,7 +147,6 @@ class CodeRepairTool:
 
 
 
-
         prompt = f"""
 You are a Python code repair assistant.
 
@@ -91,8 +161,6 @@ Code:
 
 {code}
 """
-
-
 
 
 

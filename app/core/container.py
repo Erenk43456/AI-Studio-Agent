@@ -7,11 +7,13 @@ from tools.formatter_tool import FormatterTool
 from tools.code_repair_tool import CodeRepairTool
 from tools.code_analyzer_tool import CodeAnalyzerTool
 from tools.repository_analyzer import RepositoryAnalyzerTool
+from tools.code_writer_tool import CodeWriterTool
 
 
 from agents.planner_agent import PlannerAgent
 from agents.tool_agent import ToolAgent
 from agents.chat_agent import ChatAgent
+from agents.code_agent import CodeAgent
 
 
 from memory.memory import Memory
@@ -23,6 +25,7 @@ from config.config_manager import ConfigManager
 
 
 from app.core.orchestrator.orchestrator import Orchestrator
+from app.core.workspace.workspace_manager import WorkspaceManager
 
 
 
@@ -48,8 +51,29 @@ class AIContainer:
 
         self.memory = Memory()
 
-
         self.chat_manager = ChatManager()
+
+
+
+        #
+        # Workspace
+        #
+
+        self.workspace = WorkspaceManager(
+            r"C:\AI-Studio"
+        )
+
+
+        self.workspace_path = (
+            self.workspace.create_workspace()
+        )
+
+
+        print(
+            "WORKSPACE:",
+            self.workspace_path
+        )
+
 
 
 
@@ -58,22 +82,19 @@ class AIContainer:
         #
 
         self.llm = LLMProvider(
-
             self.config
-
         )
 
 
 
 
+
         #
-        # Tools
+        # Registry
         #
 
         self.registry = ToolRegistry()
 
-
-        self._register_tools()
 
 
 
@@ -83,32 +104,43 @@ class AIContainer:
         #
 
         self.planner = PlannerAgent(
-
             self.llm,
-
-            self.memory
-
+            self.memory,
+            self.registry
         )
 
 
 
         self.chat_agent = ChatAgent(
-
             self.llm,
-
             self.memory
-
         )
 
 
 
         self.tool_agent = ToolAgent(
-
             self.registry,
-
             self.memory
-
         )
+
+
+
+        self.code_agent = CodeAgent(
+            self.llm,
+            self.registry,
+            self.memory,
+            self.workspace_path
+        )
+
+
+
+
+
+        #
+        # Tools
+        #
+
+        self._register_tools()
 
 
 
@@ -123,9 +155,13 @@ class AIContainer:
             self.planner,
 
             {
+
                 "chat": self.chat_agent,
 
-                "tool": self.tool_agent
+                "tool": self.tool_agent,
+
+                "code": self.code_agent
+
             }
 
         )
@@ -135,16 +171,62 @@ class AIContainer:
 
 
 
+
+
+
     def _register_tools(self):
+
+
+
+        self.registry.register(
+
+            "code",
+
+            self.code_agent,
+
+            {
+
+                "description":
+                "Autonomous software engineering agent.",
+
+                "purpose":
+                "Analyze architecture and create implementation plans.",
+
+                "safe": False,
+
+                "modifies_files": True
+
+            }
+
+        )
+
+
+
 
 
         self.registry.register(
 
             "calculator",
 
-            Calculator()
+            Calculator(),
+
+            {
+
+                "description":
+                "Perform calculations.",
+
+                "purpose":
+                "Math operations.",
+
+                "safe": True,
+
+                "modifies_files": False
+
+            }
 
         )
+
+
 
 
 
@@ -152,9 +234,28 @@ class AIContainer:
 
             "file",
 
-            FileTool()
+            FileTool(
+
+                self.workspace_path
+
+            ),
+
+            {
+
+                "description":
+                "Workspace file operations.",
+
+                "purpose":
+                "Read and modify workspace files.",
+
+                "safe": False,
+
+                "modifies_files": True
+
+            }
 
         )
+
 
 
 
@@ -166,12 +267,34 @@ class AIContainer:
         )
 
 
+        memory_metadata = {
+
+
+            "description":
+            "Memory management.",
+
+
+            "purpose":
+            "Store and retrieve information.",
+
+
+            "safe": True,
+
+
+            "modifies_files": False
+
+        }
+
+
+
 
         self.registry.register(
 
             "memory",
 
-            memory_tool
+            memory_tool,
+
+            memory_metadata
 
         )
 
@@ -180,7 +303,9 @@ class AIContainer:
 
             "memory_save",
 
-            memory_tool
+            memory_tool,
+
+            memory_metadata
 
         )
 
@@ -189,9 +314,13 @@ class AIContainer:
 
             "memory_get",
 
-            memory_tool
+            memory_tool,
+
+            memory_metadata
 
         )
+
+
 
 
 
@@ -201,9 +330,34 @@ class AIContainer:
 
             "formatter",
 
-            FormatterTool()
+            FormatterTool(
+
+                self.workspace_path
+
+            ),
+
+            {
+
+                "description":
+                "Format workspace code.",
+
+
+                "purpose":
+                "Code formatting.",
+
+
+                "safe": True,
+
+
+                "modifies_files": True
+
+            }
 
         )
+
+
+
+
 
 
 
@@ -214,11 +368,34 @@ class AIContainer:
 
             CodeRepairTool(
 
-                self.llm
+                self.llm,
 
-            )
+                self.workspace_path
+
+            ),
+
+            {
+
+                "description":
+                "Repair workspace code.",
+
+
+                "purpose":
+                "Fix programming errors.",
+
+
+                "safe": False,
+
+
+                "modifies_files": True
+
+            }
 
         )
+
+
+
+
 
 
 
@@ -228,11 +405,72 @@ class AIContainer:
 
             CodeAnalyzerTool(
 
-                self.llm
+                self.llm,
 
-            )
+                self.workspace_path
+
+            ),
+
+            {
+
+                "description":
+                "Analyze workspace source code.",
+
+
+                "purpose":
+                "Review code.",
+
+
+                "safe": True,
+
+
+                "modifies_files": False
+
+            }
 
         )
+
+
+
+
+
+
+
+        self.registry.register(
+
+            "code_writer",
+
+            CodeWriterTool(
+
+                self.llm,
+
+                self.workspace_path
+
+            ),
+
+            {
+
+                "description":
+                "Apply CodeAgent implementation changes.",
+
+
+                "purpose":
+                "Generate and write code modifications.",
+
+
+                "safe": False,
+
+
+                "modifies_files": True
+
+            }
+
+        )
+
+
+
+
+
 
 
 
@@ -240,6 +478,27 @@ class AIContainer:
 
             "repository_analyzer",
 
-            RepositoryAnalyzerTool()
+            RepositoryAnalyzerTool(
+
+                self.workspace_path
+
+            ),
+
+            {
+
+                "description":
+                "Analyze workspace repository.",
+
+
+                "purpose":
+                "Understand project structure.",
+
+
+                "safe": True,
+
+
+                "modifies_files": False
+
+            }
 
         )

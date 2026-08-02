@@ -1,7 +1,38 @@
+import re
+
+
+
+
 def parse_file(task):
 
 
-    if "oluştur" in task or "oluştur" in task:
+    text = task.lower()
+
+
+
+    filename = extract_filename(task)
+
+
+    if not filename:
+
+        return None
+
+
+
+
+
+    #
+    # CREATE
+    #
+
+    if any(word in text for word in [
+
+        "oluştur",
+        "yarat",
+        "meydana getir"
+
+    ]):
+
 
         return {
 
@@ -9,14 +40,35 @@ def parse_file(task):
 
             "action": "create",
 
-            "filename": extract_filename(task),
+            "filename": filename,
 
             "content": ""
 
         }
 
 
-    if "oku" in task:
+
+
+
+
+
+
+    #
+    # READ
+    #
+
+    if any(word in text for word in [
+
+        "oku",
+        "göster",
+        "söyle",
+        "içeriğini",
+        "bak",
+        "incele",
+        "görüntüle"
+
+    ]):
+
 
         return {
 
@@ -24,24 +76,71 @@ def parse_file(task):
 
             "action": "read",
 
-            "filename": extract_filename(task)
+            "filename": filename
 
         }
 
 
-    if "düzenle" in task or "güncelle" in task:
+
+
+
+
+
+
+
+    #
+    # WRITE / EDIT
+    #
+
+    if any(word in text for word in [
+
+        "düzenle",
+        "güncelle",
+        "yaz",
+        "ekle",
+        "değiştir",
+        "sil"
+
+    ]):
+
 
         return {
 
-            "tool": "file",
 
-            "action": "write",
+            "steps": [
 
-            "filename": extract_filename(task),
+                {
 
-            "content": ""
+                    "tool": "file",
+
+                    "action": "read",
+
+                    "filename": filename
+
+                },
+
+
+                {
+
+                    "tool": "file",
+
+                    "action": "write",
+
+                    "filename": filename,
+
+                    "content": "",
+
+                    "input": task
+
+                }
+
+            ]
 
         }
+
+
+
+
 
 
     return None
@@ -49,17 +148,36 @@ def parse_file(task):
 
 
 
+
+
+
+
+
+
+
 def extract_filename(task):
 
 
-    words = task.split()
+    match = re.search(
+
+        r"[\w/\\.-]+\.py",
+
+        task
+
+    )
 
 
-    for word in words:
+    if match:
 
-        if ".py" in word:
 
-            return word.strip("., ")
+        return match.group(0).replace(
+
+            "\\",
+
+            "/"
+
+        )
+
 
 
     return None
