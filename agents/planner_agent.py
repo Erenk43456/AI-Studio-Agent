@@ -12,6 +12,7 @@ from agents.planner.llm_planner import create_llm_plan
 from agents.planner.code_analyzer_parser import parse_code_analyzer
 from agents.planner.repository_analyzer_parser import parse_repository_analyzer
 from agents.planner.file_parser import parse_file
+from agents.planner.code_parser import parse_code
 
 
 
@@ -71,48 +72,48 @@ class PlannerAgent(BaseAgent):
             parsers = [
 
                 (
-                    "file",
-                    parse_file
+                    "code",
+                    parse_code
                 ),
+
                 (
                     "code_repair",
                     parse_code_repair
                 ),
-
-
-                (
-                    "formatter",
-                    parse_formatter
-                ),
-
-
-                (
-                    "calculator",
-                    parse_calculator
-                ),
-
-
-                (
-                    "memory",
-                    parse_memory
-                ),
-
-
-                (
-                    "greeting",
-                    parse_greeting
-                ),
-
 
                 (
                     "code_analyzer",
                     parse_code_analyzer
                 ),
 
-
                 (
                     "repository_analyzer",
                     parse_repository_analyzer
+                ),
+
+                (
+                    "file",
+                    parse_file
+                ),
+
+                (
+                    "formatter",
+                    parse_formatter
+                ),
+
+                (
+                    "calculator",
+                    parse_calculator
+                ),
+
+                (
+                    "memory",
+                    parse_memory
+                ),
+
+                (
+                    "greeting",
+                    parse_greeting
                 )
 
             ]
