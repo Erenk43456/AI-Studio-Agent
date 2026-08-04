@@ -1,29 +1,74 @@
 def parse_repository_analyzer(task):
 
-    task = task.lower().strip()
+    task_lower = task.lower().strip()
 
-    keywords = [
-        "repository analyze",
-        "analyze repository",
-        "analyze this repository",
-        "analyze repo",
-        "repository analizi",
-        "repo analiz",
-        "repo incele",
-        "repository incele",
-        "depo analizi",
-        "repository analiz et",
-        "repo analiz et",
-        "projeyi analiz et",
+
+    project_keywords = [
+
+        "proje",
+        "project",
+        "repository",
+        "repo",
+        "mimari",
+        "architecture",
+        "sistem",
+        "uygulama"
+
     ]
 
-    for word in keywords:
 
-        if word in task:
+    analysis_keywords = [
 
-            return {
-                "tool": "repository_analyzer",
-                "action": "analyze"
-            }
+        "analiz",
+        "incele",
+        "değerlendir",
+        "gözden geçir",
+        "analyze",
+        "review"
+
+    ]
+
+
+    has_project = any(
+
+        word in task_lower
+
+        for word in project_keywords
+
+    )
+
+
+    has_analysis = any(
+
+        word in task_lower
+
+        for word in analysis_keywords
+
+    )
+
+
+
+    if has_project and has_analysis:
+
+
+        return {
+
+            "steps": [
+
+                {
+
+                    "tool": "repository_analyzer",
+
+                    "action": "analyze",
+
+                    "input": task
+
+                }
+
+            ]
+
+        }
+
+
 
     return None

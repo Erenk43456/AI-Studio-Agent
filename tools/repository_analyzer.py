@@ -137,19 +137,125 @@ class RepositoryAnalyzerTool:
         "tool registry, GUI layout, and known issues."
     )
 
-    def __init__(self, root="."):
+    def __init__(
+        self,
+        root=".",
+        memory=None,
+        project_memory=None
+    ):
+
         self.root = root
+
+        self.memory = memory
+
+        self.project_memory = project_memory
+
         self.logger = AppLogger()
 
     def execute(self, plan):
         try:
-            action = plan.get("action", "analyze")
+
+            action = plan.get(
+                "action", 
+                "analyze"
+            )
+
+
             if action != "analyze":
+
                 return "Unsupported repository action."
-            root = Path(plan.get("path") or self.root)
-            result = self.analyze(root)
+
+            
+            root = Path(
+                plan.get("path") 
+                or self.root
+            )
+
+
+            result = self.analyze(
+                root
+            )
+
+
             if isinstance(result, str):
                 return result
+
+            
+            if self.project_memory:
+
+                self.logger.info(
+                    "Saving repository analysis to project memory."
+                )
+
+
+                self.project_memory.update_project_info(
+
+                    {
+                        "last_repository_analysis": 
+                        str(datetime.now()),
+
+                        "repository_analyzed":
+                        True
+                    }
+                )
+
+
+                self.project_memory.update_architecture(
+
+                "repository_analysis",
+
+                    {
+
+                        "generated_at": result.generated_at,
+
+                        "overview": result.overview,
+
+                        "modules": result.module_roles,
+
+                        "definitions": result.definitions,
+
+                        "tools": result.tools,
+
+                        "registry": result.registry_names,
+
+                        "checks": result.wiring_checks,
+
+                        "issues": result.issues
+
+
+                    }
+                )
+
+                for path, definitions in result.definitions.items():
+
+                    self.project_memory.add_file(
+
+                        path, 
+
+                        {
+
+
+                            "type":
+                            "python_module",
+
+
+                            "definitions":
+                            definitions
+
+
+                        }
+
+                    )
+
+                for tool in result.tools:
+
+                    self.project_memory.add_file(
+
+                        tool["file"],
+
+                        tool
+
+                    )
             return RepositoryReportFormatter.render(result)
         except Exception as error:
             self.logger.error(f"Repository analysis error: {error}")

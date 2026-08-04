@@ -13,6 +13,7 @@ from agents.planner.code_analyzer_parser import parse_code_analyzer
 from agents.planner.repository_analyzer_parser import parse_repository_analyzer
 from agents.planner.file_parser import parse_file
 from agents.planner.code_parser import parse_code
+from agents.planner.chat_parser import parse_chat
 
 
 
@@ -72,18 +73,8 @@ class PlannerAgent(BaseAgent):
             parsers = [
 
                 (
-                    "code",
-                    parse_code
-                ),
-
-                (
                     "code_repair",
                     parse_code_repair
-                ),
-
-                (
-                    "code_analyzer",
-                    parse_code_analyzer
                 ),
 
                 (
@@ -92,32 +83,21 @@ class PlannerAgent(BaseAgent):
                 ),
 
                 (
+                    "code_analyzer",
+                    parse_code_analyzer
+                ),
+
+                (
                     "file",
                     parse_file
                 ),
 
                 (
-                    "formatter",
-                    parse_formatter
+                    "code",
+                    parse_code
                 ),
 
-                (
-                    "calculator",
-                    parse_calculator
-                ),
-
-                (
-                    "memory",
-                    parse_memory
-                ),
-
-                (
-                    "greeting",
-                    parse_greeting
-                )
-
-            ]
-
+            ]   
 
 
 

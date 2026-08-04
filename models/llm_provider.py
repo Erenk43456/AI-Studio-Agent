@@ -39,12 +39,18 @@ class LLMProvider:
 
     def generate(
         self,
-        prompt
+        prompt,
+        max_tokens=None,
+        temperature=None,
+        timeout=None
     ):
 
 
         return self.llm.generate(
-            prompt
+            prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            timeout=timeout
         )
 
 

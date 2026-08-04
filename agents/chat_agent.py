@@ -13,7 +13,8 @@ class ChatAgent(BaseAgent):
         self,
         llm,
         memory=None,
-        conversation=None
+        conversation=None,
+        project_memory=None
     ):
 
 
@@ -30,6 +31,8 @@ class ChatAgent(BaseAgent):
         self.llm = llm
 
         self.conversation = conversation
+
+        self.project_memory = project_memory
 
 
         self.logger = AppLogger()
@@ -77,7 +80,7 @@ class ChatAgent(BaseAgent):
 
         conversation_context = ""
 
-
+        project_context = ""
 
 
 
@@ -171,9 +174,33 @@ class ChatAgent(BaseAgent):
                 )
 
 
+        if self.project_memory:
 
 
+            try:
 
+
+                context = self.project_memory.get_context(
+                    message
+                )
+
+
+                if context:
+
+
+                    project_context = str(
+                        context
+                    )
+
+
+            except Exception as error:
+
+
+                self.logger.error(
+
+                    f"Project memory read error: {error}"
+
+                )
 
 
 
@@ -202,6 +229,10 @@ Previous conversation:
 
 {conversation_context}
 
+
+Project knowledge:
+
+{project_context}
 
 
 Current user message:

@@ -15,68 +15,52 @@ class APILLM:
 
         self.config = config
 
-
         self.logger = AppLogger()
 
 
 
         self.url = self.config.get(
-
             "api_url",
-
             ""
-
         )
-
 
 
         self.model = self.config.get(
-
             "api_model",
-
             ""
-
         )
 
 
-
         self.api_key = self.config.get(
-
             "api_key",
-
             ""
-
         )
 
 
 
         self.temperature = self.config.get(
-
             "temperature",
-
             0.3
+        )
 
+
+        self.num_predict = self.config.get(
+            "num_predict",
+            1200
         )
 
 
 
-        self.num_predict = self.config.get(
-
-            "num_predict",
-
-            1200
-
+        self.timeout = self.config.get(
+            "api_timeout",
+            60
         )
 
 
 
         self.logger.info(
-
             f"API LLM initialized: {self.model}"
-
         )
-
-
 
 
 
@@ -84,7 +68,10 @@ class APILLM:
 
     def generate(
         self,
-        prompt
+        prompt,
+        max_tokens=None,
+        temperature=None,
+        timeout=None
     ):
 
 
@@ -94,15 +81,18 @@ class APILLM:
             if not self.url:
 
 
-                return "LLM_ERROR: API URL missing."
+                return (
+                    "LLM_ERROR: API URL missing."
+                )
 
 
 
             if not self.model:
 
 
-                return "LLM_ERROR: API model missing."
-
+                return (
+                    "LLM_ERROR: API model missing."
+                )
 
 
 
@@ -110,12 +100,13 @@ class APILLM:
 
             headers = {
 
-
-                "Content-Type":
-
-                "application/json"
+                "Authorization": f"Bearer {self.api_key}",
+                "Accept": "application/json",
+                "Content-Type": "application/json"
 
             }
+
+
 
 
 
@@ -133,6 +124,88 @@ class APILLM:
 
 
 
+
+            payload = {
+
+
+                "model": self.model,
+
+
+
+                "messages": [
+
+
+                    {
+
+
+                        "role": "user",
+
+
+                        "content": prompt
+
+
+                    }
+
+
+                ],
+
+
+
+                "temperature": (
+
+                    temperature
+
+                    if temperature is not None
+
+                    else 1
+
+                ),
+
+
+
+                "max_tokens": (
+
+                    max_tokens
+
+                    if max_tokens is not None
+
+                    else 16384
+
+                ),
+
+                "top_p": 1,
+                "stream": False,
+                "seed": 0
+
+            }
+
+
+
+
+
+
+            request_timeout = (
+
+                timeout
+
+                if timeout is not None
+
+                else self.timeout
+
+            )
+
+
+
+
+
+            self.logger.info(
+                "Sending request to NVIDIA NIM"
+            )
+
+
+
+
+
             response = requests.post(
 
 
@@ -142,45 +215,44 @@ class APILLM:
                 headers=headers,
 
 
-                json={
+                json=payload,
 
 
-                    "model": self.model,
+                timeout=request_timeout
 
-
-                    "messages": [
-
-
-                        {
-
-
-                            "role": "user",
-
-
-                            "content": prompt
-
-                        }
-
-                    ],
-
-
-                    "temperature": self.temperature,
-
-
-                    "max_tokens": self.num_predict
-
-
-                },
-
-
-                timeout=120
 
             )
 
 
 
 
-            response.raise_for_status()
+
+
+            if response.status_code != 200:
+
+
+                self.logger.error(
+
+                    f"NVIDIA API Error STATUS: {response.status_code}"
+
+                )
+
+                self.logger.error(
+                    
+                    f"NVIDIA API BODY: {response.text}"
+
+                )
+
+
+                return (
+
+                    f"LLM_ERROR: HTTP {response.status_code}: {response.text}"
+
+                )
+
+
+
+
 
 
 
@@ -188,25 +260,49 @@ class APILLM:
 
 
 
-            return data.get(
 
-                "choices",
 
-                [{}]
 
-            )[0].get(
+            result = (
 
-                "message",
+                data
 
-                {}
+                .get(
+                    "choices",
+                    [{}]
+                )[0]
 
-            ).get(
+                .get(
+                    "message",
+                    {}
+                )
 
-                "content",
+                .get(
+                    "content",
+                    ""
+                )
 
-                ""
+            )
 
-            ).strip()
+
+
+
+
+            if not result:
+
+
+                return (
+
+                    "LLM_ERROR: Empty response."
+
+                )
+
+
+
+
+
+            return result.strip()
+
 
 
 
@@ -216,13 +312,17 @@ class APILLM:
 
 
             self.logger.error(
-
                 "API request timeout."
+            )
+
+
+            return (
+
+                "LLM_ERROR: API timeout."
 
             )
 
 
-            return "LLM_ERROR: API timeout."
 
 
 
@@ -238,7 +338,13 @@ class APILLM:
             )
 
 
-            return f"LLM_ERROR: {error}"
+            return (
+
+                f"LLM_ERROR: {error}"
+
+            )
+
+
 
 
 
@@ -254,4 +360,8 @@ class APILLM:
             )
 
 
-            return f"LLM_ERROR: {error}"
+            return (
+
+                f"LLM_ERROR: {error}"
+
+            )

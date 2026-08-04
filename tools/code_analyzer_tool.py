@@ -1,8 +1,29 @@
+import json
+import re
 from pathlib import Path
 
+from app.core.logger import AppLogger
 
 
 class CodeAnalyzerTool:
+    """
+    Static and AI based Python code analyzer.
+
+    Responsibilities:
+    - Read workspace files
+    - Analyze Python code
+    - Return structured JSON analysis
+    """
+
+
+    name = "code_analyzer"
+
+
+    description = (
+        "Analyzes Python code for syntax, logic, "
+        "security and architecture issues."
+    )
+
 
 
     def __init__(
@@ -11,14 +32,12 @@ class CodeAnalyzerTool:
         workspace=None
     ):
 
-
         self.llm = llm
-
         self.workspace = workspace
+        self.logger = AppLogger()
 
-
-
-
+        # Token kontrolü için
+        self.max_code_length = 12000
 
 
 
@@ -28,27 +47,40 @@ class CodeAnalyzerTool:
     ):
 
 
-        if isinstance(plan, dict):
+        try:
 
 
-            filename = plan.get(
-                "filename"
-            )
+            if isinstance(plan, dict):
 
 
-            if filename and self.workspace:
-
-
-                file_path = (
-
-                    Path(self.workspace)
-                    /
-                    filename
-
+                filename = plan.get(
+                    "filename",
+                    ""
                 )
 
 
-                if file_path.exists():
+                if filename and self.workspace:
+
+
+                    file_path = (
+                        Path(self.workspace)
+                        /
+                        filename
+                    )
+
+
+                    if not file_path.exists():
+
+                        return {
+
+                            "success": False,
+
+                            "error": "File not found",
+
+                            "file": filename
+
+                        }
+
 
 
                     code = file_path.read_text(
@@ -59,16 +91,12 @@ class CodeAnalyzerTool:
 
 
                     result = self.analyze_code(
-
                         code
-
                     )
 
 
                     result["file"] = str(
-
                         file_path
-
                     )
 
 
@@ -76,37 +104,47 @@ class CodeAnalyzerTool:
 
 
 
+                code = (
+
+                    plan.get("code")
+                    or
+                    plan.get("context")
+                    or
+                    plan.get("content")
+                    or ""
+
+                )
 
 
-            code = (
+            else:
 
-                plan.get("code")
-                or plan.get("input")
-                or plan.get("context")
-                or ""
+                code = str(plan)
 
+
+
+            return self.analyze_code(
+                code
             )
 
 
 
-        else:
+        except Exception as error:
 
 
-            code = plan
+            self.logger.error(
+
+                f"Analyzer execution error: {error}"
+
+            )
 
 
+            return {
 
+                "success": False,
 
+                "error": str(error)
 
-        return self.analyze_code(
-
-            code
-
-        )
-
-
-
-
+            }
 
 
 
@@ -125,63 +163,120 @@ class CodeAnalyzerTool:
 
                 "success": False,
 
-                "message": "Code is empty."
+                "error": "Code is empty."
 
             }
 
 
 
+        #
+        # Büyük dosya koruması
+        #
+
+        if len(code) > self.max_code_length:
+
+
+            code = code[:self.max_code_length]
+
+
+            self.logger.warning(
+
+                "Code truncated because it was too large."
+
+            )
 
 
 
 
 
         prompt = f"""
-You are a professional Python code analyzer.
+
+You are a senior Python software architect.
 
 Analyze this Python code.
 
-Return a detailed report containing:
+Return ONLY JSON.
+No markdown.
+No explanation outside JSON.
 
-1. Syntax errors
-2. Logical errors
-3. Security problems
-4. Performance issues
-5. Code quality improvements
+Required JSON format:
 
-Code:
+{{
+    "summary": "",
+    "syntax_errors": [],
+    "logical_errors": [],
+    "security_issues": [],
+    "performance_issues": [],
+    "architecture_issues": [],
+    "improvements": [],
+    "risk_level": "low"
+}}
+
+
+Python code:
+
+----------------
 
 {code}
+
+----------------
+
 """
 
 
 
+        try:
 
 
-        response = self.llm.generate(
-
-            prompt
-
-        )
-
-
-
-
+            response = self.llm.generate(
+                prompt,
+                max_tokens=800,
+                temperature=0.2,
+                timeout=60
+            )
 
 
 
-        if response.startswith(
+            if not response:
 
-            "LLM_ERROR"
 
-        ):
+                return {
+
+                    "success": False,
+
+                    "error": "Empty LLM response."
+
+                }
+
+
+
+            if response.startswith(
+                "LLM_ERROR"
+            ):
+
+
+                return {
+
+                    "success": False,
+
+                    "error": response
+
+                }
+
+
+
+
+            analysis = self.clean_json(
+                response
+            )
+
 
 
             return {
 
-                "success": False,
+                "success": True,
 
-                "message": response
+                "analysis": analysis
 
             }
 
@@ -189,12 +284,100 @@ Code:
 
 
 
+        except Exception as error:
 
 
-        return {
+            self.logger.error(
 
-            "success": True,
+                f"Code analysis error: {error}"
 
-            "analysis": response
+            )
 
-        }
+
+            return {
+
+                "success": False,
+
+                "error": str(error)
+
+            }
+
+
+
+
+
+    def clean_json(
+        self,
+        text
+    ):
+
+
+        if not text:
+
+            return {}
+
+
+
+        text = text.strip()
+
+
+
+        #
+        # Markdown temizleme
+        #
+
+        text = text.replace(
+            "```json",
+            ""
+        )
+
+
+        text = text.replace(
+            "```",
+            ""
+        )
+
+
+
+        #
+        # JSON bloğunu bul
+        #
+
+        match = re.search(
+
+            r"\{.*\}",
+
+            text,
+
+            re.DOTALL
+
+        )
+
+
+
+        if match:
+
+            text = match.group()
+
+
+
+        try:
+
+
+            return json.loads(
+                text
+            )
+
+
+
+        except Exception:
+
+
+            return {
+
+
+                "raw_response": text,
+
+                "parse_error": True
+
+            }

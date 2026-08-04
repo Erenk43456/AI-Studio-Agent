@@ -1,12 +1,19 @@
-import os
+from pathlib import Path
 import shutil
-from datetime import datetime
+import uuid
+import os
+import tempfile
 
 from app.core.logger import AppLogger
 
 
-
 class FileTool:
+
+    name = "file"
+
+    description = (
+        "Secure workspace file operations."
+    )
 
 
     def __init__(
@@ -14,36 +21,23 @@ class FileTool:
         workspace=None
     ):
 
-
         self.logger = AppLogger()
-
 
         if workspace:
 
-            self.base_path = os.path.abspath(
+            self.base_path = Path(
                 workspace
-            )
-
+            ).resolve()
 
         else:
 
-            self.base_path = os.path.abspath(
-                os.getcwd()
-            )
+            self.base_path = Path.cwd().resolve()
 
 
 
         self.logger.info(
-
             f"FileTool workspace: {self.base_path}"
-
         )
-
-
-
-
-
-
 
 
 
@@ -55,73 +49,56 @@ class FileTool:
 
         if not isinstance(plan, dict):
 
-            return "Invalid file request."
+            return {
+
+                "success": False,
+
+                "error": "Invalid file request."
+
+            }
 
 
 
         action = plan.get(
-
             "action",
-
             "read"
-
         )
-
-
 
 
 
         if action == "create":
 
-
             return self.create_file(
-
                 plan.get("filename"),
-
-                plan.get("content")
-
+                plan.get("content", "")
             )
-
-
 
 
 
         if action == "write":
 
-
             return self.write_file(
-
                 plan.get("filename"),
-
                 plan.get("content")
-
             )
-
-
 
 
 
         if action == "read":
 
-
             return self.read_file(
-
                 plan.get("filename")
-
             )
 
 
 
+        return {
 
+            "success": False,
 
-        return "Invalid file action."
+            "error": f"Unknown action: {action}"
 
-
-
-
-
-
-
+        }
 
 
 
@@ -139,63 +116,31 @@ class FileTool:
 
 
 
-        filename = filename.replace(
+        try:
 
-            "/",
+            path = (
+                self.base_path
+                /
+                Path(filename)
+            ).resolve()
 
-            os.sep
-
-        )
 
 
-
-        path = os.path.abspath(
-
-            os.path.join(
-
-                self.base_path,
-
-                filename
-
+            path.relative_to(
+                self.base_path
             )
 
-        )
+
+
+            return path
 
 
 
-        workspace = os.path.abspath(
-
-            self.base_path
-
-        )
-
-
-
-        if not path.startswith(
-
-            workspace
-
-        ):
-
+        except ValueError:
 
             raise PermissionError(
-
                 "Access outside workspace denied."
-
             )
-
-
-
-        return path
-
-
-
-
-
-
-
-
-
 
 
 
@@ -210,92 +155,72 @@ class FileTool:
 
         try:
 
-
             path = self.get_path(
-
                 filename
-
             )
 
 
+            if path is None:
 
-            if not path:
+                return {
 
-                return "Filename missing."
+                    "success": False,
 
+                    "error": "Filename missing."
 
-
-
-
-            folder = os.path.dirname(
-
-                path
-
-            )
+                }
 
 
 
-            os.makedirs(
-
-                folder,
-
+            path.parent.mkdir(
+                parents=True,
                 exist_ok=True
-
             )
 
 
 
-
-
-            with open(
-
+            self.atomic_write(
                 path,
-
-                "w",
-
-                encoding="utf-8"
-
-            ) as file:
-
-
-                file.write(
-
-                    content or ""
-
-                )
-
-
+                content or ""
+            )
 
 
 
             self.logger.info(
-
                 f"File created: {path}"
-
             )
 
 
 
-            return f"File created: {path}"
+            return {
 
+                "success": True,
 
+                "action": "create",
 
+                "file": str(path),
+
+                "message": "File created."
+
+            }
 
 
 
         except Exception as error:
 
 
-            return f"File error: {error}"
+            self.logger.error(
+                f"Create error: {error}"
+            )
 
 
+            return {
 
+                "success": False,
 
+                "error": str(error)
 
-
-
-
-
+            }
 
 
 
@@ -307,56 +232,32 @@ class FileTool:
     ):
 
 
-        if not os.path.exists(path):
+        if not path.exists():
 
             return None
 
 
 
-        backup_path = (
-
-            path +
-
-            ".backup_" +
-
-            datetime.now().strftime(
-
-                "%Y%m%d_%H%M%S"
-
-            )
-
+        backup = Path(
+            str(path)
+            +
+            f".backup_{uuid.uuid4().hex}"
         )
 
 
 
         shutil.copy2(
-
             path,
-
-            backup_path
-
+            backup
         )
-
 
 
         self.logger.info(
-
-            f"Backup created: {backup_path}"
-
+            f"Backup created: {backup}"
         )
 
 
-
-        return backup_path
-
-
-
-
-
-
-
-
-
+        return backup
 
 
 
@@ -373,112 +274,105 @@ class FileTool:
 
 
             path = self.get_path(
-
                 filename
-
             )
 
 
 
-            if not path:
+            if path is None:
 
-                return "Filename missing."
+                return {
+
+                    "success": False,
+
+                    "error": "Filename missing."
+
+                }
+
 
 
 
             if content is None:
 
-                return "Write blocked: empty content."
+                return {
 
+                    "success": False,
 
+                    "error": "Empty content blocked."
 
-            if not content.strip():
-
-                return "Write canceled: empty content."
+                }
 
 
 
             if "<existing content>" in content:
 
-                return "Write blocked: incomplete generated content."
+
+                return {
+
+                    "success": False,
+
+                    "error":
+                    "Incomplete generated content."
+
+                }
+
 
 
 
             backup = self.create_backup(
-
                 path
-
             )
 
 
 
-            with open(
-
+            self.atomic_write(
                 path,
-
-                "w",
-
-                encoding="utf-8"
-
-            ) as file:
-
-
-                file.write(
-
-                    content
-
-                )
-
-
+                content
+            )
 
 
 
             self.logger.info(
-
                 f"File written: {path}"
-
             )
 
 
 
-            return (
+            return {
 
-                f"File updated: {path}"
+                "success": True,
 
-                +
+                "action": "write",
 
-                (
+                "file": str(path),
 
-                    f" | Backup: {backup}"
-
+                "backup":
+                    str(backup)
                     if backup
+                    else None,
 
-                    else ""
+                "message":
+                    "File updated."
 
-                )
-
-            )
-
-
-
-
-
+            }
 
 
 
         except Exception as error:
 
 
-            return f"File error: {error}"
+            self.logger.error(
+                f"Write error: {error}"
+            )
 
 
+            return {
 
+                "success": False,
 
+                "error": str(error)
 
-
-
-
-
+            }
 
 
 
@@ -494,50 +388,112 @@ class FileTool:
 
 
             path = self.get_path(
-
                 filename
-
             )
 
 
 
-            if not path:
+            if path is None:
 
-                return "Filename missing."
+                return {
+
+                    "success": False,
+
+                    "error": "Filename missing."
+
+                }
 
 
 
 
+            if not path.exists():
 
-            with open(
+                return {
 
-                path,
+                    "success": False,
 
-                "r",
+                    "error":
+                    f"File not found: {filename}"
 
+                }
+
+
+
+
+            content = path.read_text(
                 encoding="utf-8"
-
-            ) as file:
-
-
-                return file.read()
+            )
 
 
 
+            return {
 
+                "success": True,
 
+                "action": "read",
 
+                "file": str(path),
 
-        except FileNotFoundError:
+                "content": content
 
-
-            return f"File not found: {filename}"
-
-
+            }
 
 
 
         except Exception as error:
 
 
-            return f"File error: {error}"
+            return {
+
+                "success": False,
+
+                "error": str(error)
+
+            }
+
+
+
+
+
+    def atomic_write(
+        self,
+        path,
+        content
+    ):
+
+
+        path.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            delete=False,
+            dir=str(path.parent)
+        ) as temp:
+
+
+            temp.write(
+                content
+            )
+
+            temp.flush()
+
+            os.fsync(
+                temp.fileno()
+            )
+
+
+            temp_path = Path(
+                temp.name
+            )
+
+
+
+        os.replace(
+            temp_path,
+            path
+        )

@@ -11,6 +11,7 @@ class Orchestrator:
         agents
     ):
 
+
         self.planner = planner
 
         self.agents = agents
@@ -47,6 +48,7 @@ class Orchestrator:
 
 
 
+
         if not plan:
 
             return "Planner failed to create a plan."
@@ -70,11 +72,13 @@ class Orchestrator:
 
 
 
+
         #
-        # Tek işlem
+        # Direct operations
         #
 
         if not steps:
+
 
 
             if tool_name == "code":
@@ -91,15 +95,14 @@ class Orchestrator:
 
 
 
-                result = agent.run(
-                    message
-                )
-
-
-
                 return self.process_tool_result(
-                    result,
+
+                    agent.run(
+                        message
+                    ),
+
                     conversation
+
                 )
 
 
@@ -144,21 +147,21 @@ class Orchestrator:
             )
 
 
+
             if not agent:
 
                 return "Tool agent not available."
 
 
 
-            result = agent.execute(
-                plan
-            )
-
-
-
             return self.process_tool_result(
-                result,
+
+                agent.execute(
+                    plan
+                ),
+
                 conversation
+
             )
 
 
@@ -170,21 +173,25 @@ class Orchestrator:
 
 
         #
-        # Tek adımlı chat
+        # Single chat step
         #
 
         if (
 
             len(steps) == 1
 
-            and steps[0].get("tool") == "chat"
+            and
+
+            steps[0].get("tool") == "chat"
 
         ):
+
 
 
             agent = self.agents.get(
                 "chat"
             )
+
 
 
             if not agent:
@@ -212,21 +219,25 @@ class Orchestrator:
 
 
         #
-        # Tek adımlı code
+        # Single code step
         #
 
         if (
 
             len(steps) == 1
 
-            and steps[0].get("tool") == "code"
+            and
+
+            steps[0].get("tool") == "code"
 
         ):
+
 
 
             agent = self.agents.get(
                 "code"
             )
+
 
 
             if not agent:
@@ -235,23 +246,22 @@ class Orchestrator:
 
 
 
-            result = agent.run(
-
-                steps[0].get(
-
-                    "input",
-
-                    message
-
-                )
-
-            )
-
-
-
             return self.process_tool_result(
-                result,
+
+                agent.run(
+
+                    steps[0].get(
+
+                        "input",
+
+                        message
+
+                    )
+
+                ),
+
                 conversation
+
             )
 
 
@@ -263,12 +273,13 @@ class Orchestrator:
 
 
         #
-        # Multi step tool workflow
+        # Multi tool workflow
         #
 
         agent = self.agents.get(
             "tool"
         )
+
 
 
         if not agent:
@@ -284,9 +295,14 @@ class Orchestrator:
 
 
         return self.process_tool_result(
+
             result,
+
             conversation
+
         )
+
+
 
 
 
@@ -307,133 +323,60 @@ class Orchestrator:
 
 
         #
-        # Multi step sonuçları
+        # Multi-step results
         #
 
         if isinstance(result, list):
 
 
-            messages = []
-
-
-            has_read_content = False
+            outputs = []
 
 
 
             for item in result:
 
 
+
                 if not isinstance(item, dict):
 
+                    outputs.append(
+                        str(item)
+                    )
+
                     continue
+
+
 
 
 
                 tool_result = item.get(
-                    "result",
-                    ""
+                    "result"
                 )
 
 
 
-                if not isinstance(tool_result, str):
+                if tool_result is None:
 
                     continue
 
 
 
+                outputs.append(
 
-
-
-                #
-                # Read işlemi
-                #
-
-                if item.get("action") == "read":
-
-
-                    has_read_content = True
-
-
-                    messages.append(
+                    self.format_result(
                         tool_result
                     )
 
-
-
-
-
-                #
-                # Update işlemi
-                #
-
-                elif tool_result.startswith(
-                    "File updated:"
-                ):
-
-
-                    messages.append(
-
-                        "Dosya başarıyla güncellendi."
-
-                    )
+                )
 
 
 
 
 
-                #
-                # Create işlemi
-                #
-
-                elif tool_result.startswith(
-                    "File created:"
-                ):
-
-
-                    messages.append(
-
-                        "Dosya başarıyla oluşturuldu."
-
-                    )
-
-
-
-
-
-                #
-                # Diğer sonuçlar
-                #
-
-                else:
-
-
-                    messages.append(
-                        tool_result
-                    )
-
-
-
-
-
-
-            if messages:
-
-
-                #
-                # Read + Write birlikteyse
-                # sadece işlem sonucunu göster
-                #
-
-                if has_read_content and len(messages) > 1:
-
-
-                    return messages[-1]
-
-
+            if outputs:
 
                 return "\n\n".join(
-                    messages
+                    outputs
                 )
 
 
@@ -447,12 +390,215 @@ class Orchestrator:
 
 
 
+        #
+        # Single result
+        #
+
+        return self.format_result(
+            result
+        )
+
+
+
+
+
+
+
+
+
+
+
+
+
+    def format_result(
+        self,
+        result
+    ):
+
+
 
         #
-        # String sonuçlar
+        # Structured dictionary response
         #
 
-        if isinstance(result, str):
+        if isinstance(result, dict):
+
+
+            #
+            # File read result
+            #
+
+            if result.get(
+                "action"
+            ) == "read":
+
+
+
+                return result.get(
+                    "content",
+                    ""
+                )
+
+
+
+
+
+
+
+            #
+            # Successful operation
+            #
+
+            if result.get(
+                "success"
+            ):
+
+
+
+                message = result.get(
+                    "message"
+                )
+
+
+
+                if message:
+
+                    return message
+
+
+
+                return "İşlem başarıyla tamamlandı."
+
+
+
+
+
+
+
+
+
+            #
+            # Code analyzer result
+            #
+
+            if "analysis" in result:
+
+
+
+                analysis = result.get(
+                    "analysis"
+                )
+
+
+
+                if isinstance(
+                    analysis,
+                    dict
+                ):
+
+
+
+                    lines = []
+
+
+
+                    for key,value in analysis.items():
+
+
+                        title = key.replace(
+                            "_",
+                            " "
+                        ).title()
+
+
+
+                        lines.append(
+
+                            f"{title}:\n{value}"
+
+                        )
+
+
+
+                    return "\n\n".join(
+                        lines
+                    )
+
+
+
+                return str(
+                    analysis
+                )
+
+
+
+
+
+
+
+
+
+
+            #
+            # Code writer result
+            #
+
+            if "results" in result:
+
+
+                return str(
+                    result["results"]
+                )
+
+
+
+
+
+
+
+
+
+
+            #
+            # Error
+            #
+
+            if result.get(
+                "error"
+            ):
+
+
+
+                return str(
+                    result["error"]
+                )
+
+
+
+
+
+
+
+            return str(
+                result
+            )
+
+
+
+
+
+
+
+
+
+        #
+        # String response
+        #
+
+        if isinstance(
+            result,
+            str
+        ):
 
 
 
@@ -461,7 +607,11 @@ class Orchestrator:
             ):
 
 
-                return "Dosya başarıyla güncellendi."
+
+                return (
+                    "Dosya başarıyla güncellendi."
+                )
+
 
 
 
@@ -471,83 +621,14 @@ class Orchestrator:
             ):
 
 
-                return "Dosya başarıyla oluşturuldu."
+
+                return (
+                    "Dosya başarıyla oluşturuldu."
+                )
 
 
 
 
-            if result.startswith(
-                "File not found:"
-            ):
-
-                return result
-
-
-
-
-            if result.startswith(
-                "File error:"
-            ):
-
-                return result
-
-
-
-
-            if result.startswith(
-                "Filename missing:"
-            ):
-
-                return result
-
-
-
-
-            if result.startswith(
-                "Tool not found:"
-            ):
-
-                return result
-
-
-
-
-            if result.startswith(
-                "Tool error:"
-            ):
-
-                return result
-
-
-
-
-
-
-            #
-            # Read sonucu
-            #
-
-            if len(result) > 50:
-
-                return result
-
-
-
-
-
-
-
-        #
-        # Chat açıklaması gereken durumlar
-        #
-
-        chat_agent = self.agents.get(
-            "chat"
-        )
-
-
-
-        if not chat_agent:
 
             return result
 
@@ -555,42 +636,8 @@ class Orchestrator:
 
 
 
-        if conversation is not None:
-
-            chat_agent.conversation = conversation
 
 
-
-
-
-
-
-        prompt = f"""
-
-Bir araç çalıştırıldı ve sonuç döndü.
-
-Bu sonucu kullanıcı için anlaşılır bir cevap haline getir.
-
-Kurallar:
-
-- Ham tool çıktısını tekrar yazma.
-- Teknik ama okunabilir açıkla.
-- Gereksiz detay verme.
-- Kullanıcının istediği amaca göre yorumla.
-- Türkçe cevap ver.
-
-
-Tool sonucu:
-
-{result}
-
-
-Açıklama:
-
-"""
-
-
-
-        return chat_agent.respond(
-            prompt
+        return str(
+            result
         )

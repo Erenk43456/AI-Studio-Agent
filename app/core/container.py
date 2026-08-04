@@ -8,6 +8,7 @@ from tools.code_repair_tool import CodeRepairTool
 from tools.code_analyzer_tool import CodeAnalyzerTool
 from tools.repository_analyzer import RepositoryAnalyzerTool
 from tools.code_writer_tool import CodeWriterTool
+from tools.project_memory_tool import ProjectMemoryTool
 
 
 from agents.planner_agent import PlannerAgent
@@ -18,6 +19,7 @@ from agents.code_agent import CodeAgent
 
 from memory.memory import Memory
 from memory.chat_manager import ChatManager
+from memory.project_memory.project_memory import ProjectMemory
 
 
 from models.llm_provider import LLMProvider
@@ -26,6 +28,7 @@ from config.config_manager import ConfigManager
 
 from app.core.orchestrator.orchestrator import Orchestrator
 from app.core.workspace.workspace_manager import WorkspaceManager
+from app.core.workspace.watcher import WorkspaceWatcher
 
 
 
@@ -54,7 +57,6 @@ class AIContainer:
         self.chat_manager = ChatManager()
 
 
-
         #
         # Workspace
         #
@@ -74,7 +76,9 @@ class AIContainer:
             self.workspace_path
         )
 
-
+        self.project_memory = ProjectMemory(
+            self.workspace_path
+        )
 
 
         #
@@ -96,9 +100,6 @@ class AIContainer:
         self.registry = ToolRegistry()
 
 
-
-
-
         #
         # Agents
         #
@@ -112,8 +113,10 @@ class AIContainer:
 
 
         self.chat_agent = ChatAgent(
-            self.llm,
-            self.memory
+            llm=self.llm,
+            memory=self.memory,
+            conversation=None,
+            project_memory=self.project_memory
         )
 
 
@@ -147,6 +150,19 @@ class AIContainer:
 
 
         #
+        # Watcher
+        #
+
+        self.watcher = WorkspaceWatcher(
+            self.workspace_path,
+            self.refresh_project_memory
+        )
+
+
+
+
+
+        #
         # Orchestrator
         #
 
@@ -167,11 +183,22 @@ class AIContainer:
         )
 
 
+    def refresh_project_memory(
+        self,
+        changed_files=None
+    ):
 
+        analyzer = self.registry.get(
+            "repository_analyzer"
+        )
 
-
-
-
+        if analyzer:
+            analyzer.execute(
+                {
+                    "action":"analyze",
+                    "changed_files": changed_files
+                }
+            )
 
 
     def _register_tools(self):
@@ -469,7 +496,34 @@ class AIContainer:
 
 
 
+        self.registry.register(
 
+            "project_memory",
+
+            ProjectMemoryTool(
+                self.project_memory
+            ),
+
+            {
+
+                "description":
+                "Persistent project knowledge memory.",
+
+
+                "purpose":
+                "Provides architecture and codebase context.",
+
+
+                "safe":
+                True,
+
+
+                "modifies_files":
+                False
+
+            }
+
+        )
 
 
 
@@ -480,7 +534,9 @@ class AIContainer:
 
             RepositoryAnalyzerTool(
 
-                self.workspace_path
+                self.workspace_path,
+                self.memory,
+                self.project_memory
 
             ),
 

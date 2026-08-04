@@ -1,4 +1,5 @@
 from app.core.logger import AppLogger
+import inspect
 
 
 
@@ -25,29 +26,74 @@ class ToolRegistry:
     ):
 
 
+        if not hasattr(tool, "execute"):
+
+            self.logger.warning(
+                f"Tool {name} has no execute method."
+            )
+
+
+
         self.tools[name] = tool
 
 
         self.metadata[name] = metadata or {
 
-            "description": "No description provided.",
+            "description":
+            "No description provided.",
 
-            "purpose": "Unknown",
+            "purpose":
+            "Unknown",
 
-            "safe": True,
+            "safe":
+            True,
 
-            "modifies_files": False
+            "modifies_files":
+            False,
+
+            "requires_confirmation":
+            False,
+
+            "version":
+            "1.0"
 
         }
 
 
         self.logger.info(
-
             f"Tool registered: {name}"
-
         )
 
 
+
+
+
+
+
+
+    def unregister(
+        self,
+        name
+    ):
+
+
+        if name in self.tools:
+
+            del self.tools[name]
+
+            del self.metadata[name]
+
+
+            self.logger.info(
+                f"Tool removed: {name}"
+            )
+
+
+            return True
+
+
+
+        return False
 
 
 
@@ -73,6 +119,22 @@ class ToolRegistry:
 
 
 
+    def exists(
+        self,
+        name
+    ):
+
+
+        return name in self.tools
+
+
+
+
+
+
+
+
+
     def get_metadata(
         self,
         name
@@ -80,9 +142,8 @@ class ToolRegistry:
 
 
         return self.metadata.get(
-
-            name
-
+            name,
+            {}
         )
 
 
@@ -93,75 +154,26 @@ class ToolRegistry:
 
 
 
-    def get_tool_descriptions(
-        self
+    def can_execute(
+        self,
+        name
     ):
 
 
-        descriptions = []
+        tool = self.get(
+            name
+        )
 
 
-        for name, data in self.metadata.items():
+        if tool is None:
 
-
-            descriptions.append({
-
-                "name": name,
-
-                "description": data.get(
-
-                    "description",
-
-                    ""
-
-                ),
-
-                "purpose": data.get(
-
-                    "purpose",
-
-                    ""
-
-                ),
-
-                "safe": data.get(
-
-                    "safe",
-
-                    True
-
-                ),
-
-                "modifies_files": data.get(
-
-                    "modifies_files",
-
-                    False
-
-                )
-
-            })
-
-
-        return descriptions
+            return False
 
 
 
-
-
-
-
-
-
-    def list_tools(
-        self
-    ):
-
-
-        return list(
-
-            self.tools.keys()
-
+        return hasattr(
+            tool,
+            "execute"
         )
 
 
@@ -180,39 +192,217 @@ class ToolRegistry:
 
 
         tool = self.get(
-
             name
-
         )
 
 
 
         if tool is None:
 
+            return {
 
-            return f"Tool not found: {name}"
+                "success":False,
+
+                "error":
+                f"Tool not found: {name}"
+
+            }
 
 
 
 
-
-        if hasattr(
-
+        if not hasattr(
             tool,
-
             "execute"
-
         ):
 
 
-            return tool.execute(
+            return {
 
+                "success":False,
+
+                "error":
+                f"Tool {name} has no execute method."
+
+            }
+
+
+
+
+
+
+        try:
+
+
+            result = tool.execute(
                 data
-
             )
 
 
+            return {
+
+                "success":True,
+
+                "tool":
+                name,
+
+                "result":
+                result
+
+            }
 
 
 
-        return f"Tool {name} has no execute method."
+        except Exception as error:
+
+
+            self.logger.error(
+                f"Tool execution error {name}: {error}"
+            )
+
+
+            return {
+
+                "success":False,
+
+                "tool":
+                name,
+
+                "error":
+                str(error)
+
+            }
+
+
+
+
+
+
+
+
+
+    def get_tool_descriptions(
+        self
+    ):
+
+
+        descriptions = []
+
+
+        for name,data in self.metadata.items():
+
+
+            descriptions.append({
+
+                "name":
+                name,
+
+
+                "description":
+                data.get(
+                    "description",
+                    ""
+                ),
+
+
+                "purpose":
+                data.get(
+                    "purpose",
+                    ""
+                ),
+
+
+                "safe":
+                data.get(
+                    "safe",
+                    True
+                ),
+
+
+                "modifies_files":
+                data.get(
+                    "modifies_files",
+                    False
+                ),
+
+
+                "requires_confirmation":
+                data.get(
+                    "requires_confirmation",
+                    False
+                )
+
+            })
+
+
+
+        return descriptions
+
+
+
+
+
+
+
+
+
+    def inspect_tool(
+        self,
+        name
+    ):
+
+
+        tool = self.get(
+            name
+        )
+
+
+        if not tool:
+
+            return None
+
+
+
+        return {
+
+            "name":
+            name,
+
+
+            "class":
+            tool.__class__.__name__,
+
+
+            "methods":
+            [
+                x
+                for x in dir(tool)
+                if not x.startswith("_")
+            ],
+
+
+            "has_execute":
+            hasattr(
+                tool,
+                "execute"
+            )
+
+
+        }
+
+
+
+
+
+
+
+
+
+    def list_tools(
+        self
+    ):
+
+
+        return list(
+            self.tools.keys()
+        )

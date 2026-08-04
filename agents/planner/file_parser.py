@@ -3,6 +3,7 @@ import re
 
 
 
+
 def parse_file(task):
 
 
@@ -21,15 +22,16 @@ def parse_file(task):
 
 
 
+
     #
-    # CREATE
+    # CREATE EMPTY FILE
     #
 
     if any(word in text for word in [
 
-        "oluştur",
-        "yarat",
-        "meydana getir"
+        "boş dosya oluştur",
+        "dosya oluştur",
+        "dosya yarat"
 
     ]):
 
@@ -53,21 +55,22 @@ def parse_file(task):
 
 
 
+
     #
-    # READ
+    # READ FILE
     #
 
     if any(word in text for word in [
 
         "oku",
         "göster",
-        "söyle",
-        "içeriğini",
+        "içeriğini göster",
+        "içeriğini oku",
         "bak",
-        "incele",
         "görüntüle"
 
     ]):
+
 
 
         return {
@@ -89,52 +92,25 @@ def parse_file(task):
 
 
     #
-    # WRITE / EDIT
+    # DELETE FILE
     #
 
     if any(word in text for word in [
 
-        "düzenle",
-        "güncelle",
-        "yaz",
-        "ekle",
-        "değiştir",
-        "sil"
+        "dosyayı sil",
+        "dosya sil"
 
     ]):
 
 
+
         return {
 
+            "tool": "file",
 
-            "steps": [
+            "action": "delete",
 
-                {
-
-                    "tool": "file",
-
-                    "action": "read",
-
-                    "filename": filename
-
-                },
-
-
-                {
-
-                    "tool": "file",
-
-                    "action": "write",
-
-                    "filename": filename,
-
-                    "content": "",
-
-                    "input": task
-
-                }
-
-            ]
+            "filename": filename
 
         }
 
@@ -142,6 +118,42 @@ def parse_file(task):
 
 
 
+
+
+
+
+    #
+    # MOVE / COPY gibi gerçek file işlemleri
+    #
+
+    if any(word in text for word in [
+
+        "taşı",
+        "kopyala"
+
+    ]):
+
+
+        return {
+
+            "tool": "file",
+
+            "action": "manage",
+
+            "filename": filename
+
+        }
+
+
+
+
+
+
+
+    #
+    # Kod değiştirme işlemleri burada yakalanmaz.
+    # CodeParser'a bırakılır.
+    #
 
     return None
 
