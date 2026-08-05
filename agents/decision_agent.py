@@ -1,43 +1,50 @@
+import json
+import re
+
 from agents.base_agent import BaseAgent
+from app.core.logger import AppLogger
 
 
 
 class DecisionAgent(BaseAgent):
 
 
-    def __init__(self, memory):
+    def __init__(
+        self,
+        llm,
+        memory,
+        registry
+    ):
 
         super().__init__(
             "Decision Agent"
         )
 
+
+        self.llm = llm
+
         self.memory = memory
 
+        self.registry = registry
 
-
-
-
-    def process(self, request):
-
-
-        request = request.lower().strip()
+        self.logger = AppLogger()
 
 
 
 
 
-        #
-        # Name query
-        #
+    def process(
+        self,
+        request
+    ):
 
-        if (
-            "adım ne" in request
-            or "ismim ne" in request
-            or "ben kimim" in request
-        ):
 
-            return "memory_get"
+        self.logger.info(
+            f"Decision request: {request}"
+        )
 
+
+        request_lower = request.lower()
 
 
 
@@ -45,80 +52,42 @@ class DecisionAgent(BaseAgent):
 
 
         #
-        # Name storage
+        # Memory
         #
 
-        if "benim adım" in request:
-
-
-            return "memory_save"
-
-
-
-
-
-
-
-
-        #
-        # Learning query
-        #
-
-        if "ne öğreniyorum" in request:
-
-
-            return "memory_get_learning"
-
-
-
-
-
-
-
-
-        #
-        # Learning storage
-        #
-
-        if (
-            "öğreniyorum" in request
-            or "ogreniyorum" in request
+        if any(
+            word in request_lower
+            for word in [
+                "ismim ne",
+                "ben kimim",
+                "adım ne"
+            ]
         ):
 
 
-            return "memory_save"
+            return {
+
+                "agent": "memory",
+
+                "action": "get"
+
+            }
 
 
 
 
 
 
+        if "benim adım" in request_lower:
 
 
-        #
-        # Favorite game query
-        #
+            return {
 
-        if "favori oyunum ne" in request:
+                "agent": "memory",
 
+                "action": "save"
 
-            return "memory_get"
-
-
-
-
-
-
-
-
-        #
-        # Favorite game storage
-        #
-
-        if "favori oyunum" in request:
-
-
-            return "memory_save"
+            }
 
 
 
@@ -129,7 +98,7 @@ class DecisionAgent(BaseAgent):
 
 
         #
-        # Calculator detection
+        # Calculator
         #
 
         calculation_words = [
@@ -145,17 +114,26 @@ class DecisionAgent(BaseAgent):
         ]
 
 
-
-        if any(
-
-            word in request
-
-            for word in calculation_words
-
+        if (
+            any(
+                word in request_lower
+                for word in calculation_words
+            )
+            or
+            re.search(
+                r"\d+\s*[\+\-\*\/]\s*\d+",
+                request_lower
+            )
         ):
 
 
-            return "calculator"
+            return {
+
+                "agent": "tool",
+
+                "tool": "calculator"
+
+            }
 
 
 
@@ -166,30 +144,46 @@ class DecisionAgent(BaseAgent):
 
 
         #
-        # File operation detection
+        # Code
         #
 
-        file_words = [
+        code_keywords = [
 
-            "dosya",
+            "kod",
+            "code",
+            ".py",
+            "bug",
+            "hata",
+            "düzelt",
+            "duzelt",
+            "refactor",
+            "implement",
             "oluştur",
             "olustur",
-            "yaz"
+            "geliştir",
+            "gelistir",
+            "repository",
+            "repo",
+            "mimari",
+            "architecture"
 
         ]
 
 
-
         if any(
 
-            word in request
+            word in request_lower
 
-            for word in file_words
+            for word in code_keywords
 
         ):
 
 
-            return "file"
+            return {
+
+                "agent": "code"
+
+            }
 
 
 
@@ -199,4 +193,152 @@ class DecisionAgent(BaseAgent):
 
 
 
-        return None
+        #
+        # LLM Decision
+        #
+
+        prompt = f"""
+
+Sen AI-Studio karar verme ajanısın.
+
+Kullanıcı isteğini analiz et ve uygun agent seç.
+
+Agentlar:
+
+chat:
+- Genel sohbet
+- Soru cevap
+- Açıklama
+
+code:
+- Yazılım geliştirme
+- Kod analizi
+- Dosya işlemleri
+- Hata düzeltme
+
+tool:
+- Hesaplama
+- Araç kullanımı
+- Özel işlemler
+
+memory:
+- Kullanıcı bilgisi kaydetme
+- Kullanıcı bilgisi getirme
+
+
+Sadece JSON döndür.
+
+Format:
+
+{{
+    "agent":"chat",
+    "reason":"açıklama"
+}}
+
+
+Kullanıcı:
+
+{request}
+
+"""
+
+
+
+        try:
+
+
+            response = self.llm.generate(
+
+                prompt,
+
+                temperature=0.1
+
+            )
+
+
+
+            if isinstance(
+                response,
+                dict
+            ):
+
+                return response
+
+
+
+
+
+            response = response.strip()
+
+
+
+            #
+            # Markdown temizleme
+            #
+
+            response = re.sub(
+
+                r"```json|```",
+
+                "",
+
+                response
+
+            ).strip()
+
+
+
+
+
+
+            #
+            # JSON bloğu yakalama
+            #
+
+            match = re.search(
+
+                r"\{.*\}",
+
+                response,
+
+                re.DOTALL
+
+            )
+
+
+            if match:
+
+
+                response = match.group()
+
+
+
+
+
+            return json.loads(
+                response
+            )
+
+
+
+
+
+
+        except Exception as e:
+
+
+            self.logger.error(
+
+                f"Decision error: {e}"
+
+            )
+
+
+
+            return {
+
+                "agent":"chat",
+
+                "reason":"fallback"
+
+            }

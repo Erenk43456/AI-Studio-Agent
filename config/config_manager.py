@@ -85,11 +85,16 @@ class ConfigManager:
 
             "NVIDIA_API_URL": "api_url",
 
+            "LLM_PROVIDER": "llm_provider",
 
-            "NVIDIA_MODEL": "model",
 
+            "DECISION_MODEL": "decision_model",
 
-            "LLM_PROVIDER": "llm_provider"
+            "PLANNER_MODEL": "planner_model",
+
+            "CHAT_MODEL": "chat_model",
+
+            "CODE_MODEL": "code_model"
 
 
         }
@@ -134,6 +139,21 @@ class ConfigManager:
 
 
 
+    def get_model(
+            
+        self,
+        agent_name,
+        default=None
+
+    ):
+
+
+        return self.data.get(
+
+            agent_name,
+            default
+
+        )
 
 
 

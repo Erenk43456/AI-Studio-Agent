@@ -1,3 +1,5 @@
+from urllib import response
+
 from agents.base_agent import BaseAgent
 
 from app.core.logger import AppLogger
@@ -63,7 +65,9 @@ class PlannerAgent(BaseAgent):
         )
 
 
+        if isinstance(response, dict):
 
+            return response
 
 
         try:
@@ -78,13 +82,13 @@ class PlannerAgent(BaseAgent):
                 ),
 
                 (
-                    "repository_analyzer",
-                    parse_repository_analyzer
+                    "code_analyzer",
+                    parse_code_analyzer
                 ),
 
                 (
-                    "code_analyzer",
-                    parse_code_analyzer
+                    "repository_analyzer",
+                    parse_repository_analyzer
                 ),
 
                 (
@@ -95,9 +99,9 @@ class PlannerAgent(BaseAgent):
                 (
                     "code",
                     parse_code
-                ),
+                )
 
-            ]   
+            ]
 
 
 

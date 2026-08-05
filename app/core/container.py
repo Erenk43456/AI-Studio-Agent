@@ -15,6 +15,9 @@ from agents.planner_agent import PlannerAgent
 from agents.tool_agent import ToolAgent
 from agents.chat_agent import ChatAgent
 from agents.code_agent import CodeAgent
+from agents.decision_agent import DecisionAgent
+from agents.memory_agent import MemoryAgent
+from agents.improvement_agent import ImprovementAgent
 
 
 from memory.memory import Memory
@@ -29,8 +32,6 @@ from config.config_manager import ConfigManager
 from app.core.orchestrator.orchestrator import Orchestrator
 from app.core.workspace.workspace_manager import WorkspaceManager
 from app.core.workspace.watcher import WorkspaceWatcher
-
-
 
 
 
@@ -57,6 +58,7 @@ class AIContainer:
         self.chat_manager = ChatManager()
 
 
+
         #
         # Workspace
         #
@@ -76,20 +78,39 @@ class AIContainer:
             self.workspace_path
         )
 
+
         self.project_memory = ProjectMemory(
             self.workspace_path
         )
 
 
+
         #
-        # LLM
+        # LLM MODELS
         #
 
-        self.llm = LLMProvider(
-            self.config
+        self.decision_llm = LLMProvider(
+            self.config,
+            "decision_model"
         )
 
 
+        self.planner_llm = LLMProvider(
+            self.config,
+            "planner_model"
+        )
+
+
+        self.code_llm = LLMProvider(
+            self.config,
+            "code_model"
+        )
+
+
+        self.chat_llm = LLMProvider(
+            self.config,
+            "chat_model"
+        )
 
 
 
@@ -100,12 +121,25 @@ class AIContainer:
         self.registry = ToolRegistry()
 
 
+
         #
         # Agents
         #
 
+        self.decision_agent = DecisionAgent(
+            self.decision_llm,
+            self.memory,
+            self.registry
+        )
+
+
+        self.memory_agent = MemoryAgent(
+            self.memory
+        )
+
+
         self.planner = PlannerAgent(
-            self.llm,
+            self.planner_llm,
             self.memory,
             self.registry
         )
@@ -113,7 +147,7 @@ class AIContainer:
 
 
         self.chat_agent = ChatAgent(
-            llm=self.llm,
+            llm=self.chat_llm,
             memory=self.memory,
             conversation=None,
             project_memory=self.project_memory
@@ -129,23 +163,23 @@ class AIContainer:
 
 
         self.code_agent = CodeAgent(
-            self.llm,
+            self.code_llm,
             self.registry,
             self.memory,
             self.workspace_path
         )
 
-
-
-
+        self.improvement_agent = ImprovementAgent(
+            self.project_memory,
+            None,
+            self.memory
+        )
 
         #
         # Tools
         #
 
         self._register_tools()
-
-
 
 
 
@@ -160,8 +194,6 @@ class AIContainer:
 
 
 
-
-
         #
         # Orchestrator
         #
@@ -172,15 +204,20 @@ class AIContainer:
 
             {
 
+                "decision": self.decision_agent,
+
                 "chat": self.chat_agent,
 
                 "tool": self.tool_agent,
 
-                "code": self.code_agent
+                "code": self.code_agent,
+
+                "memory": self.memory_agent
 
             }
 
         )
+
 
 
     def refresh_project_memory(
@@ -188,11 +225,14 @@ class AIContainer:
         changed_files=None
     ):
 
+
         analyzer = self.registry.get(
             "repository_analyzer"
         )
 
+
         if analyzer:
+
             analyzer.execute(
                 {
                     "action":"analyze",
@@ -201,8 +241,8 @@ class AIContainer:
             )
 
 
-    def _register_tools(self):
 
+    def _register_tools(self):
 
 
         self.registry.register(
@@ -217,7 +257,7 @@ class AIContainer:
                 "Autonomous software engineering agent.",
 
                 "purpose":
-                "Analyze architecture and create implementation plans.",
+                "Analyze architecture and implement software changes.",
 
                 "safe": False,
 
@@ -226,8 +266,6 @@ class AIContainer:
             }
 
         )
-
-
 
 
 
@@ -252,8 +290,6 @@ class AIContainer:
             }
 
         )
-
-
 
 
 
@@ -285,12 +321,8 @@ class AIContainer:
 
 
 
-
-
         memory_tool = MemoryTool(
-
             self.memory
-
         )
 
 
@@ -314,42 +346,25 @@ class AIContainer:
 
 
 
-
         self.registry.register(
-
             "memory",
-
             memory_tool,
-
             memory_metadata
-
         )
 
 
         self.registry.register(
-
             "memory_save",
-
             memory_tool,
-
             memory_metadata
-
         )
 
 
         self.registry.register(
-
             "memory_get",
-
             memory_tool,
-
             memory_metadata
-
         )
-
-
-
-
 
 
 
@@ -384,18 +399,13 @@ class AIContainer:
 
 
 
-
-
-
-
-
         self.registry.register(
 
             "code_repair",
 
             CodeRepairTool(
 
-                self.llm,
+                self.code_llm,
 
                 self.workspace_path
 
@@ -422,17 +432,13 @@ class AIContainer:
 
 
 
-
-
-
-
         self.registry.register(
 
             "code_analyzer",
 
             CodeAnalyzerTool(
 
-                self.llm,
+                self.code_llm,
 
                 self.workspace_path
 
@@ -445,7 +451,7 @@ class AIContainer:
 
 
                 "purpose":
-                "Review code.",
+                "Review and understand code.",
 
 
                 "safe": True,
@@ -459,17 +465,13 @@ class AIContainer:
 
 
 
-
-
-
-
         self.registry.register(
 
             "code_writer",
 
             CodeWriterTool(
 
-                self.llm,
+                self.code_llm,
 
                 self.workspace_path
 
@@ -478,11 +480,11 @@ class AIContainer:
             {
 
                 "description":
-                "Apply CodeAgent implementation changes.",
+                "Write code modifications.",
 
 
                 "purpose":
-                "Generate and write code modifications.",
+                "Generate and apply code changes.",
 
 
                 "safe": False,
@@ -514,17 +516,14 @@ class AIContainer:
                 "Provides architecture and codebase context.",
 
 
-                "safe":
-                True,
+                "safe": True,
 
 
-                "modifies_files":
-                False
+                "modifies_files": False
 
             }
 
         )
-
 
 
 
@@ -535,7 +534,9 @@ class AIContainer:
             RepositoryAnalyzerTool(
 
                 self.workspace_path,
+
                 self.memory,
+
                 self.project_memory
 
             ),
@@ -557,4 +558,8 @@ class AIContainer:
 
             }
 
+        )
+
+        self.improvement_agent.repository_analyzer = self.registry.get(
+            "repository_analyzer"
         )

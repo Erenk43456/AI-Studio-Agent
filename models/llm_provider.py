@@ -8,7 +8,8 @@ class LLMProvider:
 
     def __init__(
         self,
-        config
+        config,
+        model_slot
     ):
 
 
@@ -18,12 +19,79 @@ class LLMProvider:
         )
 
 
+        self.model_slot = model_slot
+
+
+        self.current_model = config.get(
+            model_slot,
+            None
+        )
+
+
+
         if provider == "api":
 
 
+            api_config = {
+
+
+                "api_url":
+
+                config.get(
+                    "api_url",
+                    ""
+                ),
+
+
+
+                "api_key":
+
+                config.get(
+                    "api_key",
+                    ""
+                ),
+
+
+
+                "api_model":
+
+                self.current_model,
+
+
+
+                "temperature":
+
+                config.get(
+                    "temperature",
+                    0.3
+                ),
+
+
+
+                "api_timeout":
+
+                config.get(
+                    "api_timeout",
+                    120
+                ),
+
+
+
+                "num_predict":
+
+                config.get(
+                    "num_predict",
+                    1200
+                )
+
+            }
+
+
+
             self.llm = APILLM(
-                config
+                api_config
             )
+
 
 
         else:
@@ -47,10 +115,15 @@ class LLMProvider:
 
 
         return self.llm.generate(
+
             prompt,
+
             max_tokens=max_tokens,
+
             temperature=temperature,
+
             timeout=timeout
+
         )
 
 
@@ -65,11 +138,12 @@ class LLMProvider:
             "get_models"
         ):
 
-
             return self.llm.get_models()
 
 
-        return []
+        return [
+            self.current_model
+        ]
 
 
 
@@ -78,16 +152,7 @@ class LLMProvider:
     def has_model(self):
 
 
-        if hasattr(
-            self.llm,
-            "has_model"
-        ):
-
-
-            return self.llm.has_model()
-
-
-        return False
+        return self.current_model is not None
 
 
 
@@ -96,16 +161,7 @@ class LLMProvider:
     def get_current_model(self):
 
 
-        if hasattr(
-            self.llm,
-            "get_current_model"
-        ):
-
-
-            return self.llm.get_current_model()
-
-
-        return None
+        return self.current_model
 
 
 
@@ -118,7 +174,6 @@ class LLMProvider:
             self.llm,
             "check_connection"
         ):
-
 
             return self.llm.check_connection()
 

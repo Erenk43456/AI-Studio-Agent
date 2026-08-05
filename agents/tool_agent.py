@@ -75,6 +75,7 @@ class ToolAgent(BaseAgent):
 
 
 
+
         for index, step in enumerate(steps):
 
 
@@ -101,9 +102,6 @@ class ToolAgent(BaseAgent):
 
 
 
-            #
-            # Önceki işlem sonucunu aktar
-            #
 
             if context:
 
@@ -113,9 +111,6 @@ class ToolAgent(BaseAgent):
 
 
 
-                #
-                # Write işlemi
-                #
 
                 if action == "write":
 
@@ -163,6 +158,8 @@ class ToolAgent(BaseAgent):
 
 
 
+
+
             result = self.execute(
                 step
             )
@@ -170,10 +167,6 @@ class ToolAgent(BaseAgent):
 
 
 
-
-            #
-            # Context güncelle
-            #
 
             if isinstance(result, str):
 
@@ -215,6 +208,8 @@ class ToolAgent(BaseAgent):
 
 
 
+
+
         return results
 
 
@@ -227,6 +222,207 @@ class ToolAgent(BaseAgent):
 
 
 
+    def normalize_tool_input(
+        self,
+        plan
+    ):
+
+
+        tool_name = plan.get(
+            "tool"
+        )
+
+
+
+        if tool_name != "calculator":
+
+            return plan
+
+
+
+
+
+
+        if (
+
+            "numbers" in plan
+
+            and
+
+            "operation" in plan
+
+        ):
+
+            return plan
+
+
+
+
+
+
+        text = plan.get(
+            "input",
+            ""
+        )
+
+
+
+        if not text:
+
+            text = plan.get(
+                "user_message",
+                ""
+            )
+
+
+
+        numbers = re.findall(
+
+            r"-?\d+(?:\.\d+)?",
+
+            text
+
+        )
+
+
+
+        if len(numbers) < 2:
+
+            return plan
+
+
+
+
+
+
+        operation = None
+
+
+
+
+
+        lower = text.lower()
+
+
+
+
+
+
+        if any(
+
+            word in lower
+
+            for word in [
+
+                "+",
+
+                "topla",
+
+                "toplam",
+
+                "artı",
+
+                "kaç eder"
+
+            ]
+
+        ):
+
+
+            operation = "add"
+
+
+
+
+
+
+        elif any(
+
+            word in lower
+
+            for word in [
+
+                "-",
+
+                "çıkar",
+
+                "eksi"
+
+            ]
+
+        ):
+
+
+            operation = "subtract"
+
+
+
+
+
+
+
+        elif any(
+
+            word in lower
+
+            for word in [
+
+                "*",
+
+                "çarp",
+
+                "çarpı"
+
+            ]
+
+        ):
+
+
+            operation = "multiply"
+
+
+
+
+
+
+
+        elif any(
+
+            word in lower
+
+            for word in [
+
+                "/",
+
+                "böl",
+
+                "bölü"
+
+            ]
+
+        ):
+
+
+            operation = "divide"
+
+
+
+
+
+
+
+        if operation:
+
+
+            plan["operation"] = operation
+
+
+            plan["numbers"] = numbers[:2]
+
+
+
+
+        return plan
 
 
     def should_generate_code(
@@ -284,9 +480,6 @@ class ToolAgent(BaseAgent):
             for word in keywords
 
         )
-
-
-
 
 
 
@@ -376,14 +569,6 @@ New file:
 
 
 
-
-
-
-
-
-
-
-
     def prepare_write_content(
         self,
         instruction,
@@ -404,9 +589,7 @@ New file:
 
 
 
-        #
-        # Dosyanın başına yorum ekleme
-        #
+
 
         if any(word in lower_instruction for word in [
 
@@ -471,9 +654,6 @@ New file:
 
 
 
-        #
-        # Varsayılan
-        #
 
         return existing_content
 
@@ -500,6 +680,17 @@ New file:
 
 
 
+        #
+        # Önce tool input normalize
+        #
+
+        plan = self.normalize_tool_input(
+            plan
+        )
+
+
+
+
 
 
         tool_name = plan.get(
@@ -519,9 +710,13 @@ New file:
 
 
 
+
         if not tool_name:
 
             return "Tool name missing."
+
+
+
 
 
 
@@ -534,6 +729,8 @@ New file:
             tool_name
 
         )
+
+
 
 
 
@@ -572,6 +769,8 @@ New file:
 
 
 
+
+
         if tool is None:
 
 
@@ -583,6 +782,8 @@ New file:
 
 
             return f"Tool not found: {tool_name}"
+
+
 
 
 
@@ -609,6 +810,8 @@ New file:
                     plan
 
                 )
+
+
 
 
 
