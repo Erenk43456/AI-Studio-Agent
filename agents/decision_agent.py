@@ -67,7 +67,7 @@ class DecisionAgent(BaseAgent):
 
             return {
 
-                "agent": "memory",
+                "system": "memory",
 
                 "action": "get"
 
@@ -83,7 +83,7 @@ class DecisionAgent(BaseAgent):
 
             return {
 
-                "agent": "memory",
+                "system": "memory",
 
                 "action": "save"
 
@@ -129,7 +129,7 @@ class DecisionAgent(BaseAgent):
 
             return {
 
-                "agent": "tool",
+                "system": "tool",
 
                 "tool": "calculator"
 
@@ -181,7 +181,7 @@ class DecisionAgent(BaseAgent):
 
             return {
 
-                "agent": "code"
+                "system": "development"
 
             }
 
@@ -199,31 +199,56 @@ class DecisionAgent(BaseAgent):
 
         prompt = f"""
 
-Sen AI-Studio karar verme ajanısın.
+Sen AI-Studio Master Decision Agent'sın.
 
-Kullanıcı isteğini analiz et ve uygun agent seç.
+Görevin kullanıcı isteğini analiz etmek ve
+hangi SYSTEM'in çalışacağını seçmektir.
 
-Agentlar:
+Mevcut sistemler:
+
+memory:
+- Kullanıcı bilgisi kaydetme
+- Kullanıcı bilgisi getirme
+- Hafıza işlemleri
+
 
 chat:
 - Genel sohbet
 - Soru cevap
 - Açıklama
+- Normal konuşmalar
 
-code:
+
+development:
 - Yazılım geliştirme
+- Kod yazma
 - Kod analizi
-- Dosya işlemleri
-- Hata düzeltme
+- Repository inceleme
+- Dosya yapısı analizi
+- Bug düzeltme
+- Refactor
+- Yeni özellik geliştirme
+
 
 tool:
 - Hesaplama
-- Araç kullanımı
-- Özel işlemler
+- Basit araç kullanımı
+- Özel yardımcı işlemler
 
-memory:
-- Kullanıcı bilgisi kaydetme
-- Kullanıcı bilgisi getirme
+
+Kurallar:
+
+Yazılım, proje, repository veya kod ile ilgili tüm isteklerde:
+development seç.
+
+Sadece normal konuşmalarda:
+chat seç.
+
+Kullanıcı bilgisi veya hatırlama isteklerinde:
+memory seç.
+
+Hesaplama veya basit araç kullanımında:
+tool seç.
 
 
 Sadece JSON döndür.
@@ -231,8 +256,8 @@ Sadece JSON döndür.
 Format:
 
 {{
-    "agent":"chat",
-    "reason":"açıklama"
+    "system":"chat",
+    "reason":"neden bu sistem seçildi"
 }}
 
 
@@ -337,7 +362,7 @@ Kullanıcı:
 
             return {
 
-                "agent":"chat",
+                "system":"chat",
 
                 "reason":"fallback"
 
