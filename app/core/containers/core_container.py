@@ -15,22 +15,23 @@ class CoreContainer:
         self.config = ConfigManager()
 
 
+        #
+        # PROJECT SOURCE
+        #
+
+        project_root = (
+            Path(__file__)
+            .resolve()
+            .parents[3]
+        )
+
 
         #
         # WORKSPACE
         #
 
-        sandbox_path = (
-            Path.home()
-            /
-            "Desktop"
-            /
-            "AI-Studio-Workspace"
-        )
-
-
         self.workspace = WorkspaceManager(
-            sandbox_path
+            project_root
         )
 
 
