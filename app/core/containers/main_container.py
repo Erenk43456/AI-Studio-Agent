@@ -47,7 +47,8 @@ class MainContainer:
 
         self.tools = ToolContainer(
             self.core,
-            self.models
+            self.models,
+            self.memory
         )
 
 
