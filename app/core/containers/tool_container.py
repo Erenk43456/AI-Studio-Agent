@@ -31,7 +31,9 @@ class ToolContainer:
 
         self.calculator = Calculator()
 
-        self.file_tool = FileTool()
+        self.file_tool = FileTool(
+            core.workspace_path
+        )
 
 
 

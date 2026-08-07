@@ -1,6 +1,7 @@
 from agents.decision_agent import DecisionAgent
 from agents.chat_agent import ChatAgent
 from agents.code_agent import CodeAgent
+from agents.memory_agent import MemoryAgent
 
 
 class AgentContainer:
@@ -55,5 +56,15 @@ class AgentContainer:
             main.memory.memory,
 
             main.core.workspace_path
+
+        )
+
+        #
+        # Memory Agent
+        #
+
+        self.memory = MemoryAgent(
+
+            main.memory.memory
 
         )

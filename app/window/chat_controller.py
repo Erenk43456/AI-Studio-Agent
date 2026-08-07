@@ -172,7 +172,7 @@ class ChatController:
 
         window.worker = AIWorker(
 
-            window.orchestrator,
+            window.main_orchestrator,
 
             chat.conversation,
 

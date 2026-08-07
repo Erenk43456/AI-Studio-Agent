@@ -1,25 +1,43 @@
+from app.core.logger import AppLogger
+
+
 class MainOrchestrator:
 
 
-    def __init__(self, container):
+    def __init__(
+        self,
+        container
+    ):
 
 
         self.container = container
 
+        self.logger = AppLogger()
+
+
+
+        #
+        # Decision Agent
+        #
 
         self.decision_agent = (
-            container.agents.decision_agent
+            container.agents.decision
         )
 
 
+
+        #
+        # Systems
+        #
+
         self.systems = {
-
-            "memory":
-            container.memory.orchestrator,
-
 
             "chat":
             container.chat.orchestrator,
+
+
+            "memory":
+            container.memory.orchestrator,
 
 
             "development":
@@ -29,12 +47,30 @@ class MainOrchestrator:
 
 
 
-    def run(self,message):
+
+    def run(
+        self,
+        message,
+        conversation=None
+    ):
+
+
+        self.logger.info(
+            f"Main request: {message}"
+        )
+
 
 
         decision = self.decision_agent.process(
             message
         )
+
+
+        print(
+            "DECISION:",
+            decision
+        )
+
 
 
         system = decision.get(
@@ -43,17 +79,28 @@ class MainOrchestrator:
         )
 
 
+
         orchestrator = self.systems.get(
             system
         )
 
 
-        if not orchestrator:
 
-            return "Unknown system"
+        if orchestrator is None:
+
+            self.logger.error(
+                f"Unknown system: {system}"
+            )
+
+            return {
+                "error":
+                f"Unknown system: {system}"
+            }
+
 
 
         return orchestrator.run(
             message,
-            decision
+            decision,
+            conversation
         )

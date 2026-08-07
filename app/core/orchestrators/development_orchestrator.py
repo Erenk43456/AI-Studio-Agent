@@ -3,12 +3,10 @@ from app.core.logger import AppLogger
 
 class DevelopmentOrchestrator:
 
-
     def __init__(
         self,
         container
     ):
-
 
         self.container = container
 
@@ -27,14 +25,12 @@ class DevelopmentOrchestrator:
         self.logger = AppLogger()
 
 
-
     def run(
         self,
         message,
         decision=None,
         conversation=None
     ):
-
 
         self.logger.info(
             f"Development request: {message}"
@@ -48,39 +44,69 @@ class DevelopmentOrchestrator:
             }
 
 
-
         action = decision.get(
             "action",
             "code"
         )
 
 
+        #
+        # Repository analysis
+        #
 
         if action == "analyze":
 
+            if not self.repository_analyzer:
 
-            return self.repository_analyzer.execute(
+                return (
+                    "❌ Repository analyzer "
+                    "kullanılamıyor."
+                )
+
+
+            result = self.repository_analyzer.execute(
                 {
                     "action": "analyze"
                 }
             )
 
 
+            return self.format_result(
+                result
+            )
+
+
+        #
+        # Improvement
+        #
 
         if action == "improve":
 
+            if not self.improvement_agent:
 
-            return self.improvement_agent.execute(
+                return (
+                    "❌ Improvement agent "
+                    "kullanılamıyor."
+                )
+
+
+            result = self.improvement_agent.execute(
                 message
             )
 
 
+            return self.format_result(
+                result
+            )
+
+
+        #
+        # Normal development task
+        #
 
         return self.execute_code_task(
             message
         )
-
-
 
 
     def execute_code_task(
@@ -88,6 +114,9 @@ class DevelopmentOrchestrator:
         message
     ):
 
+        #
+        # Planner
+        #
 
         plan = self.planner.create_plan(
             message
@@ -96,12 +125,33 @@ class DevelopmentOrchestrator:
 
         if not plan:
 
-            return {
-                "success": False,
-                "message": "Planner failed."
-            }
+            self.logger.error(
+                "Planner failed."
+            )
+
+            return (
+                "❌ İstek için bir plan "
+                "oluşturulamadı."
+            )
 
 
+        #
+        # Debug
+        #
+
+        self.logger.info(
+            f"Development plan: {plan}"
+        )
+
+        print(
+            "PLAN:",
+            plan
+        )
+
+
+        #
+        # Steps
+        #
 
         steps = plan.get(
             "steps",
@@ -109,33 +159,472 @@ class DevelopmentOrchestrator:
         )
 
 
+        if not steps:
 
-        if (
-
-            len(steps) == 1
-
-            and
-
-            steps[0].get("tool") == "code"
-
-        ):
-
-
-            return self.code_agent.run(
-
-                steps[0].get(
-                    "input",
-                    message
-                )
-
+            return (
+                "❌ Planner herhangi bir "
+                "işlem oluşturmadı."
             )
 
 
+        #
+        # Execute steps
+        #
 
-        return {
+        results = []
 
-            "success": True,
+        overall_success = True
 
-            "plan": plan
 
-        }
+        for step in steps:
+
+            if not isinstance(
+                step,
+                dict
+            ):
+
+                overall_success = False
+
+                results.append({
+
+                    "success": False,
+
+                    "error":
+                        "Invalid planner step."
+
+                })
+
+                continue
+
+
+            tool_name = step.get(
+                "tool"
+            )
+
+
+            if not tool_name:
+
+                self.logger.warning(
+                    "Planner step has no tool."
+                )
+
+                overall_success = False
+
+                results.append({
+
+                    "success": False,
+
+                    "error":
+                        "Planner step has no tool."
+
+                })
+
+                continue
+
+
+            self.logger.info(
+                f"Executing tool: {tool_name}"
+            )
+
+
+            #
+            # Code agent
+            #
+
+            if tool_name == "code":
+
+                try:
+
+                    result = self.code_agent.run(
+
+                        step.get(
+                            "input",
+                            message
+                        )
+
+                    )
+
+
+                    results.append(
+                        result
+                    )
+
+
+                    if isinstance(
+                        result,
+                        dict
+                    ):
+
+                        if not result.get(
+                            "success",
+                            False
+                        ):
+
+                            overall_success = False
+
+
+                    continue
+
+
+                except Exception as error:
+
+                    overall_success = False
+
+                    results.append({
+
+                        "success": False,
+
+                        "tool":
+                            "code",
+
+                        "error":
+                            str(error)
+
+                    })
+
+                    continue
+
+
+            #
+            # Tool registry
+            #
+
+            tool = self.container.registry.get(
+                tool_name
+            )
+
+
+            if not tool:
+
+                self.logger.error(
+                    f"Tool not found: {tool_name}"
+                )
+
+                overall_success = False
+
+                results.append({
+
+                    "success": False,
+
+                    "tool":
+                        tool_name,
+
+                    "error":
+                        f"Tool not found: {tool_name}"
+
+                })
+
+                continue
+
+
+            #
+            # Execute tool
+            #
+
+            try:
+
+                result = tool.execute(
+                    step
+                )
+
+
+                results.append(
+                    result
+                )
+
+
+                #
+                # Detect tool failure
+                #
+
+                if isinstance(
+                    result,
+                    dict
+                ):
+
+                    if not result.get(
+                        "success",
+                        False
+                    ):
+
+                        overall_success = False
+
+
+                elif isinstance(
+                    result,
+                    str
+                ):
+
+                    if result.startswith(
+                        "Tool error:"
+                    ):
+
+                        overall_success = False
+
+
+            except Exception as error:
+
+                self.logger.error(
+
+                    f"Tool execution failed: "
+                    f"{tool_name}: {error}"
+
+                )
+
+
+                overall_success = False
+
+
+                results.append({
+
+                    "success": False,
+
+                    "tool":
+                        tool_name,
+
+                    "error":
+                        str(error)
+
+                })
+
+
+        #
+        # Human-readable response
+        #
+
+        return self.format_results(
+            results,
+            overall_success
+        )
+
+
+    def format_results(
+        self,
+        results,
+        overall_success
+    ):
+
+        if not results:
+
+            return (
+                "❌ Herhangi bir işlem "
+                "gerçekleştirilemedi."
+            )
+
+
+        messages = []
+
+
+        for result in results:
+
+            messages.append(
+                self.format_result(
+                    result
+                )
+            )
+
+
+        if overall_success:
+
+            return "\n\n".join(
+                messages
+            )
+
+
+        return "\n\n".join(
+            messages
+        )
+
+
+    def format_result(
+        self,
+        result
+    ):
+
+        if result is None:
+
+            return (
+                "❌ İşlem sonucunda "
+                "herhangi bir sonuç alınamadı."
+            )
+
+
+        if isinstance(
+            result,
+            str
+        ):
+
+            return result
+
+
+        if not isinstance(
+            result,
+            dict
+        ):
+
+            return str(
+                result
+            )
+
+
+        success = result.get(
+            "success",
+            False
+        )
+
+
+        action = result.get(
+            "action",
+            ""
+        )
+
+
+        #
+        # File tool
+        #
+
+        if action == "write":
+
+            if success:
+
+                filename = result.get(
+                    "file",
+                    result.get(
+                        "filename",
+                        "dosya"
+                    )
+                )
+
+                return (
+                    f"✅ Dosya başarıyla yazıldı.\n\n"
+                    f"📄 {filename}"
+                )
+
+
+            error = result.get(
+                "error",
+                result.get(
+                    "message",
+                    "Bilinmeyen hata."
+                )
+            )
+
+            return (
+                f"❌ Dosya yazılamadı.\n\n"
+                f"Sebep: {error}"
+            )
+
+
+        if action == "create":
+
+            if success:
+
+                filename = result.get(
+                    "file",
+                    result.get(
+                        "filename",
+                        "dosya"
+                    )
+                )
+
+                return (
+                    f"✅ Dosya başarıyla oluşturuldu.\n\n"
+                    f"📄 {filename}"
+                )
+
+
+            error = result.get(
+                "error",
+                result.get(
+                    "message",
+                    "Bilinmeyen hata."
+                )
+            )
+
+            return (
+                f"❌ Dosya oluşturulamadı.\n\n"
+                f"Sebep: {error}"
+            )
+
+
+        if action == "read":
+
+            if success:
+
+                filename = result.get(
+                    "file",
+                    result.get(
+                        "filename",
+                        "dosya"
+                    )
+                )
+
+
+                content = result.get(
+                    "content",
+                    ""
+                )
+
+
+                return (
+                    f"📄 {filename}\n\n"
+                    f"İçerik:\n"
+                    f"{content}"
+                )
+
+
+            error = result.get(
+                "error",
+                result.get(
+                    "message",
+                    "Bilinmeyen hata."
+                )
+            )
+
+
+            return (
+                f"❌ Dosya okunamadı.\n\n"
+                f"Sebep: {error}"
+            )
+
+
+        #
+        # Generic success
+        #
+
+        if success:
+
+            message = result.get(
+                "message"
+            )
+
+
+            if message:
+
+                return (
+                    f"✅ {message}"
+                )
+
+
+            return (
+                "✅ İşlem başarıyla tamamlandı."
+            )
+
+
+        #
+        # Generic error
+        #
+
+        error = result.get(
+            "error",
+            result.get(
+                "message",
+                "Bilinmeyen hata."
+            )
+        )
+
+
+        return (
+            f"❌ İşlem başarısız.\n\n"
+            f"Sebep: {error}"
+        )

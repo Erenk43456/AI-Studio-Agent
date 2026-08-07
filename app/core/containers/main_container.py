@@ -7,14 +7,18 @@ from app.core.containers.chat_container import ChatContainer
 from app.core.containers.development_container import DevelopmentContainer
 
 
-
 class MainContainer:
 
 
     def __init__(self):
 
 
+        #
+        # Core
+        #
+
         self.core = CoreContainer()
+
 
 
         #
@@ -26,6 +30,7 @@ class MainContainer:
         )
 
 
+
         #
         # Memory
         #
@@ -33,6 +38,7 @@ class MainContainer:
         self.memory = MemoryContainer(
             self.core
         )
+
 
 
         #
@@ -45,6 +51,7 @@ class MainContainer:
         )
 
 
+
         #
         # Agents
         #
@@ -52,6 +59,7 @@ class MainContainer:
         self.agents = AgentContainer(
             self
         )
+
 
 
         #
@@ -65,4 +73,17 @@ class MainContainer:
 
         self.development = DevelopmentContainer(
             self
+        )
+
+
+
+        #
+        # Memory orchestrator
+        #
+
+        from app.core.orchestrators.memory_orchestrator import MemoryOrchestrator
+
+
+        self.memory.orchestrator = MemoryOrchestrator(
+            self.agents
         )
