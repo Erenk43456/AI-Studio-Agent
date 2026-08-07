@@ -2,6 +2,7 @@ from agents.code_agent import CodeAgent
 from agents.planner_agent import PlannerAgent
 
 from app.core.orchestrators.development_orchestrator import DevelopmentOrchestrator
+from app.core.workspace.watcher import WorkspaceWatcher
 
 
 class DevelopmentContainer:
@@ -19,6 +20,11 @@ class DevelopmentContainer:
             main.memory.project_memory
         )
 
+        self.workspace_path = (
+            main.core.workspace_path
+        )
+
+
 
         #
         # Tool Registry
@@ -29,6 +35,7 @@ class DevelopmentContainer:
         )
 
 
+
         #
         # LLMs
         #
@@ -37,10 +44,10 @@ class DevelopmentContainer:
             main.models.code_llm
         )
 
-
         self.planner_llm = (
             main.models.planner_llm
         )
+
 
 
         #
@@ -56,8 +63,9 @@ class DevelopmentContainer:
             self.code_llm,
             self.registry,
             main.memory.memory,
-            main.core.workspace_path
+            self.workspace_path
         )
+
 
 
         #
@@ -71,11 +79,26 @@ class DevelopmentContainer:
         )
 
 
+
+        #
+        # Workspace Watcher
+        #
+
+        self.watcher = WorkspaceWatcher(
+            self.workspace_path,
+            self.on_workspace_changes
+        )
+
+        self.watcher.start()
+
+
+
         #
         # Future
         #
 
         self.improvement_agent = None
+
 
 
         #
@@ -84,4 +107,17 @@ class DevelopmentContainer:
 
         self.orchestrator = DevelopmentOrchestrator(
             self
+        )
+
+
+
+    def on_workspace_changes(
+        self,
+        changed_files
+    ):
+
+        self.project_memory.update_project_info(
+            {
+                "changed_files": changed_files
+            }
         )
