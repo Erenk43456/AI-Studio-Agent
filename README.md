@@ -6,13 +6,13 @@
 
 The project separates **decision-making, planning, execution, memory, model integration, and user interaction** into independent components.
 
-Instead of relying on a single monolithic agent, AI-Studio-Agent routes requests to the appropriate subsystem, creates structured execution plans when necessary, executes tasks through registered tools, and returns the resulting output to the user.
+Instead of relying on a single monolithic agent, AI-Studio-Agent routes requests to the appropriate subsystem, creates structured execution plans when required, executes operations through registered tools, and returns structured results to the user.
 
 The architecture is designed to remain **modular, extensible, model-independent, testable, and maintainable**.
 
 ---
 
-## ✨ Highlights
+## ✨ Features
 
 * 🧠 Multi-agent architecture
 * 🔀 Centralized request routing
@@ -23,9 +23,9 @@ The architecture is designed to remain **modular, extensible, model-independent,
 * 💻 AI-assisted software development
 * 💾 Persistent conversation memory
 * 🧠 Project-oriented memory
-* 🔒 Workspace-restricted file operations
+* 🔒 Workspace-restricted filesystem operations
 * ♻️ Automatic file backups
-* 🔍 Code analysis and repair capabilities
+* 🔍 Code analysis and repair
 * 🤖 LLM abstraction layer
 * 🌐 API-based LLM integration
 * 🖥️ PySide6 desktop application
@@ -40,84 +40,59 @@ The architecture is designed to remain **modular, extensible, model-independent,
 
 # 🏗️ Architecture
 
-AI-Studio-Agent uses a layered, container-driven architecture built around **containers, orchestrators, specialized agents, tools, memory systems, and LLM abstractions**.
+AI-Studio-Agent uses a layered architecture built around:
 
-The architecture separates **application composition** from **runtime execution**.
+* **Containers** — application composition and dependency wiring
+* **Orchestrators** — runtime workflow coordination
+* **Agents** — specialized reasoning and execution
+* **Tools** — controlled concrete capabilities
+* **Memory** — persistent and contextual information
+* **LLM abstractions** — provider and model independence
+* **GUI** — user interaction and presentation
 
-| Layer                    | Responsibility                                  |
-| ------------------------ | ----------------------------------------------- |
-| **GUI**                  | User interaction and presentation               |
-| **Worker**               | Background AI execution                         |
-| **Main Orchestrator**    | Global request routing                          |
-| **Decision Agent**       | Request classification and system selection     |
-| **System Orchestrators** | Subsystem workflow control                      |
-| **Containers**           | Dependency construction and wiring              |
-| **Agents**               | Specialized reasoning and execution             |
-| **Planner**              | Converts natural language into structured plans |
-| **Tool Registry**        | Capability discovery and tool dispatch          |
-| **Tools**                | Concrete operations                             |
-| **Memory**               | Persistent and contextual information           |
-| **LLM Layer**            | Provider and model abstraction                  |
-
-### High-Level Architecture
+A key architectural principle is the separation between **composition** and **execution**.
 
 ```text
-                         ┌─────────────────────────┐
-                         │       PySide6 GUI       │
-                         │                         │
-                         │   ChatController        │
-                         │   AIWorker              │
-                         └────────────┬────────────┘
-                                      │
-                                      ▼
-                         ┌─────────────────────────┐
-                         │    MainOrchestrator     │
-                         │                         │
-                         │    Request Routing      │
-                         │    System Selection     │
-                         └────────────┬────────────┘
-                                      │
-                         ┌────────────┴────────────┐
-                         │                         │
-                         ▼                         ▼
-                ┌─────────────────┐       ┌─────────────────┐
-                │ DecisionAgent   │       │ System Registry │
-                │                 │       │                 │
-                │ Classification  │       │ Chat            │
-                │ Routing         │       │ Memory          │
-                └────────┬────────┘       │ Development     │
-                         │                └────────┬────────┘
-                         │                         │
-                         └────────────┬────────────┘
-                                      │
-              ┌───────────────────────┼───────────────────────┐
-              │                       │                       │
-              ▼                       ▼                       ▼
-      ┌─────────────────┐     ┌─────────────────┐     ┌──────────────────────┐
-      │   Chat System   │     │  Memory System  │     │ Development System   │
-      │                 │     │                 │     │                      │
-      │ ChatContainer   │     │ MemoryContainer │     │ DevelopmentContainer │
-      │ ChatOrchestrator│     │ Memory          │     │ DevelopmentOrchestr. │
-      │ ChatAgent       │     │ Conversation    │     │ PlannerAgent         │
-      │ Chat LLM        │     │ Project Memory  │     │ CodeAgent            │
-      └────────┬────────┘     └────────┬────────┘     │ Repository Analyzer  │
-               │                       │              └──────────┬───────────┘
-               ▼                       ▼                         │
-        ┌────────────┐         ┌──────────────┐                  ▼
-        │  Chat LLM  │         │ Memory Store │         ┌─────────────────┐
-        └────────────┘         └──────────────┘         │  Tool Registry  │
-                                                        └────────┬────────┘
-                                                                 │
-                                  ┌──────────────────────────────┼───────────────┐
-                                  │                              │               │
-                                  ▼                              ▼               ▼
-                           ┌─────────────┐              ┌─────────────┐  ┌─────────────┐
-                           │  File Tool  │              │ Code Tools  │  │ Calculator  │
-                           │             │              │             │  │             │
-                           │ read/write  │              │ analyzer    │  │ calculations│
-                           │ backup      │              │ writer      │  │             │
-                           │ workspace   │              │ repair      │  │             │
-                           └─────────────┘              └─────────────┘  └─────────────┘
+┌──────────────────────────────┐
+│          PySide6 GUI         │
+│                              │
+│     ChatController           │
+│     AIWorker                 │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│      MainOrchestrator        │
+│                              │
+│      Request Routing         │
+│      System Selection        │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│       DecisionAgent          │
+│                              │
+│    Request Classification    │
+└──────────────┬───────────────┘
+               │
+       ┌───────┼────────┐
+       │       │        │
+       ▼       ▼        ▼
+    Chat    Memory  Development
+    System  System     System
+                       │
+                       ▼
+              DevelopmentOrchestrator
+                       │
+              ┌────────┼────────┐
+              │        │        │
+              ▼        ▼        ▼
+           Planner  CodeAgent  Tools
+              │        │        │
+              └────────┼────────┘
+                       ▼
+                  Execution
+                    Results
 ```
 
 ---
@@ -126,7 +101,7 @@ The architecture separates **application composition** from **runtime execution*
 
 Containers form the **composition and dependency-wiring layer** of the application.
 
-They are responsible for constructing and connecting:
+They construct and connect:
 
 * Agents
 * Orchestrators
@@ -135,30 +110,28 @@ They are responsible for constructing and connecting:
 * LLM instances
 * Supporting services
 
-The containers inject these dependencies into the components that require them.
+Runtime components do not need to construct their own dependencies.
 
 ```text
-                         Application Container
-                                  │
-                ┌─────────────────┼─────────────────┐
-                │                 │                 │
-                ▼                 ▼                 ▼
-        ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐
-        │ ChatContainer│  │MemoryContainer│  │DevelopmentContainer│
-        └──────┬───────┘  └──────┬───────┘  └──────────┬─────────┘
-               │                 │                     │
-               ▼                 ▼                     ▼
-          ChatAgent       Memory System          PlannerAgent
-          ChatOrchestrator Conversation           CodeAgent
-          Chat LLM        Project Memory          Repository Analyzer
-               │                 │                     │
-               ▼                 ▼                     ▼
-         Chat System       Memory System       Development System
+                    Application Container
+                             │
+             ┌───────────────┼────────────────┐
+             │               │                │
+             ▼               ▼                ▼
+      ChatContainer   MemoryContainer   DevelopmentContainer
+             │               │                │
+             ▼               ▼                ▼
+        ChatAgent      Memory System     PlannerAgent
+        ChatOrch.      Conversation      CodeAgent
+        Chat LLM       Project Memory    Repository Analyzer
+             │               │                │
+             ▼               ▼                ▼
+        Chat System     Memory System   Development System
 ```
 
-This keeps object construction and dependency wiring separate from runtime business logic.
+This keeps **object construction** separate from **runtime business logic**.
 
-## Development Container
+### Development Container
 
 The development subsystem is composed approximately as follows:
 
@@ -166,32 +139,34 @@ The development subsystem is composed approximately as follows:
 DevelopmentContainer
         │
         ├── Planner LLM
-        │      │
-        │      ▼
-        │  PlannerAgent
+        │       │
+        │       ▼
+        │   PlannerAgent
         │
         ├── Code LLM
-        │      │
-        │      ▼
-        │  CodeAgent
+        │       │
+        │       ▼
+        │   CodeAgent
         │
         ├── Tool Registry
-        │      ├── Repository Analyzer
-        │      ├── File Tool
-        │      ├── Code Writer
-        │      ├── Code Analyzer
-        │      └── Code Repair
+        │       ├── Repository Analyzer
+        │       ├── File Tool
+        │       ├── Code Writer
+        │       ├── Code Analyzer
+        │       └── Code Repair
         │
         ├── Project Memory
         │
         └── DevelopmentOrchestrator
-               ├── PlannerAgent
-               ├── CodeAgent
-               ├── Repository Analyzer
-               └── Tool Registry
+                ├── PlannerAgent
+                ├── CodeAgent
+                ├── Repository Analyzer
+                └── Tool Registry
 ```
 
-The `DevelopmentOrchestrator` does not construct these dependencies itself. Instead, it receives them through the `DevelopmentContainer`, keeping orchestration focused on workflow execution rather than application composition.
+The `DevelopmentOrchestrator` receives these dependencies from the container instead of constructing them itself.
+
+This keeps orchestration focused on **workflow execution** rather than application composition.
 
 ---
 
@@ -223,16 +198,17 @@ PlannerAgent
      ▼
 Structured Execution Plan
      │
-     ├──────────────────┐
-     │                  │
-     ▼                  ▼
-Tool Registry        CodeAgent
-     │                  │
- ┌───┼───────────┐      │
- ▼   ▼           ▼      │
-File Analyzer  Repair    │
- │                       │
- └───────────┬───────────┘
+     ├─────────────────┐
+     │                 │
+     ▼                 ▼
+Tool Registry       CodeAgent
+     │                 │
+ ┌───┼───────┐         │
+ ▼   ▼       ▼         │
+File Analyzer Repair   │
+ │           │         │
+ └───────────┴─────────┘
+             │
              ▼
       Execution Results
              │
@@ -240,7 +216,7 @@ File Analyzer  Repair    │
       MainOrchestrator
              │
              ▼
-           AIWorker
+          AIWorker
              │
              ▼
             GUI
@@ -256,6 +232,25 @@ The architecture separates five major responsibilities:
 | **Memory**       | Provides persistent and contextual information       |
 | **Presentation** | Returns results to the user                          |
 
+---
+
+# 🧠 Separation of Responsibilities
+
+| Layer                | Responsibility                               |
+| -------------------- | -------------------------------------------- |
+| GUI                  | User interaction and presentation            |
+| Worker               | Background execution                         |
+| Main Orchestrator    | Global request routing                       |
+| Decision Agent       | Request classification                       |
+| System Orchestrators | Subsystem workflow control                   |
+| Containers           | Dependency construction and wiring           |
+| Agents               | Specialized reasoning and task execution     |
+| Planner              | Natural language → structured execution plan |
+| Tool Registry        | Tool discovery and dispatch                  |
+| Tools                | Concrete operations                          |
+| Memory               | Persistent and contextual information        |
+| LLM Layer            | Provider and model abstraction               |
+
 The dependency direction is intentionally kept simple:
 
 ```text
@@ -270,7 +265,7 @@ Agents
 Tools / Memory / LLM
 ```
 
-This allows individual components to evolve without forcing unrelated parts of the application to change.
+This allows individual components to evolve without forcing unrelated parts of the system to change.
 
 ---
 
@@ -331,25 +326,16 @@ Examples:
 "Remember that my project uses Python 3.12"
         │
         ▼
-      Memory
+     Memory
 ```
 
-The decision layer provides an extension point for introducing additional systems in the future.
+The decision layer also provides an extension point for introducing additional systems in the future.
 
 ---
 
 # 🛠️ Development System
 
-The Development System handles:
-
-* Programming tasks
-* File manipulation
-* Code analysis
-* Code repair
-* Repository-oriented workflows
-* Development automation
-
-Its core components include:
+The Development System handles programming, file manipulation, analysis, and development-oriented workflows.
 
 ```text
 DevelopmentOrchestrator
@@ -360,7 +346,7 @@ DevelopmentOrchestrator
         └── Tool Registry
 ```
 
-### Development Execution Flow
+### Development Workflow
 
 ```text
 User Request
@@ -374,17 +360,17 @@ PlannerAgent
      ▼
 Structured Plan
      │
-     ├─────────────────┐
-     │                 │
-     ▼                 ▼
-Tool Execution      CodeAgent
-     │                 │
-     ▼                 ▼
-File / Analysis     Code Tasks
-     │                 │
-     └────────┬────────┘
-              ▼
-           Results
+     ├───────────────┐
+     │               │
+     ▼               ▼
+Tool Execution    CodeAgent
+     │               │
+     ▼               ▼
+File / Analysis   Code Tasks
+     │               │
+     └───────┬───────┘
+             ▼
+          Results
 ```
 
 The orchestrator is responsible for executing generated plans and propagating failures instead of blindly reporting every execution as successful.
@@ -428,13 +414,17 @@ Planning
 Execution
 ```
 
-The LLM does not directly control the application's infrastructure. Instead, it produces a structured plan that the application validates and executes.
+The LLM does **not** directly control application infrastructure.
+
+Instead, it produces a structured plan that the application can validate and execute through controlled capabilities.
 
 ---
 
 # 🔧 Tool System
 
 AI-Studio-Agent exposes capabilities through a centralized tool registry.
+
+### Current Tools
 
 | Tool            | Purpose                          |
 | --------------- | -------------------------------- |
@@ -470,7 +460,7 @@ This allows new capabilities to be introduced without tightly coupling agents to
 
 File operations are restricted to a configured workspace boundary.
 
-The filesystem tool prevents normal operations from escaping the allowed workspace.
+The file system tool prevents normal operations from escaping the allowed workspace.
 
 For example, an attempt to access:
 
@@ -478,9 +468,9 @@ For example, an attempt to access:
 C:\Windows\System32
 ```
 
-is rejected when it falls outside the configured workspace.
+is rejected when the target is outside the configured workspace.
 
-This provides an explicit filesystem boundary between AI-generated operations and the host operating system.
+This creates an explicit filesystem boundary between AI-generated operations and the host operating system.
 
 The goal is to ensure that development tools operate within a controlled environment rather than having unrestricted filesystem access.
 
@@ -505,7 +495,7 @@ This provides a basic recovery mechanism for AI-generated modifications and redu
 
 The framework maintains persistent conversation history.
 
-Each conversation entry contains:
+A conversation entry follows the general structure:
 
 ```json
 {
@@ -515,7 +505,7 @@ Each conversation entry contains:
 }
 ```
 
-The system keeps a configurable recent history window rather than allowing conversation storage to grow indefinitely.
+The system keeps a configurable recent-history window rather than allowing the active context to grow indefinitely.
 
 Recent conversation context can then be supplied to the Chat Agent.
 
@@ -526,14 +516,14 @@ Recent conversation context can then be supplied to the Chat Agent.
 AI-Studio-Agent separates contextual information into different memory layers.
 
 ```text
-                     Memory
-                       │
-           ┌───────────┴───────────┐
-           │                       │
- Conversation Memory        Project Memory
-           │                       │
-           ▼                       ▼
-    Recent Context          Project Context
+                    Memory
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+ Conversation Memory       Project Memory
+          │                       │
+          ▼                       ▼
+   Recent Context           Project Context
 ```
 
 ### Conversation Memory
@@ -546,7 +536,7 @@ Stores persistent information that can be recalled by agents.
 
 ### Project Memory
 
-Stores project-specific information that can be used during development workflows.
+Stores project-specific information used during development workflows.
 
 This separation allows conversational context and development context to evolve independently.
 
@@ -555,6 +545,8 @@ This separation allows conversational context and development context to evolve 
 # 🤖 LLM Architecture
 
 Agents interact with language models through an abstraction layer.
+
+Conceptually:
 
 ```text
 DecisionAgent ──► Decision LLM
@@ -565,17 +557,15 @@ ChatAgent     ──► Chat LLM
 
 Each agent can therefore have its own LLM dependency.
 
-The current development configuration may use the same model for multiple agents to simplify development and maintain consistency.
+The current configuration may use the same model for multiple workloads to simplify development and maintain consistency.
 
-The architecture supports assigning different models to different workloads.
-
-For example:
+The architecture supports assigning different models to different workloads:
 
 ```text
-Decision Agent → Fast Model
-Planner Agent  → Reasoning Model
-Code Agent     → Coding Model
-Chat Agent     → General-Purpose Model
+Decision Agent → Fast model
+Planner Agent  → Reasoning model
+Code Agent     → Coding model
+Chat Agent     → General-purpose model
 ```
 
 This allows model specialization to be introduced without redesigning the agent architecture.
@@ -592,7 +582,7 @@ The current development environment uses **NVIDIA NIM** with:
 openai/gpt-oss-20b
 ```
 
-The provider abstraction is intended to support future integrations such as:
+The provider abstraction is intended to support:
 
 * Local LLMs
 * Other API providers
@@ -618,7 +608,7 @@ The application provides:
 * Persistent conversations
 * Development task execution
 
-Long-running LLM operations are handled through a worker thread to keep the GUI responsive.
+Long-running AI operations are handled outside the main GUI thread to keep the interface responsive.
 
 ```text
 GUI
@@ -654,19 +644,21 @@ The worker communicates results back to the GUI through Qt signals.
 
 # 🧪 Testing
 
-The project includes both **automated testing with pytest** and a dedicated **development testing workflow**.
+The project includes automated testing with **pytest** as well as development-oriented testing infrastructure.
 
 ## Pytest
 
-Pytest is used for automated component-level testing and regression testing.
+Run the automated test suite with:
 
 ```bash
 pytest
 ```
 
+Pytest is used for component-level testing and regression testing.
+
 ## Development Testing
 
-The project also contains development-oriented test infrastructure for validating integrated application workflows.
+The project also contains development-oriented infrastructure for validating integrated workflows.
 
 Typical integration flow:
 
@@ -684,7 +676,7 @@ Tool
 Result
 ```
 
-The combination of automated tests and development testing helps identify both isolated component failures and integration-level problems.
+This combination helps identify both isolated component failures and integration-level problems.
 
 ---
 
@@ -803,47 +795,47 @@ Run the automated test suite with:
 pytest
 ```
 
-Development-specific tests can be executed using the project's development testing workflow.
+Development-specific tests can be executed through the project's development testing workflow.
 
 ---
 
 # 💡 Example Usage
 
-### Create a File
+## Create a File
 
 ```text
 test.txt dosyası oluştur içine merhaba yaz
 ```
 
-The request can be transformed into a structured file operation and executed through the file tool.
+The request is converted into a structured operation and executed through the file tool.
 
-### Read a File
+## Read a File
 
 ```text
 test.txt dosyasını oku
 ```
 
-### Development Request
+## Development Request
 
 ```text
 Bu Python dosyasındaki hatayı analiz et ve düzelt.
 ```
 
-### General Conversation
+## General Conversation
 
 ```text
 Python'da decorator nedir?
 ```
 
-The request is routed to the appropriate subsystem based on the decision layer.
+Requests are routed to the appropriate subsystem through the decision layer.
 
 ---
 
-# 📊 Current Development Status
+# 📊 Development Status
 
 **Status: Active Development**
 
-The core application architecture is operational and currently undergoing **stabilization, testing, and optimization**.
+The core application architecture is operational and currently focused on **stabilization, testing, and optimization**.
 
 ## Implemented
 
@@ -886,7 +878,7 @@ Current priorities include:
 * Improving response quality
 * Improving system stability
 
-The current goal is to make the existing architecture **more reliable, predictable, and efficient before introducing larger autonomous-agent capabilities**.
+The immediate goal is to make the existing architecture **more reliable, predictable, and efficient** before introducing larger autonomous-agent capabilities.
 
 ---
 
@@ -914,7 +906,7 @@ Expansion
 
 Rather than continuously adding new AI capabilities, the project prioritizes making existing components reliable and predictable.
 
-This approach allows architectural problems to be identified before the system becomes significantly more complex.
+This approach helps identify architectural problems before the system becomes significantly more complex.
 
 ---
 
@@ -926,7 +918,7 @@ Each major responsibility is isolated into its own component.
 
 ## Separation of Concerns
 
-Decision-making, planning, execution, memory, model integration, and presentation are separated into different layers.
+Decision-making, planning, execution, memory, model integration, and presentation are separated into distinct layers.
 
 ## Extensibility
 
@@ -934,7 +926,7 @@ New agents, tools, models, and systems can be introduced without rewriting the e
 
 ## Model Independence
 
-The architecture does not depend on a specific LLM provider or model.
+The architecture is not fundamentally tied to a specific LLM provider or model.
 
 ## Controlled Execution
 
@@ -1000,7 +992,7 @@ Verification
 
 can be separated into independently maintainable components.
 
-The long-term goal is to evolve this foundation into a more capable AI-assisted development environment while maintaining **control, reliability, and architectural clarity**.
+The long-term goal is to evolve this foundation into a more capable **AI-assisted development environment** while maintaining control, reliability, and architectural clarity.
 
 ---
 
@@ -1012,9 +1004,9 @@ The core system is operational and currently focused on:
 
 ```text
 Stabilization
-      ↓
+     ↓
 Testing
-      ↓
+     ↓
 Optimization
 ```
 
@@ -1042,7 +1034,7 @@ AI-Studio-Agent is an independent software engineering project focused on explor
 
 # 🔗 Repository
 
-GitHub Repository: https://github.com/Erenk43456/AI-Studio-Agent
+[GitHub Repository](https://github.com/Erenk43456/AI-Studio-Agent)
 
 ---
 
@@ -1050,4 +1042,4 @@ GitHub Repository: https://github.com/Erenk43456/AI-Studio-Agent
 
 This project is licensed under the **MIT License**.
 
-See the `LICENSE` file for the full license text.
+See the [LICENSE](LICENSE) file for the full license text.
