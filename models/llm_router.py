@@ -1,9 +1,7 @@
 from app.core.logger import AppLogger
 
 
-
 class LLMRouter:
-
 
     def __init__(
         self,
@@ -18,9 +16,6 @@ class LLMRouter:
         self.logger = AppLogger()
 
 
-
-
-
     def generate(
         self,
         prompt,
@@ -30,30 +25,31 @@ class LLMRouter:
         timeout=None
     ):
 
-
         llm = self.get_for_mode(
             mode
         )
 
+        kwargs = {}
+
+        if max_tokens is not None:
+            kwargs["max_tokens"] = max_tokens
+
+        if temperature is not None:
+            kwargs["temperature"] = temperature
+
+        if timeout is not None:
+            kwargs["timeout"] = timeout
 
         return llm.generate(
             prompt,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            timeout=timeout
+            **kwargs
         )
-
-
-
-
-
 
 
     def get_for_mode(
         self,
         mode
     ):
-
 
         if mode == "planner":
 
@@ -64,24 +60,16 @@ class LLMRouter:
             return self.planner_llm
 
 
-
         self.logger.info(
             "Router selected: chat LLM"
         )
 
-
         return self.chat_llm
-
-
-
-
-
 
 
     def get_models(
         self
     ):
-
 
         models = []
 
@@ -96,7 +84,6 @@ class LLMRouter:
             )
 
 
-
         if hasattr(
             self.chat_llm,
             "get_models"
@@ -107,21 +94,14 @@ class LLMRouter:
             )
 
 
-
         return list(
             set(models)
         )
 
 
-
-
-
-
-
     def get_current_model(
         self
     ):
-
 
         if hasattr(
             self.chat_llm,
@@ -131,45 +111,27 @@ class LLMRouter:
             return self.chat_llm.get_current_model()
 
 
-
         return None
-
-
-
-
-
 
 
     def has_model(
         self
     ):
 
-
         return (
-
             self.planner_llm.has_model()
-
             or
-
             self.chat_llm.has_model()
-
         )
-
-
-
-
-
 
 
     def check_connection(
         self
     ):
 
-
         chat_status = False
 
         planner_status = False
-
 
 
         if hasattr(
@@ -177,8 +139,9 @@ class LLMRouter:
             "check_connection"
         ):
 
-            chat_status = self.chat_llm.check_connection()
-
+            chat_status = (
+                self.chat_llm.check_connection()
+            )
 
 
         if hasattr(
@@ -186,24 +149,16 @@ class LLMRouter:
             "check_connection"
         ):
 
-            planner_status = self.planner_llm.check_connection()
-
+            planner_status = (
+                self.planner_llm.check_connection()
+            )
 
 
         return (
-
             chat_status
-
             or
-
             planner_status
-
         )
-
-
-
-
-
 
 
     def get_for_task(
@@ -212,11 +167,9 @@ class LLMRouter:
         mode="auto"
     ):
 
-
         if mode == "planner":
 
             return self.planner_llm
-
 
 
         if mode == "chat":
@@ -224,11 +177,7 @@ class LLMRouter:
             return self.chat_llm
 
 
-
-
-
         task_lower = task.lower()
-
 
 
         coding_keywords = [
@@ -251,27 +200,19 @@ class LLMRouter:
         ]
 
 
-
         for word in coding_keywords:
 
-
             if word in task_lower:
-
 
                 self.logger.info(
                     "Router selected: planner LLM"
                 )
 
-
                 return self.planner_llm
-
-
-
 
 
         self.logger.info(
             "Router selected: chat LLM"
         )
-
 
         return self.chat_llm
