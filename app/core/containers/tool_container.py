@@ -6,6 +6,8 @@ from tools.code_writer_tool import CodeWriterTool
 from tools.code_analyzer_tool import CodeAnalyzerTool
 from tools.code_repair_tool import CodeRepairTool
 from tools.repository_analyzer import RepositoryAnalyzerTool
+from tools.project_memory_tool import ProjectMemoryTool
+from tools.memory_tool import MemoryTool
 
 
 class ToolContainer:
@@ -65,6 +67,22 @@ class ToolContainer:
             project_memory=memory.project_memory
         )
 
+        #
+        # Project Memory
+        #
+
+        self.project_memory = ProjectMemoryTool(
+            memory.project_memory
+        )
+
+        #
+        # User Memory
+        #
+
+        self.memory_tool = MemoryTool(
+            memory.memory
+        )
+
 
         #
         # Register
@@ -98,4 +116,14 @@ class ToolContainer:
         self.registry.register(
             "repository_analyzer",
             self.repository_analyzer
+        )
+
+        self.registry.register(
+            "project_memory",
+            self.project_memory
+        )
+
+        self.registry.register(
+            "memory",
+            self.memory_tool
         )
