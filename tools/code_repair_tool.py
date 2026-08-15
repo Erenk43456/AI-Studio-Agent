@@ -6,6 +6,25 @@ from tools.formatter_tool import FormatterTool
 
 class CodeRepairTool:
 
+    name = "code_repair"
+
+    description = (
+        "Repairs Python syntax and logical errors "
+        "using an LLM and formats the resulting code."
+    )
+
+    purpose = (
+        "Repair broken Python source code."
+    )
+
+    safe = False
+
+    modifies_files = True
+
+    requires_information = True
+
+    version = "1.0"
+
 
     def __init__(
         self,

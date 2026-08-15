@@ -15,6 +15,18 @@ class FileTool:
         "Secure workspace file operations."
     )
 
+    purpose = (
+        "Read, create, and modify files inside the workspace."
+    )
+
+    safe = False
+
+    modifies_files = True
+
+    requires_confirmation = True
+    
+    version = "1.0"
+
 
     def __init__(
         self,

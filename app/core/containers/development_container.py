@@ -55,7 +55,9 @@ class DevelopmentContainer:
         #
 
         self.planner = PlannerAgent(
-            self.planner_llm
+            self.planner_llm,
+            main.memory.memory,
+            self.registry
         )
 
 

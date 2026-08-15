@@ -123,6 +123,27 @@ CHECKS = [
 
 
 class RepositoryAnalyzerTool:
+
+    name = "repository_analyzer"
+
+    description = (
+        "Analyzes the AI-Studio-Agent codebase"
+    )
+
+    purpose = (
+        "Analyze the repository structure, architecture, dependencies, tools, and known issues."
+    )
+
+    safe = True
+
+    modifies_files = False
+
+    requires_confirmation = False
+    
+    version = "1.0"
+
+
+
     """Analyzes the AI-Studio-Agent codebase.
 
     ``execute(plan)`` returns the human-readable text report (same

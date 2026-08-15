@@ -6,6 +6,27 @@ from app.core.logger import AppLogger
 
 
 class CodeAnalyzerTool:
+
+    name = "code_analyzer"
+
+    description = (
+        "Analyzes Python source code from files"
+    )
+
+    purpose = (
+        "Analyze Python source code for syntax, logic, security, performance, and architecture issues."
+    )
+
+    safe = True
+
+    modifies_files = False
+
+    requires_confirmation = False
+
+    version = "1.0" 
+
+
+
     """
     Static and AI based Python code analyzer.
 

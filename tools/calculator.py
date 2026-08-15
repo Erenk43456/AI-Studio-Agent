@@ -14,6 +14,18 @@ class Calculator(BaseTool):
         "such as addition, subtraction, multiplication and division."
     )
 
+    purpose = (
+        "Perform mathematical calculations."
+    )
+
+    safe = True
+
+    modifies_files = False
+
+    requires_confirmation = False
+
+    version = "1.0"
+
 
 
     def __init__(self):

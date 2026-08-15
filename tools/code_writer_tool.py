@@ -15,6 +15,18 @@ class CodeWriterTool:
         "by generating and writing code changes."
     )
 
+    purpose = (
+        "Modify existing project source files."
+    )
+
+    safe = False
+
+    modifies_files = True
+
+    requires_confirmation = True
+
+    version = "1.0"
+
 
     def __init__(
         self,
