@@ -446,11 +446,11 @@ CHECKS = [
     ),
 
     (
-        "Planner includes repository_analyzer parser",
-        "agents/planner_agent.py",
+        "LLM Planner supports repository_analyzer",
+        "agents/planner/llm_planner.py",
         [
             "repository_analyzer",
-            "parse_repository_analyzer",
+            '"analyze"',
         ],
     ),
 ]
