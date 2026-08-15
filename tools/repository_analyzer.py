@@ -57,67 +57,401 @@ MARKER_SCAN_EXCLUDES = {
 MARKER_PATTERN = re.compile(r"\b(?:TODO|FIXME|XXX)\b")
 
 MODULE_ROLES = {
-    "app/core/container.py": "Dependency injection composition root",
-    "app/core/orchestrator/orchestrator.py": "Routes plans to chat/tool agents",
-    "agents/planner_agent.py": "Keyword parsers -> LLM JSON plan fallback",
-    "agents/chat_agent.py": "Conversational agent building the LLM prompt",
-    "agents/tool_agent.py": "Executes single tools and multi-step plans",
-    "agents/code_agent.py": "Code-task agent (currently unused)",
-    "agents/decision_agent.py": "Legacy rule-based router (tests only)",
-    "models/llm_provider.py": "Selects local (Ollama) or API LLM backend",
-    "models/llm.py": "Ollama local LLM client",
-    "models/api_llm.py": "API (OpenAI-style) LLM client",
-    "memory/memory.py": "Persistent key-value memory (data/memory.json)",
-    "memory/conversation.py": "Per-chat rolling conversation history",
-    "memory/chat_manager.py": "Chat session index (data/chats.json)",
-    "tools/tool_registry.py": "name -> tool instance registry",
-    "config/config_manager.py": "JSON settings store (config/settings.json)",
-    "app/window/backend.py": "Exposes container services to the GUI",
-    "app/window/main_window.py": "Main Qt window wiring controllers",
-    "app/worker.py": "Background QThread for AI requests",
+    # Core
+    "app/core/containers/core_container.py":
+        "Core dependency and workspace configuration",
+
+    "app/core/containers/model_container.py":
+        "Creates and configures LLM providers",
+
+    "app/core/containers/memory_container.py":
+        "Creates persistent memory, conversation memory, chat manager, and project memory",
+
+    "app/core/containers/tool_container.py":
+        "Creates and registers all executable tools",
+
+    "app/core/containers/agent_container.py":
+        "Creates and wires application agents",
+
+    "app/core/containers/chat_container.py":
+        "Creates ChatAgent and ChatOrchestrator",
+
+    "app/core/containers/development_container.py":
+        "Creates development agents, repository analyzer access, watcher, and DevelopmentOrchestrator",
+
+    "app/core/containers/main_container.py":
+        "Application dependency injection composition root",
+
+    # Orchestration
+    "app/core/orchestrators/main_orchestrator.py":
+        "Routes requests between chat, memory, and development systems",
+
+    "app/core/orchestrators/chat_orchestrator.py":
+        "Routes chat requests to ChatAgent",
+
+    "app/core/orchestrators/memory_orchestrator.py":
+        "Routes memory operations to MemoryAgent",
+
+    "app/core/orchestrators/development_orchestrator.py":
+        "Plans and executes development tasks",
+
+    # Agents
+    "agents/planner_agent.py":
+        "Creates structured execution plans",
+
+    "agents/chat_agent.py":
+        "Conversational agent building the LLM prompt",
+
+    "agents/tool_agent.py":
+        "Executes single tools and multi-step plans",
+
+    "agents/code_agent.py":
+        "Code-task agent",
+
+    "agents/decision_agent.py":
+        "Routes incoming user requests to the appropriate system",
+
+    "agents/memory_agent.py":
+        "Handles persistent user memory operations",
+
+    # Models
+    "models/llm_provider.py":
+        "Selects local or API LLM backend",
+
+    "models/llm.py":
+        "Ollama local LLM client",
+
+    "models/api_llm.py":
+        "OpenAI-compatible API LLM client",
+
+    # Memory
+    "memory/memory.py":
+        "Persistent key-value user memory",
+
+    "memory/conversation.py":
+        "Per-conversation rolling history",
+
+    "memory/chat_manager.py":
+        "Chat session management",
+
+    # Tools
+    "tools/tool_registry.py":
+        "Tool name to implementation registry",
+
+    "tools/repository_analyzer.py":
+        "Static repository architecture analyzer",
+
+    "tools/project_memory_tool.py":
+        "Project memory tool",
+
+    "tools/memory_tool.py":
+        "User memory tool",
+
+    # Configuration / GUI
+    "config/config_manager.py":
+        "JSON configuration and environment settings",
+
+    "app/window/backend.py":
+        "Exposes application services to the GUI",
+
+    "app/window/main_window.py":
+        "Main Qt window and GUI wiring",
+
+    "app/worker.py":
+        "Background worker for AI requests",
 }
 
 # (label, relative file, ordered substrings) -> wiring check
 CHECKS = [
+
+    # --------------------------------------------------------------
+    # Main Container
+    # --------------------------------------------------------------
+
     (
-        "Container wires PlannerAgent(llm, memory)",
-        "app/core/container.py",
-        ["self.planner = PlannerAgent(", "self.llm,", "self.memory"],
+        "MainContainer wires CoreContainer",
+        "app/core/containers/main_container.py",
+        ["self.core = CoreContainer("],
     ),
+
     (
-        "Container wires ChatAgent(llm, memory)",
-        "app/core/container.py",
-        ["self.chat_agent = ChatAgent(", "self.llm,", "self.memory"],
+        "MainContainer wires ModelContainer",
+        "app/core/containers/main_container.py",
+        ["self.models = ModelContainer("],
     ),
+
     (
-        "repository_analyzer registered in container",
-        "app/core/container.py",
-        ['"repository_analyzer"'],
+        "MainContainer wires MemoryContainer",
+        "app/core/containers/main_container.py",
+        ["self.memory = MemoryContainer("],
     ),
+
     (
-        "Memory aliases registered (memory_save/memory_get)",
-        "app/core/container.py",
-        ['"memory_save"', '"memory_get"'],
+        "MainContainer wires ToolContainer",
+        "app/core/containers/main_container.py",
+        ["self.tools = ToolContainer("],
     ),
+
+    (
+        "MainContainer wires AgentContainer",
+        "app/core/containers/main_container.py",
+        ["self.agents = AgentContainer("],
+    ),
+
+    (
+        "MainContainer wires ChatContainer",
+        "app/core/containers/main_container.py",
+        ["self.chat = ChatContainer("],
+    ),
+
+    (
+        "MainContainer wires DevelopmentContainer",
+        "app/core/containers/main_container.py",
+        ["self.development = DevelopmentContainer("],
+    ),
+
+    (
+        "MainContainer creates MemoryOrchestrator",
+        "app/core/containers/main_container.py",
+        [
+            "MemoryOrchestrator(",
+            "self.memory.orchestrator",
+        ],
+    ),
+
+
+    # --------------------------------------------------------------
+    # Tool Container
+    # --------------------------------------------------------------
+
+    (
+        "ToolContainer registers repository_analyzer",
+        "app/core/containers/tool_container.py",
+        [
+            '"repository_analyzer"',
+            "self.repository_analyzer",
+        ],
+    ),
+
+    (
+        "ToolContainer registers project_memory",
+        "app/core/containers/tool_container.py",
+        [
+            '"project_memory"',
+            "self.project_memory",
+        ],
+    ),
+
+    (
+        "ToolContainer registers memory",
+        "app/core/containers/tool_container.py",
+        [
+            '"memory"',
+            "self.memory_tool",
+        ],
+    ),
+
+    (
+        "ToolContainer registers code_writer",
+        "app/core/containers/tool_container.py",
+        [
+            '"code_writer"',
+            "self.code_writer",
+        ],
+    ),
+
+    (
+        "ToolContainer registers code_analyzer",
+        "app/core/containers/tool_container.py",
+        [
+            '"code_analyzer"',
+            "self.code_analyzer",
+        ],
+    ),
+
+    (
+        "ToolContainer registers code_repair",
+        "app/core/containers/tool_container.py",
+        [
+            '"code_repair"',
+            "self.code_repair",
+        ],
+    ),
+
+
+    # --------------------------------------------------------------
+    # Agent Container
+    # --------------------------------------------------------------
+
+    (
+        "AgentContainer wires DecisionAgent",
+        "app/core/containers/agent_container.py",
+        [
+            "self.decision = DecisionAgent(",
+            "main.models.decision_llm",
+        ],
+    ),
+
+    (
+        "AgentContainer wires ChatAgent",
+        "app/core/containers/agent_container.py",
+        [
+            "self.chat = ChatAgent(",
+            "main.models.chat_llm",
+        ],
+    ),
+
+    (
+        "AgentContainer wires CodeAgent",
+        "app/core/containers/agent_container.py",
+        [
+            "self.code = CodeAgent(",
+            "main.models.code_llm",
+        ],
+    ),
+
+    (
+        "AgentContainer wires MemoryAgent",
+        "app/core/containers/agent_container.py",
+        [
+            "self.memory = MemoryAgent(",
+        ],
+    ),
+
+
+    # --------------------------------------------------------------
+    # Chat Container
+    # --------------------------------------------------------------
+
+    (
+        "ChatContainer wires ChatAgent",
+        "app/core/containers/chat_container.py",
+        [
+            "self.chat_agent = ChatAgent(",
+            "llm=self.llm",
+            "memory=self.memory",
+        ],
+    ),
+
+    (
+        "ChatContainer wires ChatOrchestrator",
+        "app/core/containers/chat_container.py",
+        [
+            "self.orchestrator = ChatOrchestrator(",
+        ],
+    ),
+
+
+    # --------------------------------------------------------------
+    # Development Container
+    # --------------------------------------------------------------
+
+    (
+        "DevelopmentContainer wires PlannerAgent",
+        "app/core/containers/development_container.py",
+        [
+            "self.planner = PlannerAgent(",
+            "self.planner_llm",
+            "main.memory.memory",
+            "self.registry",
+        ],
+    ),
+
+    (
+        "DevelopmentContainer wires CodeAgent",
+        "app/core/containers/development_container.py",
+        [
+            "self.code_agent = CodeAgent(",
+            "self.code_llm",
+        ],
+    ),
+
+    (
+        "DevelopmentContainer resolves repository_analyzer",
+        "app/core/containers/development_container.py",
+        [
+            'self.registry.get(',
+            '"repository_analyzer"',
+        ],
+    ),
+
+    (
+        "DevelopmentContainer wires DevelopmentOrchestrator",
+        "app/core/containers/development_container.py",
+        [
+            "self.orchestrator = DevelopmentOrchestrator(",
+        ],
+    ),
+
+
+    # --------------------------------------------------------------
+    # Main Orchestrator
+    # --------------------------------------------------------------
+
+    (
+        "MainOrchestrator routes chat",
+        "app/core/orchestrators/main_orchestrator.py",
+        [
+            '"chat":',
+            "container.chat.orchestrator",
+        ],
+    ),
+
+    (
+        "MainOrchestrator routes memory",
+        "app/core/orchestrators/main_orchestrator.py",
+        [
+            '"memory":',
+            "container.memory.orchestrator",
+        ],
+    ),
+
+    (
+        "MainOrchestrator routes development",
+        "app/core/orchestrators/main_orchestrator.py",
+        [
+            '"development":',
+            "container.development.orchestrator",
+        ],
+    ),
+
+
+    # --------------------------------------------------------------
+    # Chat Orchestrator
+    # --------------------------------------------------------------
+
+    (
+        "ChatOrchestrator forwards conversation",
+        "app/core/orchestrators/chat_orchestrator.py",
+        [
+            "self.chat_agent.conversation =",
+        ],
+    ),
+
+
+    # --------------------------------------------------------------
+    # Core capabilities
+    # --------------------------------------------------------------
+
     (
         "ConversationMemory.get_last exists",
         "memory/conversation.py",
         ["def get_last("],
     ),
+
     (
         "ToolAgent.execute_steps exists",
         "agents/tool_agent.py",
         ["def execute_steps("],
     ),
-    (
-        "Orchestrator forwards conversation to chat agent",
-        "app/core/orchestrator/orchestrator.py",
-        ["agent.conversation = conversation"],
-    ),
+
     (
         "Planner includes repository_analyzer parser",
         "agents/planner_agent.py",
-        ["repository_analyzer", "parse_repository_analyzer"],
+        [
+            "repository_analyzer",
+            "parse_repository_analyzer",
+        ],
     ),
 ]
 
@@ -404,7 +738,7 @@ class RepositoryAnalyzerTool:
                         ),
                     }
                 )
-        container = root / "app/core/container.py"
+        container = root / "app/core/containers/tool_container.py"
         registry_names = []
         if container.exists():
             registry_names = re.findall(
