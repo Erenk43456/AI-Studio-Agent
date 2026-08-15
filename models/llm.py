@@ -73,6 +73,13 @@ class LLM:
 
 
 
+        self.request_timeout = self.config.get(
+            "ollama_timeout",
+            120
+        )
+
+
+
         self.logger.info(
 
             f"LLM initialized: {self.model}"
@@ -87,7 +94,10 @@ class LLM:
 
     def generate(
         self,
-        prompt
+        prompt,
+        max_tokens=None,
+        temperature=None,
+        timeout=None
     ):
 
 
@@ -123,17 +133,29 @@ class LLM:
                     "options": {
 
 
-                        "temperature": self.temperature,
+                        "temperature": (
+                            self.temperature
+                            if temperature is None
+                            else temperature
+                        ),
 
 
-                        "num_predict": self.num_predict
+                        "num_predict": (
+                            self.num_predict
+                            if max_tokens is None
+                            else max_tokens
+                        ),
 
                     }
 
                 },
 
 
-                timeout=120
+                timeout=(
+                    self.request_timeout
+                    if timeout is None
+                    else timeout
+                )
 
             )
 
