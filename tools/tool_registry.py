@@ -1,5 +1,4 @@
 from app.core.logger import AppLogger
-import inspect
 
 
 
@@ -36,29 +35,65 @@ class ToolRegistry:
 
         self.tools[name] = tool
 
+        tool_description = getattr(
+            tool,
+            "description",
+            "No description provided."
+        )
 
-        self.metadata[name] = metadata or {
+        tool_purpose = getattr(
+            tool,
+            "purpose",
+            "Unknown"
+        )
+
+        default_metadata = {
 
             "description":
-            "No description provided.",
+                tool_description,
 
-            "purpose":
-            "Unknown",
+            "purpose": 
+                tool_purpose,
 
             "safe":
-            True,
+                getattr(
+                    tool,
+                    "safe",
+                    True
+                ),
 
             "modifies_files":
-            False,
+                getattr(
+                    tool,
+                    "modifies_files",
+                    False
+                ),
 
             "requires_confirmation":
-            False,
+                getattr(
+                    tool,
+                    "requires_confirmation",
+                    False
+                ),
 
             "version":
-            "1.0"
+                getattr(
+                    tool,
+                    "version",
+                    "1.0"
+                ),
 
         }
 
+        if metadata:
+
+            default_metadata.update(
+                metadata
+            )
+
+        self.metadata[name] = (
+            default_metadata
+        )
 
         self.logger.info(
             f"Tool registered: {name}"
