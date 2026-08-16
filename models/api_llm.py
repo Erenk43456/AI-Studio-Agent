@@ -39,14 +39,20 @@ class APILLM:
             2048
         )
 
+        # GPT-OSS-120B and other large reasoning models
+        # may need significantly more than 60 seconds.
         self.timeout = self.config.get(
             "api_timeout",
-            60
+            180
         )
 
         self.logger.info(
             f"API LLM initialized: {self.model}"
         )
+
+    # =============================================================
+    # Generate
+    # =============================================================
 
     def generate(
         self,
@@ -110,8 +116,6 @@ class APILLM:
 
                 "top_p": 1,
 
-                "reasoning_effort": "low",
-
                 "stream": False
             }
 
@@ -131,6 +135,10 @@ class APILLM:
                 f"MAX TOKENS: {request_max_tokens}"
             )
 
+            self.logger.info(
+                f"TIMEOUT: {request_timeout}"
+            )
+
             response = requests.post(
                 self.url,
                 headers=headers,
@@ -142,6 +150,10 @@ class APILLM:
                 f"STATUS: {response.status_code}"
             )
 
+            # =====================================================
+            # HTTP error
+            # =====================================================
+
             if response.status_code != 200:
 
                 self.logger.error(
@@ -152,6 +164,10 @@ class APILLM:
                     "error": response.text,
                     "status": response.status_code
                 }
+
+            # =====================================================
+            # Parse response
+            # =====================================================
 
             data = response.json()
 
@@ -178,6 +194,16 @@ class APILLM:
                 {}
             )
 
+            if not isinstance(
+                message,
+                dict
+            ):
+
+                return {
+                    "error": "Invalid message object",
+                    "raw": data
+                }
+
             content = message.get(
                 "content"
             )
@@ -194,9 +220,9 @@ class APILLM:
                 "reasoning_content"
             )
 
-            #
+            # =====================================================
             # Normal response
-            #
+            # =====================================================
 
             if isinstance(
                 content,
@@ -205,9 +231,9 @@ class APILLM:
 
                 return content.strip()
 
-            #
-            # Content is missing.
-            #
+            # =====================================================
+            # Missing final content
+            # =====================================================
 
             self.logger.error(
                 "LLM returned no content."
@@ -216,11 +242,6 @@ class APILLM:
             self.logger.error(
                 f"Finish reason: {finish_reason}"
             )
-
-            #
-            # Reasoning existed but the model
-            # did not reach the final answer.
-            #
 
             if reasoning or reasoning_content:
 
@@ -231,67 +252,75 @@ class APILLM:
                 if finish_reason == "length":
 
                     return {
-                        "error":
+                        "error": (
                             "Model reached max_tokens "
                             "during reasoning before producing "
-                            "a final response.",
-
-                        "finish_reason":
-                            finish_reason,
-
-                        "reasoning_present":
-                            True
+                            "a final response."
+                        ),
+                        "finish_reason": finish_reason,
+                        "reasoning_present": True
                     }
 
             return {
                 "error": "Empty model response",
-
-                "finish_reason":
-                    finish_reason,
-
-                "raw":
-                    data
+                "finish_reason": finish_reason,
+                "raw": data
             }
+
+        # =========================================================
+        # Timeout
+        # =========================================================
 
         except requests.exceptions.Timeout:
 
             self.logger.error(
-                "API request timeout."
+                f"API request timeout after {request_timeout} seconds."
             )
 
             return {
-                "error": "API timeout"
+                "error": "API timeout",
+                "timeout": request_timeout,
+                "model": self.model
             }
 
-        except requests.exceptions.RequestException as e:
+        # =========================================================
+        # Request error
+        # =========================================================
+
+        except requests.exceptions.RequestException as error:
 
             self.logger.error(
-                f"API request error: {e}"
+                f"API request error: {error}"
             )
 
             return {
-                "error":
-                    f"API request error: {e}"
+                "error": f"API request error: {error}"
             }
 
-        except ValueError as e:
+        # =========================================================
+        # Invalid JSON
+        # =========================================================
+
+        except ValueError as error:
 
             self.logger.error(
-                f"Invalid JSON response: {e}"
+                f"Invalid JSON response: {error}"
             )
 
             return {
-                "error":
-                    f"Invalid API response: {e}"
+                "error": f"Invalid API response: {error}"
             }
 
-        except Exception as e:
+        # =========================================================
+        # Unknown error
+        # =========================================================
+
+        except Exception as error:
 
             self.logger.error(
-                f"API LLM error: {e}"
+                f"API LLM error: {error}"
             )
 
             return {
-                "error":
-                    str(e)
+                "error": str(error)
             }

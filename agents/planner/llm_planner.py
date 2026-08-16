@@ -2,22 +2,37 @@ import json
 import re
 
 
-def clean_json(text):
+def clean_json(
+    text
+):
 
-    if not text:
+    if not isinstance(
+        text,
+        str
+    ):
+
         return "{}"
 
     text = text.strip()
 
-    text = text.replace(
-        "```json",
-        ""
+    if not text:
+
+        return "{}"
+
+    text = re.sub(
+        r"^```(?:json)?\s*",
+        "",
+        text,
+        flags=re.IGNORECASE
     )
 
-    text = text.replace(
-        "```",
-        ""
+    text = re.sub(
+        r"\s*```$",
+        "",
+        text
     )
+
+    text = text.strip()
 
     match = re.search(
         r"\{[\s\S]*\}",
@@ -25,19 +40,30 @@ def clean_json(text):
     )
 
     if match:
+
         return match.group()
 
     return "{}"
 
 
-def format_tools(tool_descriptions):
+def format_tools(
+    tool_descriptions
+):
 
     if not tool_descriptions:
+
         return "No tool information available."
 
     result = ""
 
     for tool in tool_descriptions:
+
+        if not isinstance(
+            tool,
+            dict
+        ):
+
+            continue
 
         result += f"""
 Tool:
@@ -51,6 +77,10 @@ Purpose:
 
 ---
 """
+
+    if not result:
+
+        return "No tool information available."
 
     return result
 
@@ -115,65 +145,47 @@ memory
 Allowed actions:
 
 1. get
-   Retrieves persistent user memory.
 
-   Required field:
-   - key
+Required field:
+- key
 
-   Example:
+Example:
 
-   {{
-       "tool": "memory",
-       "action": "get",
-       "key": "user_name"
-   }}
+{{
+    "tool": "memory",
+    "action": "get",
+    "key": "user_name"
+}}
 
 2. save
-   Stores persistent user memory.
 
-   Required fields:
-   - key
-   - value
+Required fields:
+- key
+- value
 
-   Optional field:
-   - category
+Optional field:
+- category
 
-   Example:
+Example:
 
-   {{
-       "tool": "memory",
-       "action": "save",
-       "key": "user_name",
-       "value": "Eren",
-       "category": "personal"
-   }}
+{{
+    "tool": "memory",
+    "action": "save",
+    "key": "user_name",
+    "value": "Eren",
+    "category": "personal"
+}}
 
 IMPORTANT:
 
-For memory retrieval, ONLY use:
+For memory retrieval ONLY use:
 
 "action": "get"
 
-Never use:
-
-- query
-- retrieve
-- recall
-- search
-- lookup
-- read
-- fetch
-
-For memory saving, ONLY use:
+For memory saving ONLY use:
 
 "action": "save"
 
-Never use:
-
-- remember
-- store
-- write
-- add
 
 --------------------------------------------------
 PROJECT MEMORY TOOL
@@ -191,41 +203,6 @@ Allowed actions:
 - search
 - context
 
-Examples:
-
-{{
-    "tool": "project_memory",
-    "action": "overview"
-}}
-
-{{
-    "tool": "project_memory",
-    "action": "architecture"
-}}
-
-{{
-    "tool": "project_memory",
-    "action": "files"
-}}
-
-{{
-    "tool": "project_memory",
-    "action": "file",
-    "path": "agents/chat_agent.py"
-}}
-
-{{
-    "tool": "project_memory",
-    "action": "search",
-    "query": "memory"
-}}
-
-{{
-    "tool": "project_memory",
-    "action": "context",
-    "query": "memory",
-    "limit": 5
-}}
 
 --------------------------------------------------
 CODE ANALYZER
@@ -247,6 +224,7 @@ Example:
     "input": "Analyze file"
 }}
 
+
 --------------------------------------------------
 REPOSITORY ANALYZER
 --------------------------------------------------
@@ -266,6 +244,7 @@ Example:
     "input": "Analyze repository architecture"
 }}
 
+
 --------------------------------------------------
 CODE
 --------------------------------------------------
@@ -277,7 +256,17 @@ Allowed action:
 
 - implement
 
-Use this when the user wants to modify software.
+Use this when the user wants to:
+
+- modify
+- fix
+- implement
+- improve
+- refactor
+- extend
+- change
+
+existing software.
 
 Example:
 
@@ -287,163 +276,73 @@ Example:
     "input": "Fix the memory system"
 }}
 
---------------------------------------------------
-CHAT
---------------------------------------------------
-
-Tool name:
-chat
-
-Allowed action:
-
-- chat
-
-Example:
-
-{{
-    "tool": "chat",
-    "action": "chat",
-    "input": "Hello"
-}}
-
 
 ==================================================
 TOOL SELECTION RULES
 ==================================================
 
-chat:
-Use ONLY for normal conversation, greetings, casual discussion, general questions, or questions that cannot be answered by another available tool.
-
 memory:
-Use when the user asks about persistent personal information, remembered facts, preferences, or asks the system to remember something.
 
-Examples:
-
-- "Benim adım ne?"
-- "What is my name?"
-- "Beni hatırlıyor musun?"
-- "Do you remember me?"
-- "Favori oyunum ne?"
-- "What is my favorite game?"
-- "Benim hakkımda ne biliyorsun?"
-- "What do you know about me?"
-
-Do NOT use chat when the answer can be obtained from memory.
-
-For a known personal fact, prefer a specific memory key.
-
-For example:
-
-"Benim adım ne?"
-
-must become:
-
-{{
-    "tool": "memory",
-    "action": "get",
-    "key": "user_name"
-}}
-
-The Turkish and English versions of the same request MUST produce the same canonical tool action.
-
---------------------------------------------------
+Use for persistent user information.
 
 code_analyzer:
-Use when the user wants to inspect, review, understand, explain, diagnose, or find problems in EXISTING SOURCE CODE.
 
-Examples:
-
-- "agents/chat_agent.py dosyasını analiz et"
-- "Analyze agents/chat_agent.py"
-- "Bu dosyada hata var mı?"
-- "Is there a bug in this file?"
-- "Bu kod neden çalışmıyor?"
-- "Why does this code fail?"
-
---------------------------------------------------
+Use when the user wants to inspect,
+review, understand, explain, diagnose,
+or analyze EXISTING SOURCE CODE.
 
 repository_analyzer:
-Use when the user wants to inspect or understand the WHOLE PROJECT, repository structure, architecture, dependencies, agent relationships, memory architecture, or project organization.
 
-Examples:
-
-- "AI-Studio projesinin mimarisini analiz et"
-- "Analyze the project architecture"
-- "Memory sistemimiz nasıl çalışıyor?"
-- "How does the memory architecture work?"
-- "Agent sistemi nasıl organize edilmiş?"
-- "How is the agent system organized?"
-
---------------------------------------------------
+Use when the user wants to inspect
+the WHOLE PROJECT, architecture,
+dependencies, repository structure,
+or agent relationships.
 
 project_memory:
-Use when the answer requires information already stored in the project's persistent project memory.
 
-Examples:
-
-- "Projede hangi dosyalar var?"
-- "What files are in the project?"
-- "agents/chat_agent.py hakkında project memory'de ne var?"
-- "What does project memory know about agents/chat_agent.py?"
-- "Projenin mimarisi hakkında kayıtlı bilgiyi getir."
-- "Show the stored project architecture."
-
---------------------------------------------------
+Use when the answer requires information
+already stored in persistent project memory.
 
 code:
-Use when the user wants to CHANGE, IMPLEMENT, FIX, REFACTOR, IMPROVE, or EXTEND the software.
 
-Examples:
+Use when the user wants to CHANGE software.
 
-- "Memory sistemini geliştir"
-- "Improve the memory system"
-- "Memory sistemindeki hatayı düzelt"
-- "Fix the memory system"
-- "Agent sistemini daha modüler hale getir"
-- "Make the agent system more modular"
-- "Bu özelliği ekle"
-- "Add this feature"
-- "Bu kodu refactor et"
-- "Refactor this code"
+This includes:
 
-IMPORTANT:
+- fix
+- implement
+- add
+- improve
+- refactor
+- modify
+- extend
+- develop
 
-There is a critical difference between ANALYZING and CHANGING.
+CRITICAL:
 
-If the user wants to understand, inspect, explain, review, or diagnose existing code:
+If the user wants to MODIFY software,
+NEVER use chat.
 
-→ use code_analyzer or repository_analyzer.
+If the user wants to FIX software,
+NEVER use chat.
 
-If the user wants to modify, fix, improve, implement, refactor, or extend the software:
+If the user wants to IMPLEMENT software,
+NEVER use chat.
 
-→ use code.
+If the user wants to REFACTOR software,
+NEVER use chat.
 
-If the user asks about persistent personal information:
+Always use:
 
-→ use memory.
+"tool": "code"
 
-If the user asks about the project's stored architecture or files:
+with:
 
-→ use project_memory.
-
-If the user asks a normal conversational question:
-
-→ use chat.
-
-Never ask the user for a filename when the repository analyzer can inspect the project and identify the relevant files.
-
-Never use chat as a fallback when the request is clearly a software development task.
-
-Always prefer a specialized tool over chat when a specialized tool can perform the requested task.
-
-Do not select tools using exact words.
-Understand the meaning.
+"action": "implement"
 
 Never invent tools.
 
 Never invent actions.
-
-Always use the exact action names defined in TOOL CONTRACTS.
 
 Never return empty steps.
 
@@ -456,8 +355,6 @@ EXECUTION PLAN
 
 Create the smallest valid execution plan.
 
-Do not create unnecessary steps.
-
 The output MUST have this structure:
 
 {{
@@ -465,215 +362,15 @@ The output MUST have this structure:
         {{
             "tool": "...",
             "action": "...",
-            ...
+            "input": "..."
         }}
     ]
 }}
 
 
 ==================================================
-EXAMPLES
+USER REQUEST
 ==================================================
-
-User:
-"Merhaba"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "chat",
-            "action": "chat",
-            "input": "Merhaba"
-        }}
-    ]
-}}
-
-
-User:
-"Hello"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "chat",
-            "action": "chat",
-            "input": "Hello"
-        }}
-    ]
-}}
-
-
-User:
-"Benim adım ne?"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "memory",
-            "action": "get",
-            "key": "user_name"
-        }}
-    ]
-}}
-
-
-User:
-"What is my name?"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "memory",
-            "action": "get",
-            "key": "user_name"
-        }}
-    ]
-}}
-
-
-User:
-"Benim adım Eren"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "memory",
-            "action": "save",
-            "key": "user_name",
-            "value": "Eren",
-            "category": "personal"
-        }}
-    ]
-}}
-
-
-User:
-"My name is Eren"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "memory",
-            "action": "save",
-            "key": "user_name",
-            "value": "Eren",
-            "category": "personal"
-        }}
-    ]
-}}
-
-
-User:
-"agents/tool_agent.py dosyasını analiz et"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "code_analyzer",
-            "action": "analyze",
-            "filename": "agents/tool_agent.py",
-            "input": "Analyze file"
-        }}
-    ]
-}}
-
-
-User:
-"Analyze agents/tool_agent.py"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "code_analyzer",
-            "action": "analyze",
-            "filename": "agents/tool_agent.py",
-            "input": "Analyze file"
-        }}
-    ]
-}}
-
-
-User:
-"AI-Studio projesinin mimarisini incele"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "repository_analyzer",
-            "action": "analyze",
-            "input": "Analyze repository architecture"
-        }}
-    ]
-}}
-
-
-User:
-"Analyze the AI-Studio project architecture"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "repository_analyzer",
-            "action": "analyze",
-            "input": "Analyze repository architecture"
-        }}
-    ]
-}}
-
-
-User:
-"Memory sistemini geliştir"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "code",
-            "action": "implement",
-            "input": "Improve memory system"
-        }}
-    ]
-}}
-
-
-User:
-"Fix the memory system"
-
-Output:
-
-{{
-    "steps": [
-        {{
-            "tool": "code",
-            "action": "implement",
-            "input": "Fix the memory system"
-        }}
-    ]
-}}
-
-
-User request:
 
 {task}
 """
@@ -682,18 +379,68 @@ User request:
 
         response = llm.generate(
             prompt,
+            max_tokens=1200,
             temperature=0
         )
 
-        print(
-            "\n===== RAW PLANNER RESPONSE ====="
-        )
-
-        print(response)
+    except Exception as error:
 
         print(
-            "================================\n"
+            "Planner LLM error:",
+            error
         )
+
+        return None
+
+    # =========================================================
+    # API error response
+    # =========================================================
+
+    if isinstance(
+        response,
+        dict
+    ):
+
+        print(
+            "Planner received API error:",
+            response
+        )
+
+        return None
+
+    # =========================================================
+    # Unexpected response
+    # =========================================================
+
+    if not isinstance(
+        response,
+        str
+    ):
+
+        print(
+            "Planner received unexpected response type:",
+            type(response)
+        )
+
+        return None
+
+    print(
+        "\n===== RAW PLANNER RESPONSE ====="
+    )
+
+    print(
+        response
+    )
+
+    print(
+        "================================\n"
+    )
+
+    # =========================================================
+    # Parse JSON
+    # =========================================================
+
+    try:
 
         cleaned = clean_json(
             response
@@ -703,42 +450,6 @@ User request:
             cleaned
         )
 
-        if "steps" not in plan:
-
-            if "tool" in plan:
-
-                plan = {
-                    "steps": [
-                        plan
-                    ]
-                }
-
-            else:
-
-                plan = {
-                    "steps": [
-                        {
-                            "tool": "chat",
-                            "action": "chat",
-                            "input": task
-                        }
-                    ]
-                }
-
-        if not plan["steps"]:
-
-            plan = {
-                "steps": [
-                    {
-                        "tool": "chat",
-                        "action": "chat",
-                        "input": task
-                    }
-                ]
-            }
-
-        return plan
-
     except Exception as error:
 
         print(
@@ -746,12 +457,46 @@ User request:
             error
         )
 
-        return {
-            "steps": [
-                {
-                    "tool": "chat",
-                    "action": "chat",
-                    "input": task
-                }
-            ]
-        }
+        return None
+
+    if not isinstance(
+        plan,
+        dict
+    ):
+
+        return None
+
+    # =========================================================
+    # Normalize single-step response
+    # =========================================================
+
+    if "steps" not in plan:
+
+        if "tool" in plan:
+
+            plan = {
+                "steps": [
+                    plan
+                ]
+            }
+
+        else:
+
+            return None
+
+    steps = plan.get(
+        "steps"
+    )
+
+    if not isinstance(
+        steps,
+        list
+    ):
+
+        return None
+
+    if not steps:
+
+        return None
+
+    return plan

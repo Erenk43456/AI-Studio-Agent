@@ -18,6 +18,10 @@ class DevelopmentOrchestrator:
             container.repository_analyzer
         )
 
+        self.development_context = (
+            container.development_context
+        )
+
         self.improvement_agent = (
             container.improvement_agent
         )
@@ -113,6 +117,12 @@ class DevelopmentOrchestrator:
         self,
         message
     ):
+
+        development_context = (
+            self.development_context.build(
+                message
+            )
+        )
 
         #
         # Planner
@@ -240,8 +250,8 @@ class DevelopmentOrchestrator:
                         step.get(
                             "input",
                             message
-                        )
-
+                        ),
+                        development_context
                     )
 
 

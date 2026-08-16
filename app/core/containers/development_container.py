@@ -1,7 +1,12 @@
 from agents.code_agent import CodeAgent
 from agents.planner_agent import PlannerAgent
 
-from app.core.orchestrators.development_orchestrator import DevelopmentOrchestrator
+from app.core.development_context import DevelopmentContext
+
+from app.core.orchestrators.development_orchestrator import (
+    DevelopmentOrchestrator
+)
+
 from app.core.workspace.watcher import WorkspaceWatcher
 
 
@@ -24,8 +29,6 @@ class DevelopmentContainer:
             main.core.workspace_path
         )
 
-
-
         #
         # Tool Registry
         #
@@ -33,8 +36,6 @@ class DevelopmentContainer:
         self.registry = (
             main.tools.registry
         )
-
-
 
         #
         # LLMs
@@ -48,27 +49,30 @@ class DevelopmentContainer:
             main.models.planner_llm
         )
 
+        #
+        # Development Context
+        #
 
+        self.development_context = DevelopmentContext(
+            self.project_memory,
+            self.workspace_path
+        )
 
         #
         # Agents
         #
 
         self.planner = PlannerAgent(
-            self.planner_llm,
-            main.memory.memory,
-            self.registry
+            self.planner_llm
         )
-
 
         self.code_agent = CodeAgent(
             self.code_llm,
             self.registry,
             main.memory.memory,
-            self.workspace_path
+            self.workspace_path,
+            self.development_context
         )
-
-
 
         #
         # Repository Analyzer
@@ -79,8 +83,6 @@ class DevelopmentContainer:
                 "repository_analyzer"
             )
         )
-
-
 
         #
         # Workspace Watcher
@@ -93,15 +95,11 @@ class DevelopmentContainer:
 
         self.watcher.start()
 
-
-
         #
         # Future
         #
 
         self.improvement_agent = None
-
-
 
         #
         # Orchestrator
@@ -110,8 +108,6 @@ class DevelopmentContainer:
         self.orchestrator = DevelopmentOrchestrator(
             self
         )
-
-
 
     def on_workspace_changes(
         self,

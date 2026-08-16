@@ -37,6 +37,7 @@ class CodeWriterTool:
         self.workspace = workspace
         self.registry = registry
         self.logger = AppLogger()
+        self.current_development_context = {}
 
     def execute(
         self,
@@ -49,6 +50,11 @@ class CodeWriterTool:
                 "success": False,
                 "message": "Invalid plan."
             }
+
+        self.current_development_context = plan.get(
+            "development_context",
+            {}
+        )
 
         files = plan.get(
             "files",
@@ -224,6 +230,12 @@ REQUIRED CHANGES
 ==================================================
 
 {changes}
+
+==================================================
+DEVELOPMENT CONTEXT
+==================================================
+
+{self.current_development_context}
 
 ==================================================
 CRITICAL ARCHITECTURE RULES
