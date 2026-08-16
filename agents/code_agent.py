@@ -236,16 +236,16 @@ Format:
         )
 
 
+        success = False
+
+        if isinstance(write_result, dict):
+            success = write_result.get("success", False)
+
         return {
+            "success": success,
             "plan": implementation_plan,
             "write_result": write_result
         }
-
-
-
-
-
-
 
 
 

@@ -589,6 +589,156 @@ class DevelopmentOrchestrator:
 
 
         #
+        # Code analyzer
+        #
+
+        if "analysis" in result:
+
+            analysis = result.get(
+                "analysis"
+            )
+
+            filename = result.get(
+                "file",
+                result.get(
+                    "filename",
+                    "dosya"
+                )
+            )
+
+
+            if not isinstance(
+                analysis,
+                dict
+            ):
+
+                return (
+                    f"📄 {filename}\n\n"
+                    f"Analiz sonucu:\n"
+                    f"{analysis}"
+                )
+
+
+            lines = [
+
+                f"📄 {filename}",
+
+                ""
+
+            ]
+
+
+            summary = analysis.get(
+                "summary"
+            )
+
+
+            if summary:
+
+                lines.extend([
+
+                    "📋 Özet:",
+
+                    str(summary),
+
+                    ""
+
+                ])
+
+
+            sections = [
+
+                (
+                    "syntax_errors",
+                    "Syntax hataları"
+                ),
+
+                (
+                    "logical_errors",
+                    "Mantıksal hatalar"
+                ),
+
+                (
+                    "security_issues",
+                    "Güvenlik sorunları"
+                ),
+
+                (
+                    "performance_issues",
+                    "Performans sorunları"
+                ),
+
+                (
+                    "architecture_issues",
+                    "Mimari sorunlar"
+                ),
+
+                (
+                    "improvements",
+                    "İyileştirmeler"
+                )
+
+            ]
+
+
+            for key, title in sections:
+
+                values = analysis.get(
+                    key,
+                    []
+                )
+
+
+                if not values:
+
+                    continue
+
+
+                lines.append(
+                    f"🔹 {title}:"
+                )
+
+
+                if isinstance(
+                    values,
+                    list
+                ):
+
+                    for value in values:
+
+                        lines.append(
+                            f"- {value}"
+                        )
+
+                else:
+
+                    lines.append(
+                        f"- {values}"
+                    )
+
+
+                lines.append("")
+
+
+            risk_level = analysis.get(
+                "risk_level"
+            )
+
+
+            if risk_level:
+
+                lines.append(
+                    f"⚠️ Risk seviyesi: "
+                    f"{risk_level}"
+                )
+
+
+            return "\n".join(
+                lines
+            )
+
+
+        #
         # Generic success
         #
 

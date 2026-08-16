@@ -251,7 +251,7 @@ Python code:
 
             response = self.llm.generate(
                 prompt,
-                max_tokens=800,
+                max_tokens=2000,
                 temperature=0.2,
                 timeout=60
             )
@@ -271,26 +271,32 @@ Python code:
 
 
 
-            if response.startswith(
-                "LLM_ERROR"
-            ):
+            if isinstance(response, dict):
+                if response.get("error"):
+                    self.logger.error(
+                        f"LLM response error: {response}"
+                    )
+                    
+                    return {
+                        "success": False,
+                        "error": response.get("error")
+                    }
+
+                analysis = response
+
+            else:
+                if response.startswith("LLM_ERROR"):
+                    return {
+                        "success": False,
+                        "error": response
+                    }
+
+                analysis = self.clean_json(response)
 
 
-                return {
-
-                    "success": False,
-
-                    "error": response
-
-                }
-
-
-
-
-            analysis = self.clean_json(
-                response
+            self.logger.info(
+                f"Code analyzer result: {analysis}"
             )
-
 
 
             return {
@@ -335,11 +341,13 @@ Python code:
 
         if not text:
 
-            return {}
+            return "{}"
+        
+        if isinstance(text, dict):
+            return text
 
 
-
-        text = text.strip()
+        text = str(text).strip()
 
 
 
