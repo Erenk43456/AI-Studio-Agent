@@ -11,9 +11,7 @@ class LLMProvider:
 
         self.config = model_config
 
-        self.model_slot = (
-            model_config.name
-        )
+        self.model_slot = model_config.name
 
         self.current_model = (
             model_config.model
@@ -21,9 +19,8 @@ class LLMProvider:
 
         provider = (
             model_config.provider
-            .lower()
-            .strip()
-        )
+            or "local"
+        ).lower()
 
         if provider == "api":
 
@@ -37,6 +34,9 @@ class LLMProvider:
                 model_config
             )
 
+    # =========================================================
+    # GENERATE
+    # =========================================================
 
     def generate(
         self,
@@ -47,20 +47,17 @@ class LLMProvider:
     ):
 
         return self.llm.generate(
-
             prompt,
-
             max_tokens=max_tokens,
-
             temperature=temperature,
-
             timeout=timeout
         )
 
+    # =========================================================
+    # MODELS
+    # =========================================================
 
-    def get_models(
-        self
-    ):
+    def get_models(self):
 
         if hasattr(
             self.llm,
@@ -71,12 +68,13 @@ class LLMProvider:
 
         return [
             self.current_model
-        ] if self.current_model else []
+        ]
 
+    # =========================================================
+    # MODEL
+    # =========================================================
 
-    def has_model(
-        self
-    ):
+    def has_model(self):
 
         if hasattr(
             self.llm,
@@ -89,17 +87,15 @@ class LLMProvider:
             self.current_model
         )
 
-
-    def get_current_model(
-        self
-    ):
+    def get_current_model(self):
 
         return self.current_model
 
+    # =========================================================
+    # CONNECTION
+    # =========================================================
 
-    def check_connection(
-        self
-    ):
+    def check_connection(self):
 
         if hasattr(
             self.llm,

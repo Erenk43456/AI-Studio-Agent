@@ -41,7 +41,7 @@ class PageManager:
 
 
         window.settings_page = SettingsPage(
-            window.container.models.chat_llm
+            window.container.models
         )
 
 

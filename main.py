@@ -11,30 +11,45 @@ from agents.chat_agent import ChatAgent
 from memory.memory import Memory
 from memory.conversation import ConversationMemory
 
-from models.llm_provider import LLMProvider
-from config.config_manager import ConfigManager
-
+from app.core.containers.core_container import CoreContainer
+from app.core.containers.model_container import ModelContainer
 
 
 def main():
 
-    config = ConfigManager()
+    #
+    # CORE
+    #
 
-    llm = LLMProvider(
-        config
+    core = CoreContainer()
+
+    #
+    # MODELS
+    #
+
+    models = ModelContainer(
+        core
     )
+
+    #
+    # MEMORY
+    #
 
     memory = Memory()
 
+    #
+    # TOOLS
+    #
+
     registry = ToolRegistry()
 
-
     calculator = Calculator()
+
     file_tool = FileTool()
+
     memory_tool = MemoryTool(
         memory
     )
-
 
     registry.register(
         "calculator",
@@ -56,27 +71,43 @@ def main():
         RepositoryAnalyzerTool()
     )
 
+    #
+    # TOOL AGENT
+    #
 
     tool_agent = ToolAgent(
         registry,
         memory
     )
 
+    #
+    # CONVERSATION
+    #
 
     conversation = ConversationMemory()
 
+    #
+    # CHAT AGENT
+    #
 
     chat_agent = ChatAgent(
-        llm,
+        models.chat_llm,
         memory,
         conversation=conversation
     )
 
+    #
+    # PLANNER AGENT
+    #
 
     planner_agent = PlannerAgent(
-        llm,
+        models.planner_llm,
         memory
     )
+
+    #
+    # DEBUG
+    #
 
     print(
         "Registered tools:"
@@ -86,19 +117,42 @@ def main():
         registry.list_tools()
     )
 
+    print(
+        "\nModels:"
+    )
+
+    print(
+        f"Chat: {models.chat_llm.get_current_model()}"
+    )
+
+    print(
+        f"Code: {models.code_llm.get_current_model()}"
+    )
+
+    print(
+        f"Planner: {models.planner_llm.get_current_model()}"
+    )
+
+    print(
+        f"Decision: {models.decision_llm.get_current_model()}"
+    )
+
+    #
+    # REQUEST
+    #
 
     request = input(
         "\nRequest:\n"
     ).strip()
 
-
     if not request:
         return
 
-
+    #
+    # HISTORY
+    #
 
     history = conversation.get()
-
 
     if history:
 
@@ -112,12 +166,13 @@ def main():
             last
         )
 
-
+    #
+    # PLANNING
+    #
 
     plan = planner_agent.create_plan(
         request
     )
-
 
     print(
         "\nPlan:"
@@ -127,12 +182,17 @@ def main():
         plan
     )
 
-
+    #
+    # EXECUTION
+    #
 
     if plan.get("tool") == "chat":
 
         result = chat_agent.respond(
-            plan.get("message", request)
+            plan.get(
+                "message",
+                request
+            )
         )
 
     elif plan.get("steps"):
@@ -160,7 +220,9 @@ def main():
             plan
         )
 
-
+    #
+    # RESULT
+    #
 
     print(
         "\nResult:"
@@ -170,6 +232,9 @@ def main():
         result
     )
 
+    #
+    # SAVE CONVERSATION
+    #
 
     conversation.add(
         request,
@@ -177,6 +242,6 @@ def main():
     )
 
 
-
 if __name__ == "__main__":
+
     main()

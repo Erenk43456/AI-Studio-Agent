@@ -1,242 +1,139 @@
 import json
-import os
 from pathlib import Path
-
-from dotenv import load_dotenv
-
 
 
 class ConfigManager:
 
-
     def __init__(self):
 
-        # Load environment variables from .env
-        load_dotenv()
-
-
         self.file = Path(
-            "config/settings.json"
+            "config/user.json"
         )
 
-
         self.file.parent.mkdir(
+            parents=True,
             exist_ok=True
         )
 
-
         self.data = self.load()
 
-
-        self.load_environment()
-
-
+    # =========================================================
+    # LOAD
+    # =========================================================
 
     def load(self):
-
 
         if not self.file.exists():
 
             return {}
 
-
-
         try:
 
-
-            with open(
-
-                self.file,
-
+            with self.file.open(
                 "r",
+                encoding="utf-8-sig"
+            ) as file:
 
-                encoding="utf-8"
+                data = json.load(
+                    file
+                )
 
-            ) as f:
+            return (
+                data
+                if isinstance(data, dict)
+                else {}
+            )
 
-
-                return json.load(f)
-
-
-
-        except json.JSONDecodeError:
-
+        except (
+            json.JSONDecodeError,
+            OSError
+        ):
 
             return {}
 
-
-
-
-
-    def load_environment(self):
-
-
-        """
-        Environment variables override config file values.
-        Sensitive data should stay in .env.
-        """
-
-
-        env_mapping = {
-
-
-            "NVIDIA_API_KEY": "api_key",
-
-
-            "NVIDIA_API_URL": "api_url",
-
-            "LLM_PROVIDER": "llm_provider",
-
-
-            "DECISION_MODEL": "decision_model",
-
-            "PLANNER_MODEL": "planner_model",
-
-            "CHAT_MODEL": "chat_model",
-
-            "CODE_MODEL": "code_model"
-
-
-        }
-
-
-
-        for env_key, config_key in env_mapping.items():
-
-
-            value = os.getenv(env_key)
-
-
-            if value:
-
-
-                self.data[config_key] = value
-
-
-
-
-
-
+    # =========================================================
+    # GET
+    # =========================================================
 
     def get(
-
         self,
-
         key,
-
         default=None
-
     ):
 
-
         return self.data.get(
-
             key,
-
             default
-
         )
 
-
-
-    def get_model(
-            
-        self,
-        agent_name,
-        default=None
-
-    ):
-
-
-        return self.data.get(
-
-            agent_name,
-            default
-
-        )
-
-
-
+    # =========================================================
+    # SET
+    # =========================================================
 
     def set(
-
         self,
-
         key,
-
         value
-
     ):
-
 
         self.data[key] = value
 
-
         self.save()
 
-
-
-
-
-
+    # =========================================================
+    # UPDATE
+    # =========================================================
 
     def update(
-
         self,
-
         values
-
     ):
 
-
         self.data.update(
-
             values
-
         )
-
 
         self.save()
 
-
-
-
-
-
+    # =========================================================
+    # SAVE
+    # =========================================================
 
     def save(self):
 
+        self.file.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
 
-        with open(
+        temp_path = self.file.with_suffix(
+            ".tmp"
+        )
 
-            self.file,
-
+        with temp_path.open(
             "w",
-
             encoding="utf-8"
-
-        ) as f:
-
+        ) as file:
 
             json.dump(
-
                 self.data,
-
-                f,
-
+                file,
                 indent=4,
-
                 ensure_ascii=False
-
             )
 
+            file.write("\n")
 
+        temp_path.replace(
+            self.file
+        )
 
-
-
-
+    # =========================================================
+    # ALL
+    # =========================================================
 
     def all(self):
 
-
-        return self.data
+        return dict(
+            self.data
+        )

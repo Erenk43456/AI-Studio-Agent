@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from config.config_manager import ConfigManager
+from models.model_registry import ModelRegistry
 from app.core.workspace.workspace_manager import WorkspaceManager
 
 
@@ -9,11 +9,10 @@ class CoreContainer:
     def __init__(self):
 
         #
-        # CONFIG
+        # MODEL CONFIG
         #
 
-        self.config = ConfigManager()
-
+        self.config = ModelRegistry()
 
         #
         # PROJECT SOURCE
@@ -25,7 +24,6 @@ class CoreContainer:
             .parents[3]
         )
 
-
         #
         # WORKSPACE
         #
@@ -33,7 +31,6 @@ class CoreContainer:
         self.workspace = WorkspaceManager(
             project_root
         )
-
 
         self.workspace_path = (
             self.workspace.create_workspace()

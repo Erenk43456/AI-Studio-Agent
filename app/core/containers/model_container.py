@@ -26,3 +26,50 @@ class ModelContainer:
         self.decision_llm = LLMProvider(
             self.registry.get("decision")
         )
+
+    # =========================================================
+    # RELOAD MODEL
+    # =========================================================
+
+    def reload_model(
+        self,
+        slot
+    ):
+
+        config = self.registry.get(
+            slot
+        )
+
+        if config is None:
+
+            raise ValueError(
+                f"Model configuration missing: {slot}"
+            )
+
+        provider = LLMProvider(
+            config
+        )
+
+        if slot == "chat":
+
+            self.chat_llm = provider
+
+        elif slot == "code":
+
+            self.code_llm = provider
+
+        elif slot == "planner":
+
+            self.planner_llm = provider
+
+        elif slot == "decision":
+
+            self.decision_llm = provider
+
+        else:
+
+            raise ValueError(
+                f"Unknown model slot: {slot}"
+            )
+
+        return provider
