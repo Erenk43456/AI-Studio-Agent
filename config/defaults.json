@@ -1,0 +1,40 @@
+{
+    "models": {
+        "chat": {
+            "provider": "local",
+            "model": "qwen2.5:3b",
+            "endpoint": "http://localhost:11434",
+            "temperature": 0.3,
+            "max_tokens": 2048,
+            "timeout": 120,
+            "enabled": true
+        },
+        "code": {
+            "provider": "local",
+            "model": "qwen2.5:3b",
+            "endpoint": "http://localhost:11434",
+            "temperature": 0.2,
+            "max_tokens": 4096,
+            "timeout": 180,
+            "enabled": true
+        },
+        "planner": {
+            "provider": "local",
+            "model": "qwen2.5:3b",
+            "endpoint": "http://localhost:11434",
+            "temperature": 0.1,
+            "max_tokens": 4096,
+            "timeout": 180,
+            "enabled": true
+        },
+        "decision": {
+            "provider": "local",
+            "model": "qwen2.5:3b",
+            "endpoint": "http://localhost:11434",
+            "temperature": 0.1,
+            "max_tokens": 2048,
+            "timeout": 120,
+            "enabled": true
+        }
+    }
+}

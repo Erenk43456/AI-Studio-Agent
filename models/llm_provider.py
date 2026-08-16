@@ -2,107 +2,40 @@ from models.llm import LLM
 from models.api_llm import APILLM
 
 
-
 class LLMProvider:
-
 
     def __init__(
         self,
-        config,
-        model_slot
+        model_config
     ):
 
+        self.config = model_config
 
-        provider = config.get(
-            "llm_provider",
-            "local"
+        self.model_slot = (
+            model_config.name
         )
 
-
-        self.model_slot = model_slot
-
-
-        self.current_model = config.get(
-            model_slot,
-            None
+        self.current_model = (
+            model_config.model
         )
 
-
+        provider = (
+            model_config.provider
+            .lower()
+            .strip()
+        )
 
         if provider == "api":
 
-
-            api_config = {
-
-
-                "api_url":
-
-                config.get(
-                    "api_url",
-                    ""
-                ),
-
-
-
-                "api_key":
-
-                config.get(
-                    "api_key",
-                    ""
-                ),
-
-
-
-                "api_model":
-
-                self.current_model,
-
-
-
-                "temperature":
-
-                config.get(
-                    "temperature",
-                    0.3
-                ),
-
-
-
-                "api_timeout":
-
-                config.get(
-                    "api_timeout",
-                    120
-                ),
-
-
-
-                "num_predict":
-
-                config.get(
-                    "num_predict",
-                    1200
-                )
-
-            }
-
-
-
             self.llm = APILLM(
-                api_config
+                model_config
             )
-
-
 
         else:
 
-
             self.llm = LLM(
-                config
+                model_config
             )
-
-
-
 
 
     def generate(
@@ -113,7 +46,6 @@ class LLMProvider:
         timeout=None
     ):
 
-
         return self.llm.generate(
 
             prompt,
@@ -123,15 +55,12 @@ class LLMProvider:
             temperature=temperature,
 
             timeout=timeout
-
         )
 
 
-
-
-
-    def get_models(self):
-
+    def get_models(
+        self
+    ):
 
         if hasattr(
             self.llm,
@@ -140,35 +69,37 @@ class LLMProvider:
 
             return self.llm.get_models()
 
-
         return [
             self.current_model
-        ]
+        ] if self.current_model else []
 
 
+    def has_model(
+        self
+    ):
+
+        if hasattr(
+            self.llm,
+            "has_model"
+        ):
+
+            return self.llm.has_model()
+
+        return bool(
+            self.current_model
+        )
 
 
-
-    def has_model(self):
-
-
-        return self.current_model is not None
-
-
-
-
-
-    def get_current_model(self):
-
+    def get_current_model(
+        self
+    ):
 
         return self.current_model
 
 
-
-
-
-    def check_connection(self):
-
+    def check_connection(
+        self
+    ):
 
         if hasattr(
             self.llm,
@@ -176,6 +107,5 @@ class LLMProvider:
         ):
 
             return self.llm.check_connection()
-
 
         return False

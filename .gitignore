@@ -71,6 +71,7 @@ memory/*.json
 
 # Local user settings
 config/settings.json
+config/user.json
 
 # Keep example config
 !config/settings.example.json
