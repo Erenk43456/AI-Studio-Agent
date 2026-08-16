@@ -6,6 +6,10 @@ class SidebarController:
     @staticmethod
     def connect(window):
 
+        # =====================================================
+        # CHAT
+        # =====================================================
+
         window.sidebar.chat_button.clicked.connect(
             lambda:
             SidebarController.show_chat_page(
@@ -28,6 +32,10 @@ class SidebarController:
             )
         )
 
+        # =====================================================
+        # MEMORY
+        # =====================================================
+
         window.sidebar.memory_button.clicked.connect(
             lambda:
             SidebarController.navigate(
@@ -35,6 +43,10 @@ class SidebarController:
                 window.show_memory
             )
         )
+
+        # =====================================================
+        # HISTORY
+        # =====================================================
 
         window.sidebar.history_button.clicked.connect(
             lambda:
@@ -44,6 +56,10 @@ class SidebarController:
             )
         )
 
+        # =====================================================
+        # TOOLS
+        # =====================================================
+
         window.sidebar.tools_button.clicked.connect(
             lambda:
             SidebarController.navigate(
@@ -52,21 +68,37 @@ class SidebarController:
             )
         )
 
+        # =====================================================
+        # FORMATTER
+        # =====================================================
+
         window.sidebar.formatter_button.clicked.connect(
             lambda:
             SidebarController.navigate(
                 window,
                 lambda:
-                window.pages.setCurrentIndex(5)
+                SidebarController.show_page(
+                    window,
+                    5,
+                    "● Formatter"
+                )
             )
         )
+
+        # =====================================================
+        # SETTINGS
+        # =====================================================
 
         window.sidebar.settings_button.clicked.connect(
             lambda:
             SidebarController.navigate(
                 window,
                 lambda:
-                window.pages.setCurrentIndex(4)
+                SidebarController.show_page(
+                    window,
+                    4,
+                    "● Settings"
+                )
             )
         )
 
@@ -79,7 +111,69 @@ class SidebarController:
     # =========================================================
 
     @staticmethod
+    def navigate(
+        window,
+        callback
+    ):
+
+        SidebarController.hide_chat_section(
+            window
+        )
+
+        callback()
+
+    @staticmethod
+    def show_page(
+        window,
+        index,
+        status
+    ):
+
+        window.pages.setCurrentIndex(
+            index
+        )
+
+        window.status.setText(
+            status
+        )
+
+    # =========================================================
+    # CHAT NAVIGATION
+    # =========================================================
+
+    @staticmethod
     def hide_chat_section(window):
+
+        window.sidebar.chat_list.hide()
+
+        window.sidebar.new_chat_button.hide()
+
+    @staticmethod
+    def show_chat_section(window):
+
+        window.sidebar.new_chat_button.show()
+
+        window.sidebar.chat_list.show()
+
+        window.pages.setCurrentIndex(
+            0
+        )
+
+        if not window.busy:
+
+            window.status.setText(
+                "● Ready"
+            )
+
+    @staticmethod
+    def show_chat_navigation(window):
+
+        window.sidebar.chat_list.show()
+
+        window.sidebar.new_chat_button.show()
+
+    @staticmethod
+    def hide_chat_navigation(window):
 
         window.sidebar.chat_list.hide()
 
@@ -88,20 +182,19 @@ class SidebarController:
     @staticmethod
     def show_chat_page(window):
 
-        window.sidebar.new_chat_button.show()
-
-        window.sidebar.chat_list.show()
-
-        window.pages.setCurrentIndex(0)
-
-    @staticmethod
-    def navigate(window, callback):
-
-        SidebarController.hide_chat_section(
+        SidebarController.show_chat_navigation(
             window
         )
 
-        callback()
+        window.pages.setCurrentIndex(
+            0
+        )
+
+        if not window.busy:
+
+            window.status.setText(
+                "● Ready"
+            )
 
     # =========================================================
     # CHAT LIST
@@ -147,7 +240,10 @@ class SidebarController:
                 widget.deleteLater()
 
     @staticmethod
-    def load_chat(window, chat):
+    def load_chat(
+        window,
+        chat
+    ):
 
         SidebarController.clear_chat(
             window
@@ -205,17 +301,24 @@ ve araçları kullanarak görev çalıştırabilirsiniz.
             window
         )
 
-        SidebarController.show_chat_page(
+        SidebarController.show_chat_section(
             window
         )
 
     @staticmethod
-    def switch_chat(window, item):
+    def switch_chat(
+        window,
+        item
+    ):
 
-        chat_id = item.data(256)
+        chat_id = item.data(
+            256
+        )
 
-        chat = window.chat_manager.get_chat(
-            chat_id
+        chat = (
+            window.chat_manager.get_chat(
+                chat_id
+            )
         )
 
         if not chat:
@@ -233,6 +336,12 @@ ve araçları kullanarak görev çalıştırabilirsiniz.
             chat
         )
 
-        SidebarController.show_chat_page(
-            window
+        window.pages.setCurrentIndex(
+            0
         )
+
+        if not window.busy:
+
+            window.status.setText(
+                "● Ready"
+            )

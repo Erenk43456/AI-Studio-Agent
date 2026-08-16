@@ -4,7 +4,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QLabel,
     QListWidget,
-    QFrame,
+    QFrame
 )
 
 from PySide6.QtCore import Qt
@@ -16,98 +16,12 @@ class Sidebar(QWidget):
 
         super().__init__()
 
-        self.setFixedWidth(230)
+        self.setObjectName(
+            "sidebar"
+        )
 
-        self.setObjectName("sidebar")
-
-        self.setStyleSheet(
-            """
-            QWidget#sidebar {
-                background-color: #111318;
-                border-right: 1px solid #232832;
-            }
-
-            QLabel#appTitle {
-                color: #f4f4f5;
-                font-size: 15px;
-                font-weight: 700;
-                padding: 8px 4px;
-            }
-
-            QLabel#sectionLabel {
-                color: #717784;
-                font-size: 11px;
-                font-weight: 700;
-                padding: 8px 10px 4px 10px;
-            }
-
-            QPushButton {
-                background-color: transparent;
-                color: #b8bdc7;
-                border: none;
-                border-radius: 9px;
-                padding: 10px 12px;
-                text-align: left;
-                font-size: 13px;
-            }
-
-            QPushButton:hover {
-                background-color: #1c2027;
-                color: #f4f4f5;
-            }
-
-            QPushButton:pressed {
-                background-color: #242933;
-            }
-
-            QPushButton:checked {
-                background-color: #202633;
-                color: #ffffff;
-            }
-
-            QPushButton#newChatButton {
-                background-color: #2563eb;
-                color: white;
-                font-weight: 700;
-                border-radius: 9px;
-                padding: 11px 12px;
-            }
-
-            QPushButton#newChatButton:hover {
-                background-color: #3b82f6;
-            }
-
-            QListWidget {
-                background-color: transparent;
-                color: #b8bdc7;
-                border: none;
-                outline: none;
-                padding: 2px 0;
-            }
-
-            QListWidget::item {
-                padding: 9px 10px;
-                margin: 2px 0;
-                border-radius: 8px;
-            }
-
-            QListWidget::item:hover {
-                background-color: #1c2027;
-                color: #ffffff;
-            }
-
-            QListWidget::item:selected {
-                background-color: #242a35;
-                color: #ffffff;
-            }
-
-            QFrame#separator {
-                background-color: #232832;
-                min-height: 1px;
-                max-height: 1px;
-                border: none;
-            }
-            """
+        self.setFixedWidth(
+            230
         )
 
         layout = QVBoxLayout()
@@ -116,33 +30,58 @@ class Sidebar(QWidget):
             12,
             14,
             12,
-            12
+            14
         )
 
-        layout.setSpacing(5)
+        layout.setSpacing(
+            6
+        )
 
         # =====================================================
-        # HEADER
+        # BRAND
         # =====================================================
 
-        title = QLabel(
-            "AI-Studio"
+        self.brand = QLabel(
+            "AI-STUDIO"
         )
 
-        title.setObjectName(
-            "appTitle"
+        self.brand.setAlignment(
+            Qt.AlignLeft
         )
 
-        title.setAlignment(
-            Qt.AlignCenter
+        self.brand.setStyleSheet(
+            """
+            QLabel {
+                color: #f1f3f5;
+                font-size: 15px;
+                font-weight: 700;
+                letter-spacing: 1px;
+                padding: 6px 8px;
+            }
+            """
         )
 
         layout.addWidget(
-            title
+            self.brand
         )
 
-        layout.addSpacing(
-            8
+        self.brand_subtitle = QLabel(
+            "Agent Workspace"
+        )
+
+        self.brand_subtitle.setStyleSheet(
+            """
+            QLabel {
+                color: #686f78;
+                font-size: 10px;
+                padding-left: 8px;
+                padding-bottom: 8px;
+            }
+            """
+        )
+
+        layout.addWidget(
+            self.brand_subtitle
         )
 
         # =====================================================
@@ -157,6 +96,32 @@ class Sidebar(QWidget):
             "newChatButton"
         )
 
+        self.new_chat_button.setMinimumHeight(
+            40
+        )
+
+        self.new_chat_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #3b82f6;
+                color: white;
+                border: none;
+                border-radius: 9px;
+                padding: 9px 12px;
+                text-align: left;
+                font-weight: 600;
+            }
+
+            QPushButton:hover {
+                background-color: #4b8ff7;
+            }
+
+            QPushButton:pressed {
+                background-color: #326fd1;
+            }
+            """
+        )
+
         layout.addWidget(
             self.new_chat_button
         )
@@ -167,27 +132,63 @@ class Sidebar(QWidget):
 
         self.chat_list = QListWidget()
 
-        self.chat_list.setMinimumHeight(
-            120
+        self.chat_list.setObjectName(
+            "chatList"
         )
 
-        # Chat list initially hidden.
-        self.chat_list.hide()
+        self.chat_list.setSpacing(
+            2
+        )
 
-        self.new_chat_button.hide()
+        self.chat_list.setStyleSheet(
+            """
+            QListWidget {
+                background-color: transparent;
+                color: #c9ced4;
+                border: none;
+                outline: none;
+            }
+
+            QListWidget::item {
+                background-color: transparent;
+                border-radius: 7px;
+                padding: 8px 9px;
+                margin: 1px 0;
+            }
+
+            QListWidget::item:hover {
+                background-color: #1d2024;
+            }
+
+            QListWidget::item:selected {
+                background-color: #24282d;
+                color: white;
+            }
+            """
+        )
 
         layout.addWidget(
             self.chat_list
         )
 
         # =====================================================
-        # SEPARATOR
+        # NAVIGATION SEPARATOR
         # =====================================================
 
         separator = QFrame()
 
-        separator.setObjectName(
-            "separator"
+        separator.setFrameShape(
+            QFrame.HLine
+        )
+
+        separator.setStyleSheet(
+            """
+            QFrame {
+                color: #292d32;
+                background-color: #292d32;
+                max-height: 1px;
+            }
+            """
         )
 
         layout.addWidget(
@@ -195,62 +196,118 @@ class Sidebar(QWidget):
         )
 
         layout.addSpacing(
-            6
+            4
         )
 
         # =====================================================
-        # NAVIGATION
+        # NAVIGATION BUTTONS
         # =====================================================
 
         self.chat_button = QPushButton(
-            "💬   Chat"
+            "💬  Chat"
         )
 
         self.memory_button = QPushButton(
-            "🧠   Memory"
+            "🧠  Memory"
         )
 
         self.history_button = QPushButton(
-            "📜   History"
+            "📜  History"
         )
 
         self.tools_button = QPushButton(
-            "🛠   Tools"
+            "🛠  Tools"
         )
 
         self.formatter_button = QPushButton(
-            "🧹   Formatter"
+            "🧹  Formatter"
         )
 
         self.settings_button = QPushButton(
-            "⚙   Settings"
+            "⚙  Settings"
         )
 
-        layout.addWidget(
-            self.chat_button
-        )
-
-        layout.addWidget(
-            self.memory_button
-        )
-
-        layout.addWidget(
-            self.history_button
-        )
-
-        layout.addWidget(
-            self.tools_button
-        )
-
-        layout.addWidget(
-            self.formatter_button
-        )
-
-        layout.addWidget(
+        self.navigation_buttons = [
+            self.chat_button,
+            self.memory_button,
+            self.history_button,
+            self.tools_button,
+            self.formatter_button,
             self.settings_button
-        )
+        ]
+
+        for button in self.navigation_buttons:
+
+            button.setMinimumHeight(
+                38
+            )
+
+            button.setStyleSheet(
+                """
+                QPushButton {
+                    background-color: transparent;
+                    color: #9ba2aa;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 8px 10px;
+                    text-align: left;
+                    font-size: 13px;
+                }
+
+                QPushButton:hover {
+                    background-color: #1d2024;
+                    color: #e7e9ec;
+                }
+
+                QPushButton:pressed {
+                    background-color: #24282d;
+                }
+                """
+            )
+
+            layout.addWidget(
+                button
+            )
+
+        # =====================================================
+        # SPACER
+        # =====================================================
 
         layout.addStretch()
+
+        # =====================================================
+        # FOOTER
+        # =====================================================
+
+        footer = QLabel(
+            "AI-Studio Agent"
+        )
+
+        footer.setAlignment(
+            Qt.AlignCenter
+        )
+
+        footer.setStyleSheet(
+            """
+            QLabel {
+                color: #4f565e;
+                font-size: 10px;
+                padding: 6px;
+            }
+            """
+        )
+
+        layout.addWidget(
+            footer
+        )
+
+        # =====================================================
+        # INITIAL STATE
+        # =====================================================
+
+        self.chat_list.hide()
+
+        self.new_chat_button.hide()
 
         self.setLayout(
             layout
