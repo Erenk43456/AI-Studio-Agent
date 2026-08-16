@@ -124,6 +124,9 @@ class Sidebar(QWidget):
         )
 
 
+        self.chat_list.hide()
+        self.new_chat_button.hide()
+
 
         self.chat_button = QPushButton(
             "💬 Chat"
@@ -164,7 +167,6 @@ class Sidebar(QWidget):
         layout.addWidget(
             self.chat_list
         )
-
 
 
         layout.addWidget(
