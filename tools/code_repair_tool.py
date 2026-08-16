@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from tools.formatter_tool import FormatterTool
+from tools.file_tool import FileTool
 
 
 class CodeRepairTool:
@@ -34,6 +35,10 @@ class CodeRepairTool:
         self.workspace = workspace
 
         self.formatter = FormatterTool(
+            workspace
+        )
+
+        self.file_tool = FileTool(
             workspace
         )
 
@@ -83,72 +88,57 @@ class CodeRepairTool:
 
             if filename and self.workspace:
 
-                file_path = (
-                    Path(self.workspace)
-                    /
+                read_result = self.file_tool.read_file(
                     filename
                 )
 
-                if not file_path.exists():
-
+                if not read_result.get("success"):
                     return {
                         "success": False,
-                        "message": "File not found.",
-                        "file": filename
-                    }
-
-                if not file_path.is_file():
-
-                    return {
-                        "success": False,
-                        "message": "Target is not a file.",
-                        "file": filename
-                    }
-
-                try:
-
-                    code = file_path.read_text(
-                        encoding="utf-8"
-                    )
-
-                except Exception as error:
-
-                    return {
-                        "success": False,
-                        "message": (
-                            f"Failed to read file: {error}"
+                        "message": read_result.get(
+                            "error",
+                            "Failed to read file."
                         ),
                         "file": filename
                     }
+
+                code = read_result.get(
+                    "content",
+                    ""
+                )
 
                 result = self.repair_code(
                     code,
                     context
                 )
 
-                if result.get("success"):
+                if not result.get("success"):
+                    result["file"] = filename
+                    return result
 
-                    try:
+                write_result = self.file_tool.write_file(
+                    filename,
+                    result.get("code")
+                )
 
-                        file_path.write_text(
-                            result["code"],
-                            encoding="utf-8"
-                        )
+                if not write_result.get("success"):
+                    return {
+                        "success": False,
+                        "message": write_result.get(
+                            "error",
+                            "Failed to write repaired file."
+                        ),
+                        "file": filename
+                    }
 
-                    except Exception as error:
+                result["file"] = write_result.get(
+                    "file",
+                    filename
+                )
 
-                        return {
-                            "success": False,
-                            "message": (
-                                f"Failed to write repaired file: "
-                                f"{error}"
-                            ),
-                            "file": filename
-                        }
-
-                    result["file"] = str(
-                        file_path
-                    )
+                result["backup"] = write_result.get(
+                    "backup"
+                )
 
                 return result
 

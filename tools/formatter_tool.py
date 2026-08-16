@@ -74,32 +74,47 @@ class FormatterTool:
 
             if filename and self.workspace:
 
+                try:
 
-                path = (
+                    workspace = Path(
+                        self.workspace
+                    ).resolve()
 
-                    Path(self.workspace)
-                    /
-                    filename
+                    path = (
+                        workspace /
+                        Path(filename)
+                    ).resolve()
 
-                )
+                    path.relative_to(
+                        workspace
+                    )
 
+                except ValueError:
+
+                    return str({
+                        "success": False,
+                        "message": (
+                            "Access outside workspace denied."
+                        )
+                    })
+
+                except Exception as error:
+
+                    return str({
+                        "success": False,
+                        "message": (
+                            f"Invalid file path: {error}"
+                        )
+                    })
 
                 result = self.format_file(
-
                     path,
-
                     write=True
-
                 )
-
 
                 return str(
-
                     result
-
                 )
-
-
 
 
 
