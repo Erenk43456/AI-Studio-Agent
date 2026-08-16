@@ -210,14 +210,50 @@ Format:
 
         response = self.llm.generate(
 
-            prompt
+            prompt,
+            max_tokens=6000
 
         )
 
 
-        implementation_plan = json.loads(
-            self.clean_json(response)
-        )
+        if isinstance(response, dict):
+            self.logger.error(
+                f"Code Agent LLM error {response}"
+            )
+
+            return {
+                "error": "Code Agent LLM request failed.",
+                "details": response
+            }
+
+        if not isinstance(response, str):
+            self.logger.error(
+                f"Unexpected LLM response type: {type(response)}"
+            )
+
+            return {
+                "error": "Unexpected LLM response type"
+            }
+
+        try:
+            cleaned_response = self.clean_json(
+                response
+            )
+
+            implementation_plan = json.loads(
+                cleaned_response
+            )
+
+        except (json.JSONDecodeError, TypeError) as error:
+
+            self.logger.error(
+                f"Invalid implementation plan JSON: {error}"
+            )
+
+            return {
+                "error": "LLM returned invalid JSON.",
+                "raw": response
+            }
 
 
         writer = self.registry.get(
@@ -318,10 +354,11 @@ Format:
 
         if not text:
 
-
             return "{}"
+        
 
-
+        if not isinstance(text, str):
+            return "{}"
 
 
         text = text.replace(
