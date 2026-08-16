@@ -1,16 +1,21 @@
+from PySide6.QtWidgets import QListWidgetItem
+
+
 class SidebarController:
 
     @staticmethod
     def connect(window):
 
         window.sidebar.chat_button.clicked.connect(
-            lambda: SidebarController.show_chat_section(
+            lambda:
+            SidebarController.show_chat_page(
                 window
             )
         )
 
         window.sidebar.new_chat_button.clicked.connect(
-            lambda: SidebarController.new_chat(
+            lambda:
+            SidebarController.new_chat(
                 window
             )
         )
@@ -70,7 +75,7 @@ class SidebarController:
         )
 
     # =========================================================
-    # CHAT SECTION
+    # NAVIGATION
     # =========================================================
 
     @staticmethod
@@ -81,7 +86,7 @@ class SidebarController:
         window.sidebar.new_chat_button.hide()
 
     @staticmethod
-    def show_chat_section(window):
+    def show_chat_page(window):
 
         window.sidebar.new_chat_button.show()
 
@@ -108,8 +113,6 @@ class SidebarController:
         window.sidebar.chat_list.clear()
 
         for chat in window.chat_manager.list_chats():
-
-            from PySide6.QtWidgets import QListWidgetItem
 
             item = QListWidgetItem(
                 f"💬 {chat.title}"
@@ -202,7 +205,7 @@ ve araçları kullanarak görev çalıştırabilirsiniz.
             window
         )
 
-        SidebarController.show_chat_section(
+        SidebarController.show_chat_page(
             window
         )
 
@@ -230,4 +233,6 @@ ve araçları kullanarak görev çalıştırabilirsiniz.
             chat
         )
 
-        window.pages.setCurrentIndex(0)
+        SidebarController.show_chat_page(
+            window
+        )
