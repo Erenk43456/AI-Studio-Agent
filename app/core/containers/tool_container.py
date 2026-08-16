@@ -8,6 +8,7 @@ from tools.code_repair_tool import CodeRepairTool
 from tools.repository_analyzer import RepositoryAnalyzerTool
 from tools.project_memory_tool import ProjectMemoryTool
 from tools.memory_tool import MemoryTool
+from tools.formatter_tool import FormatterTool
 
 
 class ToolContainer:
@@ -43,7 +44,8 @@ class ToolContainer:
 
         self.code_writer = CodeWriterTool(
             models.code_llm,
-            core.workspace_path
+            core.workspace_path,
+            self.registry
         )
 
         self.code_analyzer = CodeAnalyzerTool(
@@ -53,6 +55,10 @@ class ToolContainer:
 
         self.code_repair = CodeRepairTool(
             models.code_llm,
+            core.workspace_path
+        )
+
+        self.formatter = FormatterTool(
             core.workspace_path
         )
 
@@ -126,4 +132,9 @@ class ToolContainer:
         self.registry.register(
             "memory",
             self.memory_tool
+        )
+
+        self.registry.register(
+            "formatter",
+            self.formatter
         )

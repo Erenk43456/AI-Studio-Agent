@@ -737,7 +737,83 @@ class DevelopmentOrchestrator:
                 lines
             )
 
+        #
+        # Code agent
+        #
 
+        if "write_result" in result:
+
+            write_result = result.get(
+                "write_result"
+            )
+
+            if isinstance(
+                write_result,
+                dict
+            ):
+
+                if write_result.get(
+                    "success",
+                    False
+                ):
+
+                    return (
+                        "✅ Kod başarıyla güncellendi."
+                    )
+
+                results = write_result.get(
+                    "results",
+                    []
+                )
+
+                errors = []
+
+                for item in results:
+
+                    if not isinstance(
+                        item,
+                        dict
+                    ):
+                        continue
+
+                    error = item.get(
+                        "error"
+                    )
+
+                    if error:
+
+                        filename = item.get(
+                            "file",
+                            "dosya"
+                        )
+
+                        errors.append(
+                            f"📄 {filename}: {error}"
+                        )
+
+                if errors:
+
+                    return (
+                        "❌ Kod güncellenemedi.\n\n"
+                        + "\n".join(errors)
+                    )
+
+            error = result.get(
+                "error"
+            )
+
+            if error:
+
+                return (
+                    f"❌ Kod işlemi başarısız.\n\n"
+                    f"Sebep: {error}"
+                )
+
+            return (
+                "❌ Kod işlemi başarısız.\n\n"
+                "Code Agent işlemi tamamlayamadı."
+            )
+        
         #
         # Generic success
         #

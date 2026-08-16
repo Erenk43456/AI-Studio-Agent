@@ -3,7 +3,6 @@ from pathlib import Path
 from tools.formatter_tool import FormatterTool
 
 
-
 class CodeRepairTool:
 
     name = "code_repair"
@@ -23,8 +22,7 @@ class CodeRepairTool:
 
     requires_information = True
 
-    version = "1.0"
-
+    version = "1.2"
 
     def __init__(
         self,
@@ -32,199 +30,448 @@ class CodeRepairTool:
         workspace=None
     ):
 
-
         self.llm = llm
-
         self.workspace = workspace
 
         self.formatter = FormatterTool(
-
             workspace
-            
         )
-
-
 
     def execute(
         self,
         plan
     ):
 
-
         if isinstance(plan, dict):
-
 
             filename = plan.get(
                 "filename"
             )
 
+            # -----------------------------------------------------
+            # IMPORTANT:
+            # If CodeWriter supplied generated code, repair THAT
+            # code instead of reading the old file from disk.
+            # -----------------------------------------------------
+
+            supplied_code = (
+                plan.get("code")
+                or plan.get("input")
+            )
+
+            context = (
+                plan.get("context")
+                or "Repair the broken Python code."
+            )
+
+            if supplied_code:
+
+                result = self.repair_code(
+                    supplied_code,
+                    context
+                )
+
+                if result.get("success"):
+
+                    result["file"] = filename
+
+                return result
+
+            # -----------------------------------------------------
+            # Direct file repair mode
+            # -----------------------------------------------------
 
             if filename and self.workspace:
 
-
                 file_path = (
-
                     Path(self.workspace)
                     /
                     filename
-
                 )
 
+                if not file_path.exists():
 
-                if file_path.exists():
+                    return {
+                        "success": False,
+                        "message": "File not found.",
+                        "file": filename
+                    }
 
+                if not file_path.is_file():
+
+                    return {
+                        "success": False,
+                        "message": "Target is not a file.",
+                        "file": filename
+                    }
+
+                try:
 
                     code = file_path.read_text(
-
                         encoding="utf-8"
-
                     )
 
+                except Exception as error:
 
-                    result = self.repair_code(
+                    return {
+                        "success": False,
+                        "message": (
+                            f"Failed to read file: {error}"
+                        ),
+                        "file": filename
+                    }
 
-                        code
+                result = self.repair_code(
+                    code,
+                    context
+                )
 
-                    )
+                if result.get("success"):
 
-
-                    if result.get("success"):
-
+                    try:
 
                         file_path.write_text(
-
                             result["code"],
-
                             encoding="utf-8"
-
                         )
 
+                    except Exception as error:
 
-                        result["file"] = str(
+                        return {
+                            "success": False,
+                            "message": (
+                                f"Failed to write repaired file: "
+                                f"{error}"
+                            ),
+                            "file": filename
+                        }
 
-                            file_path
+                    result["file"] = str(
+                        file_path
+                    )
 
-                        )
-
-
-                    return result
-
-
-
+                return result
 
             code = (
-
                 plan.get("code")
                 or plan.get("input")
                 or plan.get("context")
                 or ""
-
             )
 
-
-        else:
-
-
-            code = plan
-
-
-
-
+            return self.repair_code(
+                code,
+                context
+            )
 
         return self.repair_code(
-
-            code
-
+            plan,
+            "Repair the broken Python code."
         )
-
-
-
-
-
-
-
 
     def repair_code(
         self,
-        code
+        code,
+        context=None
     ):
 
+        if not isinstance(
+            code,
+            str
+        ):
+
+            return {
+                "success": False,
+                "message": "Invalid code input."
+            }
+
+        code = code.strip()
 
         if not code:
 
-
             return {
-
                 "success": False,
-
                 "message": "Code is empty."
-
             }
-
-
-
-
-
 
         prompt = f"""
-You are a Python code repair assistant.
+You are an expert Python code repair agent.
 
-Fix all syntax and logical errors in this Python code.
+You are repairing Python source code generated by another
+code-generation agent.
 
-Rules:
-- Return ONLY corrected Python code.
-- Do not add explanations.
-- Keep the original purpose of the code.
+The generated code may contain:
 
-Code:
+- syntax errors
+- missing brackets
+- missing parentheses
+- unterminated strings
+- broken indentation
+- malformed blocks
+- incomplete try/except/finally blocks
+- invalid imports
+- accidentally deleted code
+- incomplete functions or classes
+
+Your primary goal is to produce COMPLETE, VALID Python code.
+
+Repair the supplied code while preserving its original
+architecture and intended functionality.
+
+IMPORTANT RULES:
+
+- Return ONLY complete Python source code.
+- Do NOT return Markdown.
+- Do NOT use code fences.
+- Do NOT explain the changes.
+- Do NOT return partial code.
+- Do NOT remove existing classes or methods merely to make
+  the code syntactically valid.
+- Do NOT replace the entire architecture.
+- Preserve existing imports when possible.
+- Preserve existing classes.
+- Preserve existing methods.
+- Preserve constructor signatures unless the error itself
+  requires a correction.
+- Make the smallest reasonable repair.
+- The result MUST be valid Python.
+- The result MUST be complete.
+- The result MUST be parseable by ast.parse().
+- The result MUST be compilable by compile().
+- Do not leave TODO placeholders instead of implementation.
+
+Additional repair context:
+
+{context}
+
+==================================================
+BROKEN PYTHON SOURCE
+==================================================
 
 {code}
+
+==================================================
+END SOURCE
+==================================================
+
+Return ONLY the repaired Python source code.
 """
 
+        try:
 
+            response = self.llm.generate(
+                prompt
+            )
 
-        response = self.llm.generate(
-
-            prompt
-
-        )
-
-
-
-
-
-        if response.startswith(
-
-            "LLM_ERROR"
-
-        ):
-
+        except Exception as error:
 
             return {
-
                 "success": False,
-
-                "message": response
-
+                "message": (
+                    f"LLM repair failed: {error}"
+                )
             }
 
+        if isinstance(
+            response,
+            dict
+        ):
 
+            return {
+                "success": False,
+                "message": (
+                    f"LLM returned an error: {response}"
+                )
+            }
 
+        if not isinstance(
+            response,
+            str
+        ):
 
+            return {
+                "success": False,
+                "message": (
+                    "LLM returned an invalid response type."
+                )
+            }
 
-
-        formatted = self.formatter.format_code(
-
+        repaired_code = self.clean_code(
             response
-
         )
 
+        if not repaired_code.strip():
 
+            return {
+                "success": False,
+                "message": (
+                    "LLM returned empty repaired code."
+                )
+            }
+
+        # ---------------------------------------------------------
+        # Validate repaired code BEFORE formatting
+        # ---------------------------------------------------------
+
+        syntax_error = self.validate_python(
+            repaired_code
+        )
+
+        if syntax_error is not None:
+
+            return {
+                "success": False,
+                "message": (
+                    "Code repair returned invalid code."
+                ),
+                "details": syntax_error
+            }
+
+        # ---------------------------------------------------------
+        # Format only AFTER syntax is valid
+        # ---------------------------------------------------------
+
+        formatted = self.formatter.format_code(
+            repaired_code
+        )
+
+        if not formatted.get(
+            "success",
+            False
+        ):
+
+            return {
+                "success": False,
+                "message": (
+                    "Repaired code could not be formatted."
+                ),
+                "details": formatted.get(
+                    "message"
+                )
+            }
+
+        repaired_code = formatted.get(
+            "code",
+            ""
+        )
+
+        if not isinstance(
+            repaired_code,
+            str
+        ):
+
+            return {
+                "success": False,
+                "message": (
+                    "Formatter returned invalid code."
+                )
+            }
+
+        repaired_code = (
+            repaired_code.strip()
+            +
+            "\n"
+        )
+
+        # ---------------------------------------------------------
+        # Validate AGAIN after formatting
+        # ---------------------------------------------------------
+
+        syntax_error = self.validate_python(
+            repaired_code
+        )
+
+        if syntax_error is not None:
+
+            return {
+                "success": False,
+                "message": (
+                    "Formatted repaired code is invalid."
+                ),
+                "details": syntax_error
+            }
 
         return {
-
             "success": True,
-
-            "code": formatted
-
+            "code": repaired_code
         }
+
+    @staticmethod
+    def validate_python(
+        code
+    ):
+
+        try:
+
+            compile(
+                code,
+                "<code_repair>",
+                "exec"
+            )
+
+            return None
+
+        except SyntaxError as error:
+
+            return (
+                f"{error.msg} "
+                f"(line {error.lineno}, "
+                f"column {error.offset})"
+            )
+
+        except Exception as error:
+
+            return str(error)
+
+    @staticmethod
+    def clean_code(
+        code
+    ):
+
+        if not isinstance(
+            code,
+            str
+        ):
+
+            return ""
+
+        code = code.strip()
+
+        if not code:
+
+            return ""
+
+        # ---------------------------------------------------------
+        # Remove Markdown code fences if the LLM ignored the
+        # output instructions.
+        # ---------------------------------------------------------
+
+        if code.startswith(
+            "```"
+        ):
+
+            lines = code.splitlines()
+
+            if lines:
+
+                first_line = lines[0].strip()
+
+                if first_line.startswith(
+                    "```"
+                ):
+
+                    lines = lines[1:]
+
+            if (
+                lines
+                and
+                lines[-1].strip() == "```"
+            ):
+
+                lines = lines[:-1]
+
+            code = "\n".join(
+                lines
+            )
+
+        return code.strip() + "\n"

@@ -110,6 +110,8 @@ class APILLM:
 
                 "top_p": 1,
 
+                "reasoning_effort": "low",
+
                 "stream": False
             }
 
