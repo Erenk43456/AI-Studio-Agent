@@ -39,3 +39,30 @@ def pytest_configure(config):
         "markers",
         "llm: tests requiring a real LLM",
     )
+
+import pytest
+
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_memory import FakeMemory
+from tests.fakes.fake_model_provider import FakeModelProvider
+from tests.fakes.fake_tool import FakeTool
+
+
+@pytest.fixture
+def fake_llm():
+    return FakeLLM()
+
+
+@pytest.fixture
+def fake_model_provider():
+    return FakeModelProvider()
+
+
+@pytest.fixture
+def fake_memory():
+    return FakeMemory()
+
+
+@pytest.fixture
+def fake_tool():
+    return FakeTool()
