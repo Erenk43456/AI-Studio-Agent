@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 class ModelSection(QWidget):
 
     changed = Signal()
+    connection_changed = Signal(str, bool)
 
     PROVIDERS = {
         "Local": "local",
@@ -43,11 +44,15 @@ class ModelSection(QWidget):
         slot,
         parent=None
     ):
-
         super().__init__(parent)
 
         self.registry = registry
         self.slot = slot
+
+        # None  = henüz test edilmedi
+        # True  = bağlantı başarılı
+        # False = bağlantı başarısız
+        self.connection_status = None
 
         self.build_ui()
         self.load_model()
@@ -112,21 +117,7 @@ class ModelSection(QWidget):
         header.addStretch()
 
         self.status_label = QLabel(
-            "● Active"
-        )
-
-        self.status_label.setStyleSheet(
-            """
-            QLabel {
-                color: #8fd694;
-                background-color: #17201a;
-                border: 1px solid #263a2b;
-                border-radius: 7px;
-                padding: 5px 9px;
-                font-size: 11px;
-                font-weight: 600;
-            }
-            """
+            "● Configured"
         )
 
         header.addWidget(
@@ -398,13 +389,11 @@ class ModelSection(QWidget):
         )
 
         if config is None:
-
             return
 
         provider_text = "API"
 
         if config.provider == "local":
-
             provider_text = "Local"
 
         self.provider_box.setCurrentText(
@@ -435,8 +424,10 @@ class ModelSection(QWidget):
             config.timeout
         )
 
-        self.update_provider_visibility()
+        # Yeni yüklenen konfigurasyon henüz test edilmemiştir.
+        self.connection_status = None
 
+        self.update_provider_visibility()
         self.update_status()
 
     # =========================================================
@@ -445,9 +436,15 @@ class ModelSection(QWidget):
 
     def provider_changed(self):
 
-        self.update_provider_visibility()
+        self.connection_status = None
 
+        self.update_provider_visibility()
         self.update_status()
+
+        self.connection_changed.emit(
+            self.slot,
+            False
+        )
 
     def update_provider_visibility(self):
 
@@ -466,7 +463,6 @@ class ModelSection(QWidget):
         )
 
         if api_label:
-
             api_label.setVisible(
                 is_api
             )
@@ -483,11 +479,11 @@ class ModelSection(QWidget):
 
         if text is not None:
 
-            if success:
+            self.status_label.setText(
+                f"● {text}"
+            )
 
-                self.status_label.setText(
-                    f"● {text}"
-                )
+            if success:
 
                 self.status_label.setStyleSheet(
                     """
@@ -504,10 +500,6 @@ class ModelSection(QWidget):
                 )
 
             else:
-
-                self.status_label.setText(
-                    f"● {text}"
-                )
 
                 self.status_label.setStyleSheet(
                     """
@@ -535,12 +527,40 @@ class ModelSection(QWidget):
                 "● Not Configured"
             )
 
+            self.status_label.setStyleSheet(
+                """
+                QLabel {
+                    color: #f0ad4e;
+                    background-color: #211c14;
+                    border: 1px solid #3d3220;
+                    border-radius: 7px;
+                    padding: 5px 9px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                """
+            )
+
             return
 
         if not config.enabled:
 
             self.status_label.setText(
                 "● Disabled"
+            )
+
+            self.status_label.setStyleSheet(
+                """
+                QLabel {
+                    color: #737b85;
+                    background-color: #191c20;
+                    border: 1px solid #30353b;
+                    border-radius: 7px;
+                    padding: 5px 9px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                """
             )
 
             return
@@ -551,10 +571,82 @@ class ModelSection(QWidget):
                 "● Not Configured"
             )
 
+            self.status_label.setStyleSheet(
+                """
+                QLabel {
+                    color: #f0ad4e;
+                    background-color: #211c14;
+                    border: 1px solid #3d3220;
+                    border-radius: 7px;
+                    padding: 5px 9px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                """
+            )
+
+            return
+
+        if self.connection_status is True:
+
+            self.status_label.setText(
+                "● Connected"
+            )
+
+            self.status_label.setStyleSheet(
+                """
+                QLabel {
+                    color: #8fd694;
+                    background-color: #17201a;
+                    border: 1px solid #263a2b;
+                    border-radius: 7px;
+                    padding: 5px 9px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                """
+            )
+
+            return
+
+        if self.connection_status is False:
+
+            self.status_label.setText(
+                "● Connection Failed"
+            )
+
+            self.status_label.setStyleSheet(
+                """
+                QLabel {
+                    color: #f28b82;
+                    background-color: #241716;
+                    border: 1px solid #402523;
+                    border-radius: 7px;
+                    padding: 5px 9px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }
+                """
+            )
+
             return
 
         self.status_label.setText(
-            "● Active"
+            "● Configured"
+        )
+
+        self.status_label.setStyleSheet(
+            """
+            QLabel {
+                color: #f0ad4e;
+                background-color: #211c14;
+                border: 1px solid #3d3220;
+                border-radius: 7px;
+                padding: 5px 9px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            """
         )
 
     # =========================================================
@@ -589,6 +681,8 @@ class ModelSection(QWidget):
             timeout=self.timeout_input.value()
         )
 
+        self.connection_status = None
+
         self.update_status(
             "Saved",
             True
@@ -605,6 +699,8 @@ class ModelSection(QWidget):
         if self.registry.reset(
             self.slot
         ):
+
+            self.connection_status = None
 
             self.load_model()
 
@@ -636,8 +732,15 @@ class ModelSection(QWidget):
 
         if config is None:
 
+            self.connection_status = False
+
             self.update_status(
                 "Configuration Error",
+                False
+            )
+
+            self.connection_changed.emit(
+                self.slot,
                 False
             )
 
@@ -646,6 +749,8 @@ class ModelSection(QWidget):
         self.test_button.setEnabled(
             False
         )
+
+        self.connection_status = None
 
         self.update_status(
             "Testing...",
@@ -660,24 +765,47 @@ class ModelSection(QWidget):
                 config
             )
 
-            if not provider.check_connection():
+            connected = provider.check_connection()
+
+            if not connected:
+
+                self.connection_status = False
 
                 self.update_status(
                     "Connection Failed",
                     False
                 )
 
+                self.connection_changed.emit(
+                    self.slot,
+                    False
+                )
+
                 return
+
+            self.connection_status = True
 
             self.update_status(
                 "Connected",
                 True
             )
 
-        except Exception as error:
+            self.connection_changed.emit(
+                self.slot,
+                True
+            )
+
+        except Exception:
+
+            self.connection_status = False
 
             self.update_status(
                 "Connection Failed",
+                False
+            )
+
+            self.connection_changed.emit(
+                self.slot,
                 False
             )
 
@@ -699,7 +827,6 @@ class ModelSection(QWidget):
         parent = widget.parentWidget()
 
         if parent is None:
-
             return None
 
         form = parent.layout()
@@ -708,7 +835,6 @@ class ModelSection(QWidget):
             form,
             QFormLayout
         ):
-
             return None
 
         for row in range(
@@ -732,7 +858,6 @@ class ModelSection(QWidget):
             ):
 
                 if label:
-
                     return label.widget()
 
         return None

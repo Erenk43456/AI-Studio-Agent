@@ -1,5 +1,4 @@
-from PySide6.QtCore import Qt, Signal
-
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -44,6 +43,7 @@ class SettingsPage(QWidget):
         self.registry = models.registry
 
         self.model_sections = {}
+        self.status_labels = {}
 
         self.build_ui()
 
@@ -153,8 +153,6 @@ class SettingsPage(QWidget):
         status_layout.setSpacing(
             8
         )
-
-        self.status_labels = {}
 
         for slot in ModelRegistry.SLOTS:
 
@@ -357,8 +355,9 @@ class SettingsPage(QWidget):
             0
         )
 
-        # Create all sections once.
-        # Only one is visible at a time.
+        # =====================================================
+        # CREATE MODEL SECTIONS
+        # =====================================================
 
         for slot in ModelRegistry.SLOTS:
 
@@ -367,9 +366,12 @@ class SettingsPage(QWidget):
                 slot
             )
 
+            # IMPORTANT:
+            # ModelSection.changed emits no arguments.
+            # Connect directly to a dedicated handler instead
+            # of using a lambda.
             section.changed.connect(
-                lambda slot=slot:
-                self.model_changed(slot)
+                self._on_model_changed
             )
 
             self.model_sections[slot] = section
@@ -414,7 +416,24 @@ class SettingsPage(QWidget):
                 0
             )
 
+        # Initial status synchronization.
         self.refresh_status()
+
+    # =========================================================
+    # SHOW
+    # =========================================================
+
+    def showEvent(
+        self,
+        event
+    ):
+
+        super().showEvent(
+            event
+        )
+
+        # Re-read registry whenever Settings becomes visible.
+        self.refresh()
 
     # =========================================================
     # SWITCH MODEL
@@ -445,11 +464,31 @@ class SettingsPage(QWidget):
     # MODEL CHANGED
     # =========================================================
 
-    def model_changed(
-        self,
-        slot
+    def _on_model_changed(
+        self
     ):
 
+        sender = self.sender()
+
+        if sender is None:
+
+            self.refresh_status()
+
+            return
+
+        slot = getattr(
+            sender,
+            "slot",
+            None
+        )
+
+        if slot is None:
+
+            self.refresh_status()
+
+            return
+
+        # Reload the section from the registry.
         section = self.model_sections.get(
             slot
         )
@@ -458,10 +497,93 @@ class SettingsPage(QWidget):
 
             section.load_model()
 
-        self.refresh_status()
+        # Update the corresponding top status card.
+        self.update_status_card(
+            slot
+        )
 
+        # Keep compatibility with main_window.py.
         self.model_updated.emit(
             slot
+        )
+
+    # =========================================================
+    # STATUS CARD
+    # =========================================================
+
+    def update_status_card(
+        self,
+        slot
+    ):
+
+        label = self.status_labels.get(
+            slot
+        )
+
+        if label is None:
+
+            return
+
+        config = self.registry.get(
+            slot
+        )
+
+        # -----------------------------------------------------
+        # Missing configuration
+        # -----------------------------------------------------
+
+        if config is None:
+
+            self._set_status(
+                label,
+                "Not Configured",
+                "warning"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # Disabled
+        # -----------------------------------------------------
+
+        if not config.enabled:
+
+            self._set_status(
+                label,
+                "Disabled",
+                "disabled"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # Missing model
+        # -----------------------------------------------------
+
+        if not config.model:
+
+            self._set_status(
+                label,
+                "Not Configured",
+                "warning"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # Configured
+        # -----------------------------------------------------
+
+        provider = (
+            "API"
+            if config.provider == "api"
+            else "Local"
+        )
+
+        self._set_status(
+            label,
+            f"Configured · {provider}",
+            "configured"
         )
 
     # =========================================================
@@ -472,83 +594,25 @@ class SettingsPage(QWidget):
 
         for slot in ModelRegistry.SLOTS:
 
-            label = self.status_labels.get(
+            self.update_status_card(
                 slot
             )
 
-            if label is None:
+    # =========================================================
+    # STATUS STYLE
+    # =========================================================
 
-                continue
+    def _set_status(
+        self,
+        label,
+        text,
+        state
+    ):
 
-            config = self.registry.get(
-                slot
-            )
-
-            if config is None:
-
-                label.setText(
-                    "● Not Configured"
-                )
-
-                label.setStyleSheet(
-                    """
-                    QLabel {
-                        color: #f0ad4e;
-                        font-size: 10px;
-                        border: none;
-                        background: transparent;
-                    }
-                    """
-                )
-
-                continue
-
-            if not config.enabled:
-
-                label.setText(
-                    "● Disabled"
-                )
-
-                label.setStyleSheet(
-                    """
-                    QLabel {
-                        color: #737b85;
-                        font-size: 10px;
-                        border: none;
-                        background: transparent;
-                    }
-                    """
-                )
-
-                continue
-
-            if not config.model:
-
-                label.setText(
-                    "● Not Configured"
-                )
-
-                label.setStyleSheet(
-                    """
-                    QLabel {
-                        color: #f0ad4e;
-                        font-size: 10px;
-                        border: none;
-                        background: transparent;
-                    }
-                    """
-                )
-
-                continue
-
-            provider = (
-                "API"
-                if config.provider == "api"
-                else "Local"
-            )
+        if state == "configured":
 
             label.setText(
-                f"● Active · {provider}"
+                f"● {text}"
             )
 
             label.setStyleSheet(
@@ -562,6 +626,61 @@ class SettingsPage(QWidget):
                 """
             )
 
+            return
+
+        if state == "warning":
+
+            label.setText(
+                f"● {text}"
+            )
+
+            label.setStyleSheet(
+                """
+                QLabel {
+                    color: #f0ad4e;
+                    font-size: 10px;
+                    border: none;
+                    background: transparent;
+                }
+                """
+            )
+
+            return
+
+        if state == "disabled":
+
+            label.setText(
+                f"● {text}"
+            )
+
+            label.setStyleSheet(
+                """
+                QLabel {
+                    color: #737b85;
+                    font-size: 10px;
+                    border: none;
+                    background: transparent;
+                }
+                """
+            )
+
+            return
+
+        label.setText(
+            f"● {text}"
+        )
+
+        label.setStyleSheet(
+            """
+            QLabel {
+                color: #737b85;
+                font-size: 10px;
+                border: none;
+                background: transparent;
+            }
+            """
+        )
+
     # =========================================================
     # REFRESH
     # =========================================================
@@ -573,3 +692,31 @@ class SettingsPage(QWidget):
             section.load_model()
 
         self.refresh_status()
+
+    # =========================================================
+    # CLOSE
+    # =========================================================
+
+    def closeEvent(
+        self,
+        event
+    ):
+
+        worker = getattr(
+            self,
+            "status_worker",
+            None
+        )
+
+        if (
+            worker is not None
+            and worker.isRunning()
+        ):
+
+            worker.requestInterruption()
+
+            worker.quit()
+
+            worker.wait()
+
+        event.accept()
