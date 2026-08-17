@@ -44,7 +44,13 @@ class SettingsPage(QWidget):
         self.registry = models.registry
 
         self.model_sections = {}
-        self.status_labels = {}
+
+        # Last known connection result for each slot.
+        #
+        # None  -> not tested yet
+        # True  -> last test succeeded
+        # False -> last test failed
+        self.connection_status = {}
 
         self.build_ui()
 
@@ -155,6 +161,8 @@ class SettingsPage(QWidget):
             8
         )
 
+        self.status_labels = {}
+
         for slot in ModelRegistry.SLOTS:
 
             card = QFrame()
@@ -231,6 +239,9 @@ class SettingsPage(QWidget):
             )
 
             self.status_labels[slot] = status
+
+            # No connection test has happened yet.
+            self.connection_status[slot] = None
 
         status_frame.setLayout(
             status_layout
@@ -367,7 +378,7 @@ class SettingsPage(QWidget):
                 slot
             )
 
-            # Model configuration changed.
+            # Configuration changed.
             section.changed.connect(
                 self._on_model_changed
             )
@@ -459,6 +470,11 @@ class SettingsPage(QWidget):
                 current_slot == slot
             )
 
+        # IMPORTANT:
+        #
+        # refresh_status() does NOT erase connection results.
+        # It only reads the last known result stored in
+        # self.connection_status.
         self.refresh_status()
 
     # =========================================================
@@ -469,33 +485,29 @@ class SettingsPage(QWidget):
         self
     ):
 
-        sender = self.sender()
+        section = self.sender()
 
-        if sender is None:
-
-            self.refresh_status()
+        if section is None:
 
             return
 
         slot = getattr(
-            sender,
+            section,
             "slot",
             None
         )
 
         if slot is None:
 
-            self.refresh_status()
-
             return
 
-        section = self.model_sections.get(
-            slot
-        )
+        # The configuration changed.
+        #
+        # Therefore the previous connection test is no longer
+        # valid for the new configuration.
+        self.connection_status[slot] = None
 
-        if section:
-
-            section.load_model()
+        section.load_model()
 
         self.update_status_card(
             slot
@@ -515,85 +527,12 @@ class SettingsPage(QWidget):
         connected
     ):
 
-        label = self.status_labels.get(
+        # Store the last known result.
+        self.connection_status[slot] = connected
+
+        self.update_status_card(
             slot
         )
-
-        if label is None:
-
-            return
-
-        config = self.registry.get(
-            slot
-        )
-
-        # -----------------------------------------------------
-        # Configuration is missing
-        # -----------------------------------------------------
-
-        if config is None:
-
-            self._set_status(
-                label,
-                "Not Configured",
-                "warning"
-            )
-
-            return
-
-        # -----------------------------------------------------
-        # Disabled
-        # -----------------------------------------------------
-
-        if not config.enabled:
-
-            self._set_status(
-                label,
-                "Disabled",
-                "disabled"
-            )
-
-            return
-
-        # -----------------------------------------------------
-        # Model is missing
-        # -----------------------------------------------------
-
-        if not config.model:
-
-            self._set_status(
-                label,
-                "Not Configured",
-                "warning"
-            )
-
-            return
-
-        # -----------------------------------------------------
-        # Connection result
-        # -----------------------------------------------------
-
-        provider = (
-            "API"
-            if config.provider == "api"
-            else "Local"
-        )
-
-        if connected:
-
-            self._set_status(
-                label,
-                f"Connected · {provider}",
-                "connected"
-            )
-
-        else:
-
-            self._set_status(
-                label,
-                f"Connection Failed · {provider}",
-                "error"
-            )
 
     # =========================================================
     # STATUS CARD
@@ -658,15 +597,43 @@ class SettingsPage(QWidget):
 
             return
 
-        # -----------------------------------------------------
-        # Configured
-        # -----------------------------------------------------
-
         provider = (
             "API"
             if config.provider == "api"
             else "Local"
         )
+
+        # -----------------------------------------------------
+        # Last connection result
+        # -----------------------------------------------------
+
+        connection_status = self.connection_status.get(
+            slot
+        )
+
+        if connection_status is True:
+
+            self._set_status(
+                label,
+                f"Connected · {provider}",
+                "connected"
+            )
+
+            return
+
+        if connection_status is False:
+
+            self._set_status(
+                label,
+                f"Connection Failed · {provider}",
+                "error"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # Configured but not tested
+        # -----------------------------------------------------
 
         self._set_status(
             label,
@@ -675,7 +642,7 @@ class SettingsPage(QWidget):
         )
 
     # =========================================================
-    # STATUS
+    # REFRESH STATUS
     # =========================================================
 
     def refresh_status(self):
