@@ -1,52 +1,89 @@
 import pytest
 
-
-@pytest.mark.unit
-def test_fake_llm_is_deterministic(fake_llm):
-    first = fake_llm.generate("hello")
-    second = fake_llm.generate("hello")
-
-    assert first == second
-    assert first == "Fake response"
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_memory import FakeMemory
+from tests.fakes.fake_model_provider import FakeModelProvider
+from tests.fakes.fake_tool import FakeTool
 
 
 @pytest.mark.unit
-def test_fake_llm_tracks_calls(fake_llm):
-    fake_llm.generate("one")
-    fake_llm.generate("two")
+def test_fake_llm_generate():
 
-    assert fake_llm.call_count == 2
-    assert fake_llm.calls == ["one", "two"]
+    llm = FakeLLM(
+        response="hello"
+    )
+
+    result = llm.generate(
+        "test prompt"
+    )
+
+    assert result == "hello"
+    assert llm.call_count == 1
 
 
 @pytest.mark.unit
-def test_fake_memory_stores_data(fake_memory):
-    fake_memory.add("hello")
-    fake_memory.add("world")
+def test_fake_llm_tracks_prompts():
 
-    assert fake_memory.get() == [
-        "hello",
-        "world",
+    llm = FakeLLM()
+
+    llm.generate("first")
+    llm.generate("second")
+
+    assert llm.calls == [
+        "first",
+        "second",
     ]
 
-    assert len(fake_memory) == 2
+
+@pytest.mark.unit
+def test_fake_memory_stores_data():
+
+    memory = FakeMemory()
+
+    memory.save(
+        "test-key",
+        "hello",
+    )
+
+    assert memory.get(
+        "test-key"
+    ) == "hello"
 
 
 @pytest.mark.unit
-def test_fake_memory_clear(fake_memory):
-    fake_memory.add("hello")
+def test_fake_memory_clear():
 
-    fake_memory.clear()
+    memory = FakeMemory()
 
-    assert fake_memory.get() == []
+    memory.save(
+        "test-key",
+        "hello",
+    )
+
+    memory.clear()
+
+    assert memory.recall() == {}
 
 
 @pytest.mark.unit
-def test_fake_tool_tracks_execution(fake_tool):
-    result = fake_tool.execute(
+def test_fake_tool_tracks_execution():
+
+    tool = FakeTool(
+        result="success"
+    )
+
+    result = tool.execute(
         1,
         value="test",
     )
 
-    assert result is None
-    assert fake_tool.call_count == 1
+    assert result == "success"
+    assert tool.call_count == 1
+
+    assert tool.calls[0]["args"] == (
+        1,
+    )
+
+    assert tool.calls[0]["kwargs"] == {
+        "value": "test"
+    }

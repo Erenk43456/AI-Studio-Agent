@@ -14,8 +14,15 @@ class FakeLLM:
         self.model = model
         self.calls = []
 
-    def generate(self, prompt):
+    def generate(
+        self,
+        prompt,
+        max_tokens=None,
+        temperature=None,
+        timeout=None,
+    ):
         self.calls.append(prompt)
+
         return self.response
 
     def get_current_model(self):

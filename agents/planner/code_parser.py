@@ -8,7 +8,7 @@ def parse_code(task):
 
 
     #
-    # Gerçek geliştirme komutları
+    # Development commands
     #
 
     keywords = [
@@ -53,7 +53,7 @@ def parse_code(task):
 
 
     #
-    # Belirli Python dosyası hedeflenmişse
+    # Actual python file target
     #
 
     if ".py" in task_lower:
@@ -65,8 +65,7 @@ def parse_code(task):
 
 
     #
-    # Açıklama / analiz istekleri
-    # CodeAgent çalıştırmamalı
+    # Description / analysis requests
     #
 
     analysis_keywords = [
@@ -98,7 +97,7 @@ def parse_code(task):
 
 
     #
-    # Sadece geliştirme görevi ise
+    # Just a development goal
     #
 
     if score >= 2:

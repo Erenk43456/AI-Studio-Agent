@@ -1,19 +1,77 @@
 class FakeMemory:
     """
-    In-memory deterministic memory implementation for tests.
+    Deterministic in-memory implementation of the Memory contract.
+
+    This fake never performs filesystem or network access.
     """
 
     def __init__(self):
-        self.data = []
+        self.data = {}
 
-    def add(self, item):
-        self.data.append(item)
+    def save(
+        self,
+        key,
+        value,
+        category="general",
+    ):
+        self.data[key] = {
+            "value": value,
+            "category": category,
+        }
 
-    def get(self):
-        return list(self.data)
+    def update(
+        self,
+        key,
+        value,
+    ):
+        if key in self.data:
+            self.data[key]["value"] = value
+        else:
+            self.save(
+                key,
+                value,
+            )
+
+    def get(
+        self,
+        key,
+    ):
+        item = self.data.get(
+            key
+        )
+
+        if item is None:
+            return None
+
+        if isinstance(
+            item,
+            dict,
+        ) and "value" in item:
+
+            return item["value"]
+
+        return item
+
+    def get_full(
+        self,
+        key,
+    ):
+        return self.data.get(
+            key
+        )
+
+    def delete(
+        self,
+        key,
+    ):
+        if key in self.data:
+            del self.data[key]
+            return True
+
+        return False
 
     def clear(self):
-        self.data.clear()
+        self.data = {}
 
-    def __len__(self):
-        return len(self.data)
+    def recall(self):
+        return self.data

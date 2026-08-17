@@ -131,7 +131,10 @@ class DecisionAgent(BaseAgent):
         ]
 
         if any(
-            word in request_lower
+            re.search(
+                rf"\b{re.escape(word)}\b",
+                request_lower
+            )
             for word in code_keywords
         ):
 
