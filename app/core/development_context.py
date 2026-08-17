@@ -18,6 +18,14 @@ class DevelopmentContext:
 
         self.logger = AppLogger()
 
+        # Memory loading state.
+        #
+        # This is deliberately tracked separately from the
+        # returned dictionaries because an empty memory and a
+        # failed memory lookup are both different from having
+        # usable project memory.
+        self._memory_available = False
+
     # =============================================================
     # Public API
     # =============================================================
@@ -28,6 +36,9 @@ class DevelopmentContext:
     ):
 
         task = str(task or "").strip()
+
+        # Reset memory state for every build.
+        self._memory_available = False
 
         targets = self.extract_target_files(
             task
@@ -105,7 +116,7 @@ class DevelopmentContext:
         candidates = re.findall(
             r"""
             (?:
-                [A-Za-z0-9_.-]+/
+                [A-Za-z0-9_.-]+[\\/] 
             )*
             [A-Za-z0-9_.-]+\.py
             """,
@@ -122,15 +133,15 @@ class DevelopmentContext:
                 "/"
             )
 
-            candidate = candidate.lstrip(
-                "./"
-            )
+            # Remove only an actual leading "./" or ".\".
+            while candidate.startswith("./"):
+                candidate = candidate[2:]
+
+            if candidate.startswith("/"):
+                candidate = candidate.lstrip("/")
 
             if candidate not in result:
-
-                result.append(
-                    candidate
-                )
+                result.append(candidate)
 
         return result
 
@@ -163,6 +174,9 @@ class DevelopmentContext:
         ):
 
             return {}
+
+        if files:
+            self._memory_available = True
 
         return files
 
@@ -227,6 +241,8 @@ class DevelopmentContext:
 
             if info is not None:
 
+                self._memory_available = True
+
                 result[target] = info
 
         return result
@@ -251,6 +267,9 @@ class DevelopmentContext:
             ):
 
                 return {}
+
+            if architecture:
+                self._memory_available = True
 
             return architecture
 
@@ -420,13 +439,15 @@ class DevelopmentContext:
             # Architecture relationships
             # -----------------------------------------------------
 
-            architecture_score, architecture_reasons, architecture_relationships = (
-                self.score_architecture_relationship(
-                    normalized,
-                    targets,
-                    architecture,
-                    info
-                )
+            (
+                architecture_score,
+                architecture_reasons,
+                architecture_relationships
+            ) = self.score_architecture_relationship(
+                normalized,
+                targets,
+                architecture,
+                info
             )
 
             score += architecture_score
@@ -443,12 +464,14 @@ class DevelopmentContext:
             # Explicit dependency information
             # -----------------------------------------------------
 
-            dependency_score, dependency_reasons, dependency_relationships = (
-                self.score_dependency_relationship(
-                    normalized,
-                    targets,
-                    info
-                )
+            (
+                dependency_score,
+                dependency_reasons,
+                dependency_relationships
+            ) = self.score_dependency_relationship(
+                normalized,
+                targets,
+                info
             )
 
             score += dependency_score
@@ -461,8 +484,31 @@ class DevelopmentContext:
                 dependency_relationships
             )
 
-            if score <= 0:
+            # A file must have a meaningful relationship before
+            # entering the development context.
+            #
+            # Architecture-layer membership by itself is not
+            # enough. This prevents unrelated files such as
+            # app/tools.py from being included merely because
+            # they live under app/.
+            meaningful_relationships = {
+                "same_package",
+                "related_module",
+                "references_target",
+                "references_target_file",
+                "references_target_module",
+                "target_references_file",
+                "target_references_module",
+                "architecture_member",
+                "architecture_reference"
+            }
 
+            has_meaningful_relationship = bool(
+                set(relationships)
+                & meaningful_relationships
+            )
+
+            if not has_meaningful_relationship:
                 continue
 
             # Remove duplicate information while
@@ -572,46 +618,54 @@ class DevelopmentContext:
 
         # ---------------------------------------------------------
         # Layer / component information
+        #
+        # Only consider architecture layers when the architecture
+        # actually contains structural information. Merely having
+        # "app" or "core" in a path must not make every file
+        # architecture-related.
         # ---------------------------------------------------------
 
-        path_parts = set(
-            part.lower()
-            for part in Path(path).parts
-        )
+        if architecture:
 
-        architecture_keywords = (
-            "agent",
-            "agents",
-            "orchestrator",
-            "orchestrators",
-            "container",
-            "containers",
-            "tool",
-            "tools",
-            "memory",
-            "model",
-            "models",
-            "app",
-            "core"
-        )
-
-        matching_layers = (
-            path_parts
-            &
-            set(architecture_keywords)
-        )
-
-        if matching_layers:
-
-            score += 1
-
-            reasons.append(
-                "belongs to known project architecture layer"
+            path_parts = set(
+                part.lower()
+                for part in Path(path).parts
             )
 
-            relationships.append(
-                "architecture_layer"
+            architecture_keywords = (
+                "agent",
+                "agents",
+                "orchestrator",
+                "orchestrators",
+                "container",
+                "containers",
+                "tool",
+                "tools",
+                "memory",
+                "model",
+                "models",
+                "app",
+                "core"
             )
+
+            matching_layers = (
+                path_parts
+                &
+                set(architecture_keywords)
+            )
+
+            if matching_layers:
+
+                # Layer membership is supporting evidence only.
+                score += 1
+
+                reasons.append(
+                    "belongs to known project architecture layer"
+                )
+
+                relationships.append(
+                    "architecture_layer"
+                )
 
         return (
             score,
@@ -639,8 +693,6 @@ class DevelopmentContext:
         serialized = self.serialize_info(
             info
         )
-
-        path_lower = path.lower()
 
         for target in targets:
 
@@ -969,7 +1021,11 @@ class DevelopmentContext:
             )
         ):
 
-            if relationship_count >= 3:
+            # A related file is enough to make the fix
+            # architecture-aware. Requiring three relationship
+            # edges was too strict and caused valid architectural
+            # contexts to fall back to targeted_fix.
+            if related_files:
 
                 strategy_type = (
                     "architecture_aware_targeted_fix"
@@ -1016,7 +1072,7 @@ class DevelopmentContext:
             )
         ):
 
-            if relationship_count >= 2:
+            if related_files:
 
                 strategy_type = (
                     "architecture_aware_feature_implementation"
@@ -1070,13 +1126,7 @@ class DevelopmentContext:
         # Determine whether repository analysis is needed.
         # ---------------------------------------------------------
 
-        memory_available = bool(
-            target_files
-            or
-            related_files
-            or
-            architecture_text
-        )
+        memory_available = self._memory_available
 
         repository_analysis_fallback = (
             not memory_available
