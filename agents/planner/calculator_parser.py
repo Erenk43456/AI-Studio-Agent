@@ -7,7 +7,7 @@ def parse_calculator(task):
     task = task.lower().strip()
 
 
-    # Direkt matematik:
+    # Direct math:
     # 15+20
     # 10 * 5
 
@@ -62,7 +62,7 @@ def parse_calculator(task):
 
 
 
-    # Türkçe komutlar
+    # Turkish commands
 
     numbers = re.findall(
         r"\d+",

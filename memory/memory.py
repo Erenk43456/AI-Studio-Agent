@@ -10,13 +10,13 @@ from app.core.logger import AppLogger
 class Memory:
 
 
-    def __init__(self):
+    def __init__(self, data_dir=None):
 
 
         self.logger = AppLogger()
 
 
-        self.data_dir = Path("data")
+        self.data_dir = Path(data_dir or "data")
 
 
         self.data_dir.mkdir(
