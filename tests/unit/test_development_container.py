@@ -52,17 +52,32 @@ class FakeTools:
 class FakeCore:
     workspace_path = "C:/AI-Studio"
 
+
 class FakeMemory:
 
     def __init__(self):
         self.memory = object()
         self.project_memory = FakeProjectMemory()
 
+
+class FakeCodeAgent:
+
+    def __init__(self):
+        self.development_context = None
+
+
+class FakeAgents:
+
+    def __init__(self):
+        self.code = FakeCodeAgent()
+
+
 class FakeMain:
     core = FakeCore()
     models = FakeModels()
     tools = FakeTools()
     memory = FakeMemory()
+    agents = FakeAgents()
 
 
 @pytest.mark.unit

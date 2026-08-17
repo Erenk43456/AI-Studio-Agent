@@ -1,4 +1,3 @@
-from agents.chat_agent import ChatAgent
 from app.core.orchestrators.chat_orchestrator import ChatOrchestrator
 
 
@@ -23,17 +22,7 @@ class ChatContainer:
         )
 
 
-        self.chat_agent = ChatAgent(
-
-            llm=self.llm,
-
-            memory=self.memory,
-
-            conversation=None,
-
-            project_memory=self.project_memory
-
-        )
+        self.chat_agent = main.agents.chat
 
 
         self.orchestrator = ChatOrchestrator(

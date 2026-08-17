@@ -1,4 +1,3 @@
-from agents.code_agent import CodeAgent
 from agents.planner_agent import PlannerAgent
 
 from app.core.development_context import DevelopmentContext
@@ -66,11 +65,9 @@ class DevelopmentContainer:
             self.planner_llm
         )
 
-        self.code_agent = CodeAgent(
-            self.code_llm,
-            self.registry,
-            main.memory.memory,
-            self.workspace_path,
+        self.code_agent = main.agents.code
+
+        self.code_agent.development_context = (
             self.development_context
         )
 

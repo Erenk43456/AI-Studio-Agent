@@ -34,11 +34,10 @@ class AgentContainer:
         #
 
         self.chat = ChatAgent(
-
-            main.models.chat_llm,
-
-            main.memory.memory
-
+            llm=main.models.chat_llm,
+            memory=main.memory.memory,
+            conversation=None,
+            project_memory=main.memory.project_memory
         )
 
 

@@ -29,8 +29,13 @@ class FakeModels:
     code_llm = FakeLLM()
 
 
+class FakeProjectMemory:
+    pass
+
+
 class FakeMemoryContainer:
     memory = FakeMemory()
+    project_memory = FakeProjectMemory()
 
 
 class FakeTools:

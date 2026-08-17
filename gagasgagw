@@ -1,0 +1,127 @@
+[1mdiff --git a/app/core/containers/agent_container.py b/app/core/containers/agent_container.py[m
+[1mindex f9234da..9e2b6da 100644[m
+[1m--- a/app/core/containers/agent_container.py[m
+[1m+++ b/app/core/containers/agent_container.py[m
+[36m@@ -34,11 +34,10 @@[m [mclass AgentContainer:[m
+         #[m
+ [m
+         self.chat = ChatAgent([m
+[31m-[m
+[31m-            main.models.chat_llm,[m
+[31m-[m
+[31m-            main.memory.memory[m
+[31m-[m
+[32m+[m[32m            llm=main.models.chat_llm,[m
+[32m+[m[32m            memory=main.memory.memory,[m
+[32m+[m[32m            conversation=None,[m
+[32m+[m[32m            project_memory=main.memory.project_memory[m
+         )[m
+ [m
+ [m
+[1mdiff --git a/app/core/containers/chat_container.py b/app/core/containers/chat_container.py[m
+[1mindex eb3421d..4498554 100644[m
+[1m--- a/app/core/containers/chat_container.py[m
+[1m+++ b/app/core/containers/chat_container.py[m
+[36m@@ -1,4 +1,3 @@[m
+[31m-from agents.chat_agent import ChatAgent[m
+ from app.core.orchestrators.chat_orchestrator import ChatOrchestrator[m
+ [m
+ [m
+[36m@@ -23,17 +22,7 @@[m [mclass ChatContainer:[m
+         )[m
+ [m
+ [m
+[31m-        self.chat_agent = ChatAgent([m
+[31m-[m
+[31m-            llm=self.llm,[m
+[31m-[m
+[31m-            memory=self.memory,[m
+[31m-[m
+[31m-            conversation=None,[m
+[31m-[m
+[31m-            project_memory=self.project_memory[m
+[31m-[m
+[31m-        )[m
+[32m+[m[32m        self.chat_agent = main.agents.chat[m
+ [m
+ [m
+         self.orchestrator = ChatOrchestrator([m
+[1mdiff --git a/app/core/containers/development_container.py b/app/core/containers/development_container.py[m
+[1mindex cd57cb8..430f385 100644[m
+[1m--- a/app/core/containers/development_container.py[m
+[1m+++ b/app/core/containers/development_container.py[m
+[36m@@ -1,4 +1,3 @@[m
+[31m-from agents.code_agent import CodeAgent[m
+ from agents.planner_agent import PlannerAgent[m
+ [m
+ from app.core.development_context import DevelopmentContext[m
+[36m@@ -66,11 +65,9 @@[m [mclass DevelopmentContainer:[m
+             self.planner_llm[m
+         )[m
+ [m
+[31m-        self.code_agent = CodeAgent([m
+[31m-            self.code_llm,[m
+[31m-            self.registry,[m
+[31m-            main.memory.memory,[m
+[31m-            self.workspace_path,[m
+[32m+[m[32m        self.code_agent = main.agents.code[m
+[32m+[m
+[32m+[m[32m        self.code_agent.development_context = ([m
+             self.development_context[m
+         )[m
+ [m
+[1mdiff --git a/tests/unit/test_agent_container.py b/tests/unit/test_agent_container.py[m
+[1mindex cb7cdae..42d2640 100644[m
+[1m--- a/tests/unit/test_agent_container.py[m
+[1m+++ b/tests/unit/test_agent_container.py[m
+[36m@@ -29,8 +29,13 @@[m [mclass FakeModels:[m
+     code_llm = FakeLLM()[m
+ [m
+ [m
+[32m+[m[32mclass FakeProjectMemory:[m
+[32m+[m[32m    pass[m
+[32m+[m
+[32m+[m
+ class FakeMemoryContainer:[m
+     memory = FakeMemory()[m
+[32m+[m[32m    project_memory = FakeProjectMemory()[m
+ [m
+ [m
+ class FakeTools:[m
+[1mdiff --git a/tests/unit/test_development_container.py b/tests/unit/test_development_container.py[m
+[1mindex 1fd790a..2fa2a4e 100644[m
+[1m--- a/tests/unit/test_development_container.py[m
+[1m+++ b/tests/unit/test_development_container.py[m
+[36m@@ -52,17 +52,32 @@[m [mclass FakeTools:[m
+ class FakeCore:[m
+     workspace_path = "C:/AI-Studio"[m
+ [m
+[32m+[m
+ class FakeMemory:[m
+ [m
+     def __init__(self):[m
+         self.memory = object()[m
+         self.project_memory = FakeProjectMemory()[m
+ [m
+[32m+[m
+[32m+[m[32mclass FakeCodeAgent:[m
+[32m+[m
+[32m+[m[32m    def __init__(self):[m
+[32m+[m[32m        self.development_context = None[m
+[32m+[m
+[32m+[m
+[32m+[m[32mclass FakeAgents:[m
+[32m+[m
+[32m+[m[32m    def __init__(self):[m
+[32m+[m[32m        self.code = FakeCodeAgent()[m
+[32m+[m
+[32m+[m
+ class FakeMain:[m
+     core = FakeCore()[m
+     models = FakeModels()[m
+     tools = FakeTools()[m
+     memory = FakeMemory()[m
+[32m+[m[32m    agents = FakeAgents()[m
+ [m
+ [m
+ @pytest.mark.unit[m
