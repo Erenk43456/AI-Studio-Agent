@@ -8,86 +8,78 @@ from app.pages.settings_page import SettingsPage
 from app.pages.formatter_page import FormatterPage
 
 
-
-
-
 class PageManager:
-
 
     @staticmethod
     def create(
         window
     ):
 
-
         window.pages = QStackedWidget()
-
-
 
         window.chat_index = 0
 
-
-
-
-
+        # =====================================================
+        # PAGES
+        # =====================================================
 
         window.memory_page = MemoryPage()
 
-
         window.history_page = HistoryPage()
 
-
         window.tools_page = ToolsPage()
-
 
         window.settings_page = SettingsPage(
             window.container.models
         )
 
-
         window.formatter_page = FormatterPage()
 
-
-
-
-
-
-
+        # =====================================================
+        # PAGE ORDER
+        # =====================================================
         #
-        # Sıra önemli
-        # Sidebar indexleri buna bağlı
+        # 0 = Chat
+        # 1 = Memory
+        # 2 = History
+        # 3 = Tools
+        # 4 = Settings
+        # 5 = Formatter
+        #
+        # SidebarController bu indexlere bağlı.
+        # Sıralamayı değiştirme.
         #
 
         window.pages.addWidget(
-            window.scroll
+            window.chat_page
         )
-
 
         window.pages.addWidget(
             window.memory_page
         )
 
-
         window.pages.addWidget(
             window.history_page
         )
-
 
         window.pages.addWidget(
             window.tools_page
         )
 
-
         window.pages.addWidget(
             window.settings_page
         )
-
 
         window.pages.addWidget(
             window.formatter_page
         )
 
+        # =====================================================
+        # DEFAULT PAGE
+        # =====================================================
 
-
+        window.pages.setCurrentIndex(
+            window.chat_index
+        )
 
         return window.pages

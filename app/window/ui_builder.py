@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 
 from PySide6.QtCore import Qt
 
+
 from app.header import Header
 from app.sidebar import Sidebar
 
@@ -153,6 +154,10 @@ class UIBuilder:
             0,
             4,
             0
+        )
+
+        status_row.setSpacing(
+            6
         )
 
         window.status = QLabel(

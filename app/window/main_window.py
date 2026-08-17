@@ -1,5 +1,7 @@
 from PySide6.QtWidgets import QWidget
 
+from app.ui.chat_ui import ChatUI
+
 from app.window.backend import Backend
 from app.window.ui_builder import UIBuilder
 from app.window.chat_controller import ChatController
@@ -28,6 +30,11 @@ class AIWindow(QWidget):
 
         UIBuilder.build(
             self
+        )
+
+        self.settings_page.model_updated.connect(
+            lambda slot:
+            self.update_model_ui(slot)
         )
 
         ChatController.connect(
@@ -178,6 +185,21 @@ How can I help you?
         self.status.setText(
             "● Tools"
         )
+
+    # =========================================================
+    # UPDATE MODEL
+    # =========================================================
+
+    def update_model_ui(
+        self,
+        slot
+    ):
+
+        if slot == "chat":
+
+            ChatUI.update_model_info(
+                self
+            )
 
     # =========================================================
     # CLOSE

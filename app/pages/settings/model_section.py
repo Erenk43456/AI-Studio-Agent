@@ -3,7 +3,6 @@ from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -11,6 +10,7 @@ from PySide6.QtWidgets import (
     QSpinBox,
     QVBoxLayout,
     QWidget,
+    QFrame,
 )
 
 
@@ -21,6 +21,20 @@ class ModelSection(QWidget):
     PROVIDERS = {
         "Local": "local",
         "API": "api",
+    }
+
+    SLOT_NAMES = {
+        "chat": "Chat Model",
+        "code": "Code Model",
+        "planner": "Planner Model",
+        "decision": "Decision Model",
+    }
+
+    SLOT_ICONS = {
+        "chat": "💬",
+        "code": "💻",
+        "planner": "🧠",
+        "decision": "⚖",
     }
 
     def __init__(
@@ -44,13 +58,143 @@ class ModelSection(QWidget):
 
     def build_ui(self):
 
-        self.group = QGroupBox(
+        root = QVBoxLayout()
+
+        root.setContentsMargins(
+            0,
+            0,
+            0,
+            0
+        )
+
+        root.setSpacing(
+            14
+        )
+
+        # =====================================================
+        # HEADER
+        # =====================================================
+
+        header = QHBoxLayout()
+
+        header.setSpacing(
+            10
+        )
+
+        icon = self.SLOT_ICONS.get(
+            self.slot,
+            "🤖"
+        )
+
+        name = self.SLOT_NAMES.get(
+            self.slot,
             self.slot.capitalize()
         )
 
-        root = QVBoxLayout()
+        self.title = QLabel(
+            f"{icon}  {name}"
+        )
+
+        self.title.setStyleSheet(
+            """
+            QLabel {
+                color: #f1f3f5;
+                font-size: 18px;
+                font-weight: 600;
+            }
+            """
+        )
+
+        header.addWidget(
+            self.title
+        )
+
+        header.addStretch()
+
+        self.status_label = QLabel(
+            "● Active"
+        )
+
+        self.status_label.setStyleSheet(
+            """
+            QLabel {
+                color: #8fd694;
+                background-color: #17201a;
+                border: 1px solid #263a2b;
+                border-radius: 7px;
+                padding: 5px 9px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            """
+        )
+
+        header.addWidget(
+            self.status_label
+        )
+
+        root.addLayout(
+            header
+        )
+
+        # =====================================================
+        # DESCRIPTION
+        # =====================================================
+
+        description = QLabel(
+            "Configure the model used for this agent role."
+        )
+
+        description.setStyleSheet(
+            """
+            QLabel {
+                color: #737b85;
+                font-size: 12px;
+            }
+            """
+        )
+
+        root.addWidget(
+            description
+        )
+
+        # =====================================================
+        # DIVIDER
+        # =====================================================
+
+        divider = QFrame()
+
+        divider.setFrameShape(
+            QFrame.HLine
+        )
+
+        divider.setStyleSheet(
+            """
+            QFrame {
+                color: #292d32;
+                background-color: #292d32;
+                max-height: 1px;
+            }
+            """
+        )
+
+        root.addWidget(
+            divider
+        )
+
+        # =====================================================
+        # FORM
+        # =====================================================
 
         form = QFormLayout()
+
+        form.setHorizontalSpacing(
+            20
+        )
+
+        form.setVerticalSpacing(
+            12
+        )
 
         # -----------------------------------------------------
         # Provider
@@ -81,7 +225,7 @@ class ModelSection(QWidget):
         self.model_input = QLineEdit()
 
         self.model_input.setPlaceholderText(
-            "Model name"
+            "Model identifier"
         )
 
         form.addRow(
@@ -105,7 +249,7 @@ class ModelSection(QWidget):
         )
 
         # -----------------------------------------------------
-        # API key
+        # API Key
         # -----------------------------------------------------
 
         self.api_key_input = QLineEdit()
@@ -148,7 +292,7 @@ class ModelSection(QWidget):
         )
 
         # -----------------------------------------------------
-        # Max tokens
+        # Max Tokens
         # -----------------------------------------------------
 
         self.max_tokens_input = QSpinBox()
@@ -183,74 +327,64 @@ class ModelSection(QWidget):
             form
         )
 
-        # -----------------------------------------------------
-        # Buttons
-        # -----------------------------------------------------
+        # =====================================================
+        # ACTIONS
+        # =====================================================
 
-        buttons = QHBoxLayout()
+        actions = QHBoxLayout()
+
+        actions.setSpacing(
+            8
+        )
 
         self.test_button = QPushButton(
             "Test Connection"
-        )
-
-        self.save_button = QPushButton(
-            "Save"
         )
 
         self.reset_button = QPushButton(
             "Reset"
         )
 
-        self.test_button.clicked.connect(
-            self.test_connection
+        self.save_button = QPushButton(
+            "Save Changes"
         )
 
-        self.save_button.clicked.connect(
-            self.save_model
+        self.save_button.setObjectName(
+            "sendButton"
+        )
+
+        self.test_button.clicked.connect(
+            self.test_connection
         )
 
         self.reset_button.clicked.connect(
             self.reset_model
         )
 
-        buttons.addWidget(
+        self.save_button.clicked.connect(
+            self.save_model
+        )
+
+        actions.addWidget(
             self.test_button
         )
 
-        buttons.addWidget(
-            self.save_button
-        )
-
-        buttons.addWidget(
+        actions.addWidget(
             self.reset_button
         )
 
+        actions.addStretch()
+
+        actions.addWidget(
+            self.save_button
+        )
+
         root.addLayout(
-            buttons
-        )
-
-        # -----------------------------------------------------
-        # Status
-        # -----------------------------------------------------
-
-        self.status_label = QLabel()
-
-        root.addWidget(
-            self.status_label
-        )
-
-        self.group.setLayout(
-            root
-        )
-
-        outer = QVBoxLayout()
-
-        outer.addWidget(
-            self.group
+            actions
         )
 
         self.setLayout(
-            outer
+            root
         )
 
     # =========================================================
@@ -303,6 +437,8 @@ class ModelSection(QWidget):
 
         self.update_provider_visibility()
 
+        self.update_status()
+
     # =========================================================
     # PROVIDER
     # =========================================================
@@ -310,6 +446,8 @@ class ModelSection(QWidget):
     def provider_changed(self):
 
         self.update_provider_visibility()
+
+        self.update_status()
 
     def update_provider_visibility(self):
 
@@ -332,6 +470,92 @@ class ModelSection(QWidget):
             api_label.setVisible(
                 is_api
             )
+
+    # =========================================================
+    # STATUS
+    # =========================================================
+
+    def update_status(
+        self,
+        text=None,
+        success=True
+    ):
+
+        if text is not None:
+
+            if success:
+
+                self.status_label.setText(
+                    f"● {text}"
+                )
+
+                self.status_label.setStyleSheet(
+                    """
+                    QLabel {
+                        color: #8fd694;
+                        background-color: #17201a;
+                        border: 1px solid #263a2b;
+                        border-radius: 7px;
+                        padding: 5px 9px;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+                    """
+                )
+
+            else:
+
+                self.status_label.setText(
+                    f"● {text}"
+                )
+
+                self.status_label.setStyleSheet(
+                    """
+                    QLabel {
+                        color: #f28b82;
+                        background-color: #241716;
+                        border: 1px solid #402523;
+                        border-radius: 7px;
+                        padding: 5px 9px;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+                    """
+                )
+
+            return
+
+        config = self.registry.get(
+            self.slot
+        )
+
+        if config is None:
+
+            self.status_label.setText(
+                "● Not Configured"
+            )
+
+            return
+
+        if not config.enabled:
+
+            self.status_label.setText(
+                "● Disabled"
+            )
+
+            return
+
+        if not config.model:
+
+            self.status_label.setText(
+                "● Not Configured"
+            )
+
+            return
+
+        self.status_label.setText(
+            "● Active"
+        )
 
     # =========================================================
     # SAVE
@@ -365,8 +589,9 @@ class ModelSection(QWidget):
             timeout=self.timeout_input.value()
         )
 
-        self.status_label.setText(
-            "✓ Saved"
+        self.update_status(
+            "Saved",
+            True
         )
 
         self.changed.emit()
@@ -383,16 +608,18 @@ class ModelSection(QWidget):
 
             self.load_model()
 
-            self.status_label.setText(
-                "✓ Reset to defaults"
+            self.update_status(
+                "Reset",
+                True
             )
 
             self.changed.emit()
 
         else:
 
-            self.status_label.setText(
-                "No defaults available."
+            self.update_status(
+                "No Defaults",
+                False
             )
 
     # =========================================================
@@ -409,11 +636,21 @@ class ModelSection(QWidget):
 
         if config is None:
 
-            self.status_label.setText(
-                "✗ Model configuration missing."
+            self.update_status(
+                "Configuration Error",
+                False
             )
 
             return
+
+        self.test_button.setEnabled(
+            False
+        )
+
+        self.update_status(
+            "Testing...",
+            True
+        )
 
         try:
 
@@ -425,20 +662,29 @@ class ModelSection(QWidget):
 
             if not provider.check_connection():
 
-                self.status_label.setText(
-                    "✗ Connection failed."
+                self.update_status(
+                    "Connection Failed",
+                    False
                 )
 
                 return
 
-            self.status_label.setText(
-                "✓ Connection successful."
+            self.update_status(
+                "Connected",
+                True
             )
 
         except Exception as error:
 
-            self.status_label.setText(
-                f"✗ {error}"
+            self.update_status(
+                "Connection Failed",
+                False
+            )
+
+        finally:
+
+            self.test_button.setEnabled(
+                True
             )
 
     # =========================================================
