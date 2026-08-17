@@ -1,4 +1,5 @@
 from PySide6.QtCore import Signal
+
 from PySide6.QtWidgets import (
     QComboBox,
     QFrame,
@@ -366,12 +367,14 @@ class SettingsPage(QWidget):
                 slot
             )
 
-            # IMPORTANT:
-            # ModelSection.changed emits no arguments.
-            # Connect directly to a dedicated handler instead
-            # of using a lambda.
+            # Model configuration changed.
             section.changed.connect(
                 self._on_model_changed
+            )
+
+            # Connection test result changed.
+            section.connection_changed.connect(
+                self._on_connection_changed
             )
 
             self.model_sections[slot] = section
@@ -416,7 +419,6 @@ class SettingsPage(QWidget):
                 0
             )
 
-        # Initial status synchronization.
         self.refresh_status()
 
     # =========================================================
@@ -432,7 +434,6 @@ class SettingsPage(QWidget):
             event
         )
 
-        # Re-read registry whenever Settings becomes visible.
         self.refresh()
 
     # =========================================================
@@ -488,7 +489,6 @@ class SettingsPage(QWidget):
 
             return
 
-        # Reload the section from the registry.
         section = self.model_sections.get(
             slot
         )
@@ -497,15 +497,103 @@ class SettingsPage(QWidget):
 
             section.load_model()
 
-        # Update the corresponding top status card.
         self.update_status_card(
             slot
         )
 
-        # Keep compatibility with main_window.py.
         self.model_updated.emit(
             slot
         )
+
+    # =========================================================
+    # CONNECTION CHANGED
+    # =========================================================
+
+    def _on_connection_changed(
+        self,
+        slot,
+        connected
+    ):
+
+        label = self.status_labels.get(
+            slot
+        )
+
+        if label is None:
+
+            return
+
+        config = self.registry.get(
+            slot
+        )
+
+        # -----------------------------------------------------
+        # Configuration is missing
+        # -----------------------------------------------------
+
+        if config is None:
+
+            self._set_status(
+                label,
+                "Not Configured",
+                "warning"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # Disabled
+        # -----------------------------------------------------
+
+        if not config.enabled:
+
+            self._set_status(
+                label,
+                "Disabled",
+                "disabled"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # Model is missing
+        # -----------------------------------------------------
+
+        if not config.model:
+
+            self._set_status(
+                label,
+                "Not Configured",
+                "warning"
+            )
+
+            return
+
+        # -----------------------------------------------------
+        # Connection result
+        # -----------------------------------------------------
+
+        provider = (
+            "API"
+            if config.provider == "api"
+            else "Local"
+        )
+
+        if connected:
+
+            self._set_status(
+                label,
+                f"Connected · {provider}",
+                "connected"
+            )
+
+        else:
+
+            self._set_status(
+                label,
+                f"Connection Failed · {provider}",
+                "error"
+            )
 
     # =========================================================
     # STATUS CARD
@@ -609,11 +697,11 @@ class SettingsPage(QWidget):
         state
     ):
 
-        if state == "configured":
+        label.setText(
+            f"● {text}"
+        )
 
-            label.setText(
-                f"● {text}"
-            )
+        if state == "connected":
 
             label.setStyleSheet(
                 """
@@ -628,11 +716,22 @@ class SettingsPage(QWidget):
 
             return
 
-        if state == "warning":
+        if state == "configured":
 
-            label.setText(
-                f"● {text}"
+            label.setStyleSheet(
+                """
+                QLabel {
+                    color: #f0ad4e;
+                    font-size: 10px;
+                    border: none;
+                    background: transparent;
+                }
+                """
             )
+
+            return
+
+        if state == "warning":
 
             label.setStyleSheet(
                 """
@@ -649,10 +748,6 @@ class SettingsPage(QWidget):
 
         if state == "disabled":
 
-            label.setText(
-                f"● {text}"
-            )
-
             label.setStyleSheet(
                 """
                 QLabel {
@@ -666,9 +761,20 @@ class SettingsPage(QWidget):
 
             return
 
-        label.setText(
-            f"● {text}"
-        )
+        if state == "error":
+
+            label.setStyleSheet(
+                """
+                QLabel {
+                    color: #f28b82;
+                    font-size: 10px;
+                    border: none;
+                    background: transparent;
+                }
+                """
+            )
+
+            return
 
         label.setStyleSheet(
             """
