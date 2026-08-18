@@ -31,12 +31,23 @@ class ProjectMemorySync:
         plan = {
             "action": "analyze",
             "path": str(self.workspace),
+            "changed_files": changed_files,
         }
 
         try:
-            return self.repository_analyzer.execute(
+            result = self.repository_analyzer.execute(
                 plan
             )
+
+            if result is None:
+                return None
+
+            self.project_memory.update_architecture(
+                "repository_analysis",
+                result
+            )
+
+            return result
 
         except Exception as error:
             self.logger.error(

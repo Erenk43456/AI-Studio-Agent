@@ -65,6 +65,7 @@ def test_project_memory_sync_runs_repository_analysis():
         {
             "action": "analyze",
             "path": "C:/AI-Studio",
+            "changed_files": changed_files,
         }
     ]
 
@@ -110,3 +111,27 @@ def test_project_memory_sync_handles_analysis_failure():
     )
 
     assert result is None
+
+@pytest.mark.unit
+def test_project_memory_sync_passes_changed_files_to_repository_analyzer():
+    analyzer = FakeRepositoryAnalyzer()
+    project_memory = FakeProjectMemory()
+
+    sync = ProjectMemorySync(
+        repository_analyzer=analyzer,
+        project_memory=project_memory,
+        workspace="C:/AI-Studio",
+    )
+
+    changed_files = [
+        "agents/chat_agent.py",
+        "tools/calculator.py",
+    ]
+
+    sync.sync(changed_files)
+
+    assert analyzer.calls[-1] == {
+        "action": "analyze",
+        "path": "C:/AI-Studio",
+        "changed_files": changed_files,
+    }
