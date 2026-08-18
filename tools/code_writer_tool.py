@@ -3,6 +3,8 @@ from pathlib import Path
 
 from app.core.logger import AppLogger
 
+from tools.atomic_writer import AtomicWriter
+
 
 class CodeWriterTool:
 
@@ -37,6 +39,11 @@ class CodeWriterTool:
         self.workspace = workspace
         self.registry = registry
         self.logger = AppLogger()
+        self.atomic_writer = (
+            AtomicWriter(self.workspace)
+            if self.workspace
+            else None
+        )
         self.current_development_context = {}
 
     def execute(
@@ -490,25 +497,34 @@ The resulting code MUST be valid Python.
             }
 
         # ---------------------------------------------------------
-        # ONLY NOW write to disk
+        # Atomic Write
         # ---------------------------------------------------------
 
-        try:
-
-            path.write_text(
-                new_code,
-                encoding="utf-8"
-            )
-
-        except Exception as error:
-
-            self.logger.error(
-                f"Failed to write {filename}: {error}"
-            )
+        if self.atomic_writer is None:
 
             return {
                 "file": filename,
-                "error": f"Failed to write file: {error}"
+                "error": "Atomic writer is not configured."
+            }
+
+        write_result = self.atomic_writer.write(
+            path,
+            new_code
+        )
+
+        if not write_result.get(
+            "success",
+            False
+        ):
+
+            return {
+                "file": filename,
+                "error": (
+                    "Atomic write failed."
+                ),
+                "details": write_result.get(
+                    "error"
+                )
             }
 
         # ---------------------------------------------------------
