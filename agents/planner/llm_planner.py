@@ -85,6 +85,55 @@ Purpose:
     return result
 
 
+def validate_plan(
+    plan,
+    tool_descriptions=None,
+):
+    if not isinstance(plan, dict):
+        return False
+
+    steps = plan.get("steps")
+
+    if not isinstance(steps, list):
+        return False
+
+    if not steps:
+        return False
+
+    available_tools = None
+
+    if tool_descriptions is not None:
+        available_tools = {
+            tool.get("name")
+            for tool in tool_descriptions
+            if isinstance(tool, dict)
+            and isinstance(tool.get("name"), str)
+            and tool.get("name").strip()
+        }
+
+    for step in steps:
+
+        if not isinstance(step, dict):
+            return False
+
+        tool = step.get("tool")
+        action = step.get("action")
+
+        if not isinstance(tool, str) or not tool.strip():
+            return False
+
+        if not isinstance(action, str) or not action.strip():
+            return False
+
+        if (
+            available_tools is not None
+            and tool not in available_tools
+        ):
+            return False
+
+    return True
+
+
 def create_llm_plan(
     llm,
     task,
@@ -450,6 +499,7 @@ USER REQUEST
             cleaned
         )
 
+
     except Exception as error:
 
         print(
@@ -496,6 +546,22 @@ USER REQUEST
         return None
 
     if not steps:
+
+        return None
+
+
+    # =========================================================
+    # Validate execution plan
+    # =========================================================
+
+    if not validate_plan(
+        plan,
+        tool_descriptions,
+    ):
+
+        print(
+            "Planner returned an invalid execution plan."
+        )
 
         return None
 

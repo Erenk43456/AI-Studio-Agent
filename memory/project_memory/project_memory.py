@@ -1,127 +1,106 @@
-import json
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 from app.core.logger import AppLogger
-
+from app.core.storage.json_store import JsonStore
 
 
 class ProjectMemory:
-
 
     def __init__(
         self,
         workspace
     ):
 
-
         self.workspace = Path(
             workspace
         )
 
-
         self.memory_path = (
             self.workspace
-            /
-            ".ai_memory"
+            / ".ai_memory"
         )
 
-
         self.memory_path.mkdir(
+            parents=True,
             exist_ok=True
         )
 
-
         self.project_file = (
             self.memory_path
-            /
-            "project.json"
+            / "project.json"
         )
-
 
         self.files_file = (
             self.memory_path
-            /
-            "files.json"
+            / "files.json"
         )
-
 
         self.architecture_file = (
             self.memory_path
-            /
-            "architecture.json"
+            / "architecture.json"
         )
 
+        self.project_store = JsonStore(
+            self.project_file
+        )
+
+        self.files_store = JsonStore(
+            self.files_file
+        )
+
+        self.architecture_store = JsonStore(
+            self.architecture_file
+        )
 
         self.logger = AppLogger()
 
-
         self.initialize()
 
-
-
-
+    # =========================================================
+    # Initialization
+    # =========================================================
 
     def initialize(
         self
     ):
 
+        defaults = (
+            (
+                self.project_store,
+                {
+                    "name": self.workspace.name,
+                    "created": str(
+                        datetime.now()
+                    ),
+                    "last_scan": None,
+                },
+            ),
+            (
+                self.files_store,
+                {},
+            ),
+            (
+                self.architecture_store,
+                {},
+            ),
+        )
 
-        defaults = {
+        for store, default in defaults:
 
+            if not store.path.exists():
 
-            self.project_file:
-            {
-
-                "name":
-                self.workspace.name,
-
-                "created":
-                str(datetime.now()),
-
-                "last_scan":
-                None
-
-            },
-
-
-            self.files_file:
-            {},
-
-
-
-            self.architecture_file:
-            {}
-
-        }
-
-
-
-        for path, data in defaults.items():
-
-
-            if not path.exists():
-
-
-                self.save_json(
-                    path,
-                    data
+                store.save(
+                    default
                 )
-
-
-
-
 
         self.logger.info(
             "Project memory initialized."
         )
 
-
-
-
-
-
-
+    # =========================================================
+    # JSON compatibility helpers
+    # =========================================================
 
     def save_json(
         self,
@@ -129,88 +108,100 @@ class ProjectMemory:
         data
     ):
 
+        path = Path(
+            path
+        )
 
-        with open(
-            path,
-            "w",
-            encoding="utf-8"
-        ) as file:
+        store = JsonStore(
+            path
+        )
 
-
-            json.dump(
-                data,
-                file,
-                indent=4,
-                ensure_ascii=False
-            )
-
-
-
-
-
-
+        store.save(
+            data
+        )
 
     def load_json(
         self,
         path
     ):
 
+        path = Path(
+            path
+        )
 
-        if not path.exists():
+        store = JsonStore(
+            path
+        )
+
+        try:
+
+            data = store.load(
+                default={}
+            )
+
+        except ValueError as error:
+
+            self.logger.error(
+                f"Project memory JSON error "
+                f"for {path}: {error}"
+            )
 
             return {}
 
+        if not isinstance(
+            data,
+            dict
+        ):
 
-        with open(
-            path,
-            "r",
-            encoding="utf-8"
-        ) as file:
-
-
-            return json.load(
-                file
+            self.logger.warning(
+                f"Project memory data is not "
+                f"a dictionary: {path}"
             )
 
+            return {}
 
+        return data
 
-
-
-
-
+    # =========================================================
+    # Project information
+    # =========================================================
 
     def update_project_info(
         self,
         data
     ):
 
-
-        project = self.load_json(
-            self.project_file
+        project = self.project_store.load(
+            default={}
         )
 
+        if not isinstance(
+            project,
+            dict
+        ):
 
-        project.update(
-            data
-        )
+            project = {}
 
+        if isinstance(
+            data,
+            dict
+        ):
+
+            project.update(
+                data
+            )
 
         project["last_scan"] = str(
             datetime.now()
         )
 
-
-        self.save_json(
-            self.project_file,
+        self.project_store.save(
             project
         )
 
-
-
-
-
-
-
+    # =========================================================
+    # File memory
+    # =========================================================
 
     def add_file(
         self,
@@ -218,69 +209,104 @@ class ProjectMemory:
         info
     ):
 
-
-        files = self.load_json(
-            self.files_file
+        path = str(
+            path
+        ).replace(
+            "\\",
+            "/"
         )
 
+        files = self.get_all_files()
 
         files[path] = info
 
-
-        self.save_json(
-            self.files_file,
+        self.files_store.save(
             files
         )
-
 
         self.logger.info(
             f"Project memory updated: {path}"
         )
-
-
-
-
-
-
-
 
     def get_file(
         self,
         path
     ):
 
-
-        files = self.load_json(
-            self.files_file
+        path = str(
+            path
+        ).replace(
+            "\\",
+            "/"
         )
 
+        files = self.get_all_files()
 
         return files.get(
             path
         )
 
-
-
-
-
-
-
-
     def get_all_files(
         self
     ):
 
+        try:
 
-        return self.load_json(
-            self.files_file
+            files = self.files_store.load(
+                default={}
+            )
+
+        except ValueError as error:
+
+            self.logger.error(
+                f"Failed to load project files: "
+                f"{error}"
+            )
+
+            return {}
+
+        if not isinstance(
+            files,
+            dict
+        ):
+
+            return {}
+
+        return files
+
+    def remove_file(
+        self,
+        path
+    ):
+
+        path = str(
+            path
+        ).replace(
+            "\\",
+            "/"
         )
 
+        files = self.get_all_files()
 
+        if path not in files:
 
+            return False
 
+        del files[path]
 
+        self.files_store.save(
+            files
+        )
 
+        self.logger.info(
+            f"Project memory removed: {path}"
+        )
 
+        return True
+
+    # =========================================================
+    # Architecture
+    # =========================================================
 
     def update_architecture(
         self,
@@ -288,60 +314,82 @@ class ProjectMemory:
         data
     ):
 
-
-        architecture = self.load_json(
-            self.architecture_file
-        )
-
+        architecture = self.get_architecture()
 
         architecture[name] = data
 
-
-        self.save_json(
-            self.architecture_file,
+        self.architecture_store.save(
             architecture
         )
-
-
-
-
-
-
-
 
     def get_architecture(
         self
     ):
 
+        try:
 
-        return self.load_json(
-            self.architecture_file
-        )
+            architecture = (
+                self.architecture_store.load(
+                    default={}
+                )
+            )
+
+        except ValueError as error:
+
+            self.logger.error(
+                f"Failed to load project architecture: "
+                f"{error}"
+            )
+
+            return {}
+
+        if not isinstance(
+            architecture,
+            dict
+        ):
+
+            return {}
+
+        return architecture
+
+    # =========================================================
+    # Search
+    # =========================================================
 
     def search(
         self,
         query
     ):
 
-        query = query.lower()
+        if not isinstance(
+            query,
+            str
+        ):
+
+            return {}
+
+        query = query.lower().strip()
+
+        if not query:
+
+            return {}
 
         results = {}
 
         files = self.get_all_files()
 
-
         for path, info in files.items():
 
-            content = json.dumps(
-                info,
-                ensure_ascii=False
-            ).lower()
+            content = self._serialize(
+                info
+            )
 
-
-            if query in path.lower() or query in content:
+            if (
+                query in path.lower()
+                or query in content
+            ):
 
                 results[path] = info
-
 
         return results
 
@@ -355,42 +403,42 @@ class ProjectMemory:
             query
         )
 
-
         context = []
 
-
-        for path, info in list(results.items())[:limit]:
-
+        for path, info in list(
+            results.items()
+        )[:limit]:
 
             context.append(
                 {
                     "file": path,
-                    "info": info
+                    "info": info,
                 }
             )
 
-
         return context
 
-    def remove_file(
+    # =========================================================
+    # Utilities
+    # =========================================================
+
+    def _serialize(
         self,
-        path
+        value
     ):
 
-        files = self.get_all_files()
+        try:
 
+            import json
 
-        if path in files:
+            return json.dumps(
+                value,
+                ensure_ascii=False,
+                default=str
+            ).lower()
 
-            del files[path]
+        except Exception:
 
-
-            self.save_json(
-                self.files_file,
-                files
-            )
-
-
-            self.logger.info(
-                f"Project memory removed: {path}"
-            )
+            return str(
+                value
+            ).lower()

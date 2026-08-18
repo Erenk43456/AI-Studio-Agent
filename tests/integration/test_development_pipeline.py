@@ -89,14 +89,18 @@ class FakeRegistry:
         return self.tools.get(name)
 
     def get_tool_descriptions(self):
-        return {
-            "code": {
+        return [
+            {
+                "name": "code",
                 "description": "Implement code changes.",
+                "purpose": "Modify software.",
             },
-            "repository_analyzer": {
+            {
+                "name": "repository_analyzer",
                 "description": "Analyze repository.",
+                "purpose": "Analyze the repository.",
             },
-        }
+        ]
 
 
 class FakeContainer:

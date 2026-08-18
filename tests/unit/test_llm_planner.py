@@ -178,3 +178,151 @@ def test_create_llm_plan_llm_error_returns_none():
     )
 
     assert result is None
+
+@pytest.mark.unit
+def test_create_llm_plan_rejects_step_without_tool():
+
+    llm = FakeLLM(
+        response="""
+        {
+            "steps": [
+                {
+                    "action": "execute",
+                    "input": "hello"
+                }
+            ]
+        }
+        """
+    )
+
+    result = create_llm_plan(
+        llm,
+        "do something",
+    )
+
+    assert result is None
+
+
+@pytest.mark.unit
+def test_create_llm_plan_rejects_step_without_action():
+
+    llm = FakeLLM(
+        response="""
+        {
+            "steps": [
+                {
+                    "tool": "fake_tool",
+                    "input": "hello"
+                }
+            ]
+        }
+        """
+    )
+
+    result = create_llm_plan(
+        llm,
+        "do something",
+    )
+
+    assert result is None
+
+
+@pytest.mark.unit
+def test_create_llm_plan_rejects_non_object_step():
+
+    llm = FakeLLM(
+        response="""
+        {
+            "steps": [
+                "execute something"
+            ]
+        }
+        """
+    )
+
+    result = create_llm_plan(
+        llm,
+        "do something",
+    )
+
+    assert result is None
+
+
+@pytest.mark.unit
+def test_create_llm_plan_rejects_empty_tool():
+
+    llm = FakeLLM(
+        response="""
+        {
+            "steps": [
+                {
+                    "tool": "",
+                    "action": "execute"
+                }
+            ]
+        }
+        """
+    )
+
+    result = create_llm_plan(
+        llm,
+        "do something",
+    )
+
+    assert result is None
+
+
+@pytest.mark.unit
+def test_create_llm_plan_rejects_empty_action():
+
+    llm = FakeLLM(
+        response="""
+        {
+            "steps": [
+                {
+                    "tool": "fake_tool",
+                    "action": ""
+                }
+            ]
+        }
+        """
+    )
+
+    result = create_llm_plan(
+        llm,
+        "do something",
+    )
+
+    assert result is None
+
+
+@pytest.mark.unit
+def test_create_llm_plan_rejects_unknown_tool_when_tools_are_available():
+
+    llm = FakeLLM(
+        response="""
+        {
+            "steps": [
+                {
+                    "tool": "unknown_tool",
+                    "action": "execute",
+                    "input": "hello"
+                }
+            ]
+        }
+        """
+    )
+
+    result = create_llm_plan(
+        llm,
+        "do something",
+        [
+            {
+                "name": "fake_tool",
+                "description": "A deterministic test tool.",
+                "purpose": "Testing tool execution.",
+            }
+        ],
+    )
+
+    assert result is None
