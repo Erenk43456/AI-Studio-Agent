@@ -140,9 +140,8 @@ def test_development_container_uses_shared_dependencies(monkeypatch):
         main.models.planner_llm
     )
 
-
 @pytest.mark.unit
-def test_workspace_changes_update_project_memory(monkeypatch):
+def test_workspace_changes_trigger_project_memory_sync(monkeypatch):
 
     monkeypatch.setattr(
         module,
@@ -150,29 +149,57 @@ def test_workspace_changes_update_project_memory(monkeypatch):
         FakeWatcher
     )
 
-    main = FakeMain()
+    class FakeProjectMemorySync:
 
-    calls = []
+        instances = []
 
-    main.memory.project_memory.update_project_info = (
-        lambda data: calls.append(data)
+        def __init__(
+            self,
+            repository_analyzer,
+            project_memory,
+            workspace
+        ):
+            self.repository_analyzer = repository_analyzer
+            self.project_memory = project_memory
+            self.workspace = workspace
+            self.calls = []
+
+            FakeProjectMemorySync.instances.append(
+                self
+            )
+
+        def sync(
+            self,
+            changed_files
+        ):
+            self.calls.append(
+                changed_files
+            )
+
+    monkeypatch.setattr(
+        module,
+        "ProjectMemorySync",
+        FakeProjectMemorySync
     )
+
+    main = FakeMain()
 
     container = DevelopmentContainer(
         main
     )
 
     changed_files = [
-        "agents/test.py",
-        "tools/test.py"
+        "agents/chat_agent.py",
     ]
 
     container.on_workspace_changes(
         changed_files
     )
 
-    assert calls == [
-        {
-            "changed_files": changed_files
-        }
+    sync = (
+        FakeProjectMemorySync.instances[-1]
+    )
+
+    assert sync.calls == [
+        changed_files
     ]

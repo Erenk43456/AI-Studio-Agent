@@ -7,6 +7,7 @@ from app.core.orchestrators.development_orchestrator import (
 )
 
 from app.core.workspace.watcher import WorkspaceWatcher
+from app.core.project_memory_sync import ProjectMemorySync
 
 
 class DevelopmentContainer:
@@ -82,6 +83,15 @@ class DevelopmentContainer:
         )
 
         #
+        # Project Memory Sync
+        #
+        self.project_memory_sync = ProjectMemorySync(
+            repository_analyzer=self.repository_analyzer,
+            project_memory=self.project_memory,
+            workspace=self.workspace_path,
+        )
+
+        #
         # Workspace Watcher
         #
 
@@ -111,8 +121,6 @@ class DevelopmentContainer:
         changed_files
     ):
 
-        self.project_memory.update_project_info(
-            {
-                "changed_files": changed_files
-            }
+        self.project_memory_sync.sync(
+            changed_files
         )

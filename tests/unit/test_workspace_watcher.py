@@ -179,3 +179,37 @@ def test_detect_changes_reports_multiple_changes(tmp_path):
         "c.py",
         "b.py",
     ]
+
+@pytest.mark.unit
+def test_watcher_forwards_changes_to_callback(tmp_path):
+
+    calls = []
+
+    watcher = WorkspaceWatcher(
+        workspace=tmp_path,
+        callback=lambda files: calls.append(files),
+    )
+
+    watcher.files = {
+        "app.py": 1.0,
+    }
+
+    current = {
+        "app.py": 2.0,
+        "new.py": 1.0,
+    }
+
+    changed_files = watcher.detect_changes(
+        current
+    )
+
+    watcher.callback(
+        changed_files
+    )
+
+    assert calls == [
+        [
+            "app.py",
+            "new.py",
+        ]
+    ]
