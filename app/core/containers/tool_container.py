@@ -70,7 +70,6 @@ class ToolContainer:
         self.repository_analyzer = RepositoryAnalyzerTool(
             root=core.workspace_path,
             memory=memory,
-            project_memory=memory.project_memory
         )
 
         #
