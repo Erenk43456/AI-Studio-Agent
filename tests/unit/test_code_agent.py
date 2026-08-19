@@ -1007,3 +1007,77 @@ def test_code_agent_returns_writer_failure_result():
     assert result["plan"]["summary"] == (
         "Fix parser"
     )
+
+@pytest.mark.unit
+def test_code_agent_returns_files_written_from_code_writer():
+    llm = FakeLLM(
+        response="""
+        {
+            "summary": "Fix parser",
+            "files": [
+                {
+                    "path": "app/parser.py",
+                    "purpose": "Fix parser",
+                    "changes": [
+                        "Add validation"
+                    ]
+                },
+                {
+                    "path": "app/tokenizer.py",
+                    "purpose": "Fix tokenizer",
+                    "changes": [
+                        "Handle empty input"
+                    ]
+                }
+            ],
+            "implementation": [
+                "Update parser",
+                "Update tokenizer"
+            ],
+            "risks": []
+        }
+        """
+    )
+
+    writer = FakeTool(
+        name="code_writer",
+        result={
+            "success": True,
+            "results": [
+                {
+                    "file": "app/parser.py",
+                    "status": "updated",
+                },
+                {
+                    "file": "app/tokenizer.py",
+                    "status": "updated",
+                },
+            ],
+            "files_written": [
+                "app/parser.py",
+                "app/tokenizer.py",
+            ],
+        },
+    )
+
+    registry = FakeRegistry(
+        {
+            "code_writer": writer,
+        }
+    )
+
+    agent = CodeAgent(
+        llm,
+        registry,
+    )
+
+    result = agent.run(
+        "Fix parser"
+    )
+
+    assert result["success"] is True
+
+    assert result["write_result"]["files_written"] == [
+        "app/parser.py",
+        "app/tokenizer.py",
+    ]
