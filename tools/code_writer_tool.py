@@ -94,6 +94,16 @@ class CodeWriterTool:
             if not path:
                 continue
 
+            if not isinstance(
+                changes,
+                list
+            ):
+                continue
+            
+            if not changes:
+
+                continue
+
             result = self.modify_file(
                 path,
                 changes
@@ -340,6 +350,25 @@ The resulting code MUST be valid Python.
             return {
                 "file": filename,
                 "error": "LLM returned empty code."
+            }
+
+        # ---------------------------------------------------------
+        # Detect unchanged source
+        # ---------------------------------------------------------
+
+        if new_code.strip() == old_code.strip():
+
+            self.logger.warning(
+                f"Generated code is identical to the existing "
+                f"file: {filename}"
+            )
+
+            return {
+                "file": filename,
+                "error": (
+                    "Generated code is identical to the "
+                    "existing file."
+                )
             }
 
         # ---------------------------------------------------------

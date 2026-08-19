@@ -140,7 +140,11 @@ def test_code_writer_execute_stores_development_context(
     valid_code,
 ):
     llm = FakeLLM(
-        response=valid_code
+        response="""\
+class Parser:
+    def parse(self, value):
+        return value.strip()
+"""
     )
 
     writer = CodeWriterTool(
@@ -1381,7 +1385,7 @@ def test_code_writer_execute_reports_partial_failure(
     class SequentialLLM:
         def __init__(self):
             self.responses = [
-                "class A:\n    pass\n",
+                "class A:\n    def update(self):\n        pass\n",
                 "class Other:\n    pass\n",
             ]
 
@@ -1608,3 +1612,80 @@ class Parser:
     assert source.read_text(
         encoding="utf-8"
     ) == original
+
+@pytest.mark.unit
+def test_code_writer_rejects_file_with_empty_changes():
+    writer = CodeWriterTool(
+        FakeLLM(),
+        workspace="."
+    )
+
+    result = writer.execute(
+        {
+            "files": [
+                {
+                    "path": "app/parser.py",
+                    "changes": [],
+                }
+            ]
+        }
+    )
+
+    assert result["success"] is False
+    assert result["message"] == (
+        "No valid files were provided."
+    )
+
+@pytest.mark.unit
+def test_code_writer_rejects_unchanged_generated_code():
+    original_code = """
+def parse(value):
+    return value
+"""
+
+    class SameCodeLLM:
+        def generate(self, prompt):
+            return original_code
+
+    writer = CodeWriterTool(
+        SameCodeLLM(),
+        workspace="."
+    )
+
+@pytest.mark.unit
+def test_code_writer_rejects_unchanged_generated_code(
+    tmp_path
+):
+    source = tmp_path / "parser.py"
+
+    original_code = """\
+def parse(value):
+    return value
+"""
+
+    source.write_text(
+        original_code,
+        encoding="utf-8"
+    )
+
+    class SameCodeLLM:
+        def generate(self, prompt):
+            return original_code
+
+    writer = CodeWriterTool(
+        SameCodeLLM(),
+        workspace=tmp_path
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        ["Modify the parser."]
+    )
+
+    assert result["error"] == (
+        "Generated code is identical to the existing file."
+    )
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original_code
