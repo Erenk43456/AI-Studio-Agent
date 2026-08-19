@@ -1714,3 +1714,235 @@ def parse(value): return value
     assert source.read_text(
         encoding="utf-8"
     ) == original_code
+
+@pytest.mark.unit
+def test_code_writer_rejects_public_method_signature_change(
+    tmp_path
+):
+    source = tmp_path / "parser.py"
+
+    original_code = """\
+class Parser:
+
+    def parse(self, value):
+        return value
+"""
+
+    source.write_text(
+        original_code,
+        encoding="utf-8"
+    )
+
+    class ChangedSignatureLLM:
+
+        def generate(self, prompt):
+            return """\
+class Parser:
+
+    def parse(self, value, strict=False):
+        return value
+"""
+
+    writer = CodeWriterTool(
+        ChangedSignatureLLM(),
+        workspace=tmp_path
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        ["Modify the parser."]
+    )
+
+    assert result["error"] == (
+        "Public method 'Parser.parse' signature changed."
+    )
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original_code
+
+
+@pytest.mark.unit
+def test_code_writer_rejects_constructor_signature_change(
+    tmp_path
+):
+    source = tmp_path / "parser.py"
+
+    original_code = """\
+class Parser:
+
+    def __init__(self, config):
+        self.config = config
+"""
+
+    source.write_text(
+        original_code,
+        encoding="utf-8"
+    )
+
+    class ChangedConstructorLLM:
+
+        def generate(self, prompt):
+            return """\
+class Parser:
+
+    def __init__(self, config, strict=False):
+        self.config = config
+"""
+
+    writer = CodeWriterTool(
+        ChangedConstructorLLM(),
+        workspace=tmp_path
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        ["Modify the parser."]
+    )
+
+    assert result["error"] == (
+        "Constructor signature for 'Parser' changed."
+    )
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original_code
+
+
+@pytest.mark.unit
+def test_code_writer_rejects_async_public_method_change(
+    tmp_path
+):
+    source = tmp_path / "parser.py"
+
+    original_code = """\
+class Parser:
+
+    def parse(self, value):
+        return value
+"""
+
+    source.write_text(
+        original_code,
+        encoding="utf-8"
+    )
+
+    class AsyncMethodLLM:
+
+        def generate(self, prompt):
+            return """\
+class Parser:
+
+    async def parse(self, value):
+        return value
+"""
+
+    writer = CodeWriterTool(
+        AsyncMethodLLM(),
+        workspace=tmp_path
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        ["Modify the parser."]
+    )
+
+    assert result["error"] == (
+        "Public method 'Parser.parse' signature changed."
+    )
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original_code
+
+@pytest.mark.unit
+def test_code_writer_requested_change_verification_accepts_satisfied_change(
+    tmp_path
+):
+    source = tmp_path / "parser.py"
+
+    original = """\
+def parse(value):
+    return value
+"""
+
+    generated = """\
+def parse(value):
+    return value.strip()
+"""
+
+    source.write_text(
+        original,
+        encoding="utf-8"
+    )
+
+    writer = CodeWriterTool(
+        llm=FakeLLM(
+            response=generated
+        ),
+        workspace=tmp_path
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        [
+            {
+                "description": "Strip parser input",
+                "verification": (
+                    "'return value.strip()' in new_code"
+                )
+            }
+        ]
+    )
+
+    assert result["status"] == "updated"
+    assert "error" not in result
+
+@pytest.mark.unit
+def test_code_writer_requested_change_verification_rejects_unsatisfied_change(
+    tmp_path
+):
+    source = tmp_path / "parser.py"
+
+    original = """\
+def parse(value):
+    return value
+"""
+
+    generated = """\
+def parse(value):
+    return value + "!"
+"""
+
+    source.write_text(
+        original,
+        encoding="utf-8"
+    )
+
+    writer = CodeWriterTool(
+        llm=FakeLLM(
+            response=generated
+        ),
+        workspace=tmp_path
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        [
+            {
+                "description": "Strip parser input",
+                "verification": (
+                    "'return value.strip()' in new_code"
+                )
+            }
+        ]
+    )
+
+    assert result["error"] == (
+        "Requested change was not satisfied: "
+        "Strip parser input"
+    )
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original

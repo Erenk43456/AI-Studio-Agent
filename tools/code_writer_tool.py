@@ -452,6 +452,21 @@ The resulting code MUST be valid Python.
 
             if repaired is None:
 
+                if (
+                    architecture_error.startswith(
+                        "Public method "
+                    )
+                    or
+                    architecture_error.startswith(
+                        "Constructor signature "
+                    )
+                ):
+
+                    return {
+                        "file": filename,
+                        "error": architecture_error
+                    }
+
                 return {
                     "file": filename,
                     "error": (
@@ -481,6 +496,30 @@ The resulting code MUST be valid Python.
                     ),
                     "details": architecture_error
                 }
+
+        # ---------------------------------------------------------
+        # Requested change validation
+        # ---------------------------------------------------------
+
+        requested_change_error = (
+            self.validate_requested_changes(
+                changes,
+                old_code,
+                new_code
+            )
+        )
+
+        if requested_change_error is not None:
+
+            self.logger.warning(
+                f"Requested change validation failed for "
+                f"{filename}: {requested_change_error}"
+            )
+
+            return {
+                "file": filename,
+                "error": requested_change_error
+            }
 
         # ---------------------------------------------------------
         # Final syntax validation
@@ -699,7 +738,7 @@ The resulting code MUST be valid Python.
                             "<unknown>"
                         )
 
-                methods = []
+                methods = {}
 
                 for child in node.body:
 
@@ -711,9 +750,15 @@ The resulting code MUST be valid Python.
                         )
                     ):
 
-                        methods.append(
-                            child.name
-                        )
+                        methods[child.name] = {
+                            "signature": self.extract_signature(
+                            child
+                            ),
+                            "async": isinstance(
+                                child,
+                                ast.AsyncFunctionDef
+                            )
+                        }
 
                 classes[node.name] = {
                     "bases": bases,
@@ -755,6 +800,21 @@ The resulting code MUST be valid Python.
             "functions": functions,
             "imports": imports
         }
+
+    def extract_signature(
+        self,
+        node
+    ):
+
+        try:
+
+            return ast.unparse(
+                node.args
+            )
+
+        except Exception:
+
+            return "<unknown>"
 
     def validate_architecture(
         self,
@@ -824,24 +884,20 @@ The resulting code MUST be valid Python.
                     f"got {sorted(new_bases)}."
                 )
 
-            original_methods = set(
-                class_info.get(
+            original_methods = class_info.get(
                     "methods",
-                    []
-                )
+                    {}
             )
 
-            new_methods = set(
-                new_classes[class_name].get(
+            new_methods = new_classes[class_name].get(
                     "methods",
-                    []
-                )
+                    {}
             )
 
             missing_methods = (
-                original_methods
+                set(original_methods)
                 -
-                new_methods
+                set(new_methods)
             )
 
             if missing_methods:
@@ -851,6 +907,40 @@ The resulting code MUST be valid Python.
                     f"methods: "
                     f"{sorted(missing_methods)}."
                 )
+
+            for method_name, method_info in original_methods.items():
+
+                new_method_info = new_methods.get(
+                    method_name
+                )
+
+                if new_method_info is None:
+                    continue
+
+                if (
+                    method_info.get("signature")
+                    !=
+                    new_method_info.get("signature")
+                    or
+                    method_info.get("async")
+                    !=
+                    new_method_info.get("async")
+                ):
+
+                    if method_name == "__init__":
+
+                        return (
+                            f"Constructor signature for "
+                            f"'{class_name}' changed."
+                        )
+
+                    if not method_name.startswith("_"):
+
+                        return (
+                            f"Public method "
+                            f"'{class_name}.{method_name}' "
+                            f"signature changed."
+                        )                        
 
         # ---------------------------------------------------------
         # Existing top-level functions must remain
@@ -1088,6 +1178,96 @@ The resulting code MUST be valid Python.
             self.logger.warning(
                 f"Semantic comparison skipped: {error}"
             )
+
+        return None
+
+    # =============================================================
+    # Requested change validation
+    # =============================================================
+    def validate_requested_changes(
+        self,
+        changes,
+        old_code,
+        new_code
+    ):
+        """
+        Validate explicitly structured requested changes.
+
+        Legacy string-based changes remain unsupported by this
+        validator and continue through the existing pipeline.
+        """
+
+        if not isinstance(changes, list):
+            return None
+
+        structured_changes = [
+            change
+            for change in changes
+            if isinstance(change, dict)
+            and change.get("verification")
+        ]
+
+        if not structured_changes:
+            return None
+
+        for change in structured_changes:
+
+            verification = change.get(
+                "verification"
+            )
+
+            if not isinstance(
+                verification,
+                str
+            ):
+                continue
+
+            verification = verification.strip()
+
+            if not verification:
+                continue
+
+            # Explicit verification currently supports simple
+            # source-level assertions expressed as Python snippets.
+            #
+            # The snippet receives:
+            #
+            #   old_code
+            #   new_code
+            #
+            # and must evaluate to True.
+
+            try:
+
+                result = eval(
+                    verification,
+                    {
+                        "__builtins__": {}
+                    },
+                    {
+                        "old_code": old_code,
+                        "new_code": new_code
+                    }
+                )
+
+            except Exception as error:
+
+                return (
+                    "Requested change verification failed: "
+                    f"{error}"
+                )
+
+            if result is not True:
+
+                description = change.get(
+                    "description",
+                    "Requested change"
+                )
+
+                return (
+                    "Requested change was not satisfied: "
+                    f"{description}"
+                )
 
         return None
 
