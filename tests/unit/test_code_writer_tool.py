@@ -1475,3 +1475,83 @@ def test_code_writer_execute_handles_no_valid_files():
         "message": "No valid files were provided.",
         "results": [],
     }
+
+@pytest.mark.unit
+def test_code_writer_returns_written_files(tmp_path):
+    writer = CodeWriterTool(
+        llm=None,
+        workspace=tmp_path,
+    )
+
+    writer.modify_file = lambda filename, changes: {
+        "file": filename,
+        "status": "updated",
+    }
+
+    result = writer.execute({
+        "files": [
+            {
+                "path": "app/parser.py",
+                "changes": [
+                    "Fix parser"
+                ],
+            },
+            {
+                "path": "app/tokenizer.py",
+                "changes": [
+                    "Fix tokenizer"
+                ],
+            },
+        ]
+    })
+
+    assert result["success"] is True
+
+    assert result["files_written"] == [
+        "app/parser.py",
+        "app/tokenizer.py",
+    ]
+
+@pytest.mark.unit
+def test_code_writer_excludes_failed_files_from_files_written(tmp_path):
+    writer = CodeWriterTool(
+        llm=None,
+        workspace=tmp_path,
+    )
+
+    def fake_modify_file(filename, changes):
+        if filename == "app/parser.py":
+            return {
+                "file": filename,
+                "status": "updated",
+            }
+
+        return {
+            "file": filename,
+            "error": "Write failed.",
+        }
+
+    writer.modify_file = fake_modify_file
+
+    result = writer.execute({
+        "files": [
+            {
+                "path": "app/parser.py",
+                "changes": [
+                    "Fix parser"
+                ],
+            },
+            {
+                "path": "app/tokenizer.py",
+                "changes": [
+                    "Fix tokenizer"
+                ],
+            },
+        ]
+    })
+
+    assert result["success"] is False
+
+    assert result["files_written"] == [
+        "app/parser.py",
+    ]

@@ -120,7 +120,15 @@ class CodeWriterTool:
 
         return {
             "success": success,
-            "results": results
+            "results": results,
+            "files_written": [
+                result["file"]
+                for result in results
+                if (
+                    isinstance(result, dict)
+                    and result.get("status") == "updated"
+                )
+            ]
         }
 
     def modify_file(

@@ -9,6 +9,7 @@ from tools.repository_analyzer import RepositoryAnalyzerTool
 from tools.project_memory_tool import ProjectMemoryTool
 from tools.memory_tool import MemoryTool
 from tools.formatter_tool import FormatterTool
+from tools.validation_tool import ValidationTool
 
 
 class ToolContainer:
@@ -59,6 +60,10 @@ class ToolContainer:
         )
 
         self.formatter = FormatterTool(
+            core.workspace_path
+        )
+
+        self.validation = ValidationTool(
             core.workspace_path
         )
 
@@ -136,4 +141,9 @@ class ToolContainer:
         self.registry.register(
             "formatter",
             self.formatter
+        )
+
+        self.registry.register(
+            "validation",
+            self.validation
         )
