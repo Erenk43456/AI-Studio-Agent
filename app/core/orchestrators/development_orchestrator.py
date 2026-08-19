@@ -32,7 +32,6 @@ class DevelopmentOrchestrator:
 
         self.logger = AppLogger()
 
-
     def run(
         self,
         message,
@@ -44,19 +43,16 @@ class DevelopmentOrchestrator:
             f"Development request: {message}"
         )
 
-
         if decision is None:
 
             decision = {
                 "action": "code"
             }
 
-
         action = decision.get(
             "action",
             "code"
         )
-
 
         #
         # Repository analysis
@@ -71,18 +67,15 @@ class DevelopmentOrchestrator:
                     "kullanılamıyor."
                 )
 
-
             result = self.repository_analyzer.execute(
                 {
                     "action": "analyze"
                 }
             )
 
-
             return self.format_result(
                 result
             )
-
 
         #
         # Improvement
@@ -97,16 +90,13 @@ class DevelopmentOrchestrator:
                     "kullanılamıyor."
                 )
 
-
             result = self.improvement_agent.execute(
                 message
             )
 
-
             return self.format_result(
                 result
             )
-
 
         #
         # Normal development task
@@ -115,7 +105,6 @@ class DevelopmentOrchestrator:
         return self.execute_code_task(
             message
         )
-
 
     def execute_code_task(
         self,
@@ -159,7 +148,6 @@ class DevelopmentOrchestrator:
             message
         )
 
-
         if not plan:
 
             self.logger.error(
@@ -171,7 +159,6 @@ class DevelopmentOrchestrator:
                 "oluşturulamadı."
             )
 
-
         #
         # Debug
         #
@@ -179,12 +166,6 @@ class DevelopmentOrchestrator:
         self.logger.info(
             f"Development plan: {plan}"
         )
-
-        print(
-            "PLAN:",
-            plan
-        )
-
 
         #
         # Steps
@@ -195,14 +176,12 @@ class DevelopmentOrchestrator:
             []
         )
 
-
         if not steps:
 
             return (
                 "❌ Planner herhangi bir "
                 "işlem oluşturmadı."
             )
-
 
         #
         # Execute steps
@@ -211,7 +190,6 @@ class DevelopmentOrchestrator:
         results = []
 
         overall_success = True
-
 
         for step in steps:
 
@@ -233,11 +211,9 @@ class DevelopmentOrchestrator:
 
                 continue
 
-
             tool_name = step.get(
                 "tool"
             )
-
 
             if not tool_name:
 
@@ -258,11 +234,9 @@ class DevelopmentOrchestrator:
 
                 continue
 
-
             self.logger.info(
                 f"Executing tool: {tool_name}"
             )
-
 
             #
             # Code agent
@@ -278,14 +252,14 @@ class DevelopmentOrchestrator:
                             "input",
                             message
                         ),
-                        development_context
-                    )
 
+                        development_context
+
+                    )
 
                     results.append(
                         result
                     )
-
 
                     if isinstance(
                         result,
@@ -299,9 +273,7 @@ class DevelopmentOrchestrator:
 
                             overall_success = False
 
-
                     continue
-
 
                 except Exception as error:
 
@@ -321,7 +293,6 @@ class DevelopmentOrchestrator:
 
                     continue
 
-
             #
             # Tool registry
             #
@@ -329,7 +300,6 @@ class DevelopmentOrchestrator:
             tool = self.container.registry.get(
                 tool_name
             )
-
 
             if not tool:
 
@@ -353,7 +323,6 @@ class DevelopmentOrchestrator:
 
                 continue
 
-
             #
             # Execute tool
             #
@@ -364,11 +333,9 @@ class DevelopmentOrchestrator:
                     step
                 )
 
-
                 results.append(
                     result
                 )
-
 
                 #
                 # Detect tool failure
@@ -386,7 +353,6 @@ class DevelopmentOrchestrator:
 
                         overall_success = False
 
-
                 elif isinstance(
                     result,
                     str
@@ -398,7 +364,6 @@ class DevelopmentOrchestrator:
 
                         overall_success = False
 
-
             except Exception as error:
 
                 self.logger.error(
@@ -408,9 +373,7 @@ class DevelopmentOrchestrator:
 
                 )
 
-
                 overall_success = False
-
 
                 results.append({
 
@@ -424,7 +387,6 @@ class DevelopmentOrchestrator:
 
                 })
 
-
         #
         # Human-readable response
         #
@@ -433,7 +395,6 @@ class DevelopmentOrchestrator:
             results,
             overall_success
         )
-
 
     def format_results(
         self,
@@ -448,9 +409,7 @@ class DevelopmentOrchestrator:
                 "gerçekleştirilemedi."
             )
 
-
         messages = []
-
 
         for result in results:
 
@@ -460,18 +419,9 @@ class DevelopmentOrchestrator:
                 )
             )
 
-
-        if overall_success:
-
-            return "\n\n".join(
-                messages
-            )
-
-
         return "\n\n".join(
             messages
         )
-
 
     def format_result(
         self,
@@ -485,14 +435,12 @@ class DevelopmentOrchestrator:
                 "herhangi bir sonuç alınamadı."
             )
 
-
         if isinstance(
             result,
             str
         ):
 
             return result
-
 
         if not isinstance(
             result,
@@ -503,18 +451,15 @@ class DevelopmentOrchestrator:
                 result
             )
 
-
         success = result.get(
             "success",
             False
         )
 
-
         action = result.get(
             "action",
             ""
         )
-
 
         #
         # File tool
@@ -537,7 +482,6 @@ class DevelopmentOrchestrator:
                     f"📄 {filename}"
                 )
 
-
             error = result.get(
                 "error",
                 result.get(
@@ -550,7 +494,6 @@ class DevelopmentOrchestrator:
                 f"❌ Dosya yazılamadı.\n\n"
                 f"Sebep: {error}"
             )
-
 
         if action == "create":
 
@@ -569,7 +512,6 @@ class DevelopmentOrchestrator:
                     f"📄 {filename}"
                 )
 
-
             error = result.get(
                 "error",
                 result.get(
@@ -583,7 +525,6 @@ class DevelopmentOrchestrator:
                 f"Sebep: {error}"
             )
 
-
         if action == "read":
 
             if success:
@@ -596,19 +537,16 @@ class DevelopmentOrchestrator:
                     )
                 )
 
-
                 content = result.get(
                     "content",
                     ""
                 )
-
 
                 return (
                     f"📄 {filename}\n\n"
                     f"İçerik:\n"
                     f"{content}"
                 )
-
 
             error = result.get(
                 "error",
@@ -618,12 +556,10 @@ class DevelopmentOrchestrator:
                 )
             )
 
-
             return (
                 f"❌ Dosya okunamadı.\n\n"
                 f"Sebep: {error}"
             )
-
 
         #
         # Code analyzer
@@ -643,7 +579,6 @@ class DevelopmentOrchestrator:
                 )
             )
 
-
             if not isinstance(
                 analysis,
                 dict
@@ -655,7 +590,6 @@ class DevelopmentOrchestrator:
                     f"{analysis}"
                 )
 
-
             lines = [
 
                 f"📄 {filename}",
@@ -664,11 +598,9 @@ class DevelopmentOrchestrator:
 
             ]
 
-
             summary = analysis.get(
                 "summary"
             )
-
 
             if summary:
 
@@ -681,7 +613,6 @@ class DevelopmentOrchestrator:
                     ""
 
                 ])
-
 
             sections = [
 
@@ -717,7 +648,6 @@ class DevelopmentOrchestrator:
 
             ]
 
-
             for key, title in sections:
 
                 values = analysis.get(
@@ -725,16 +655,13 @@ class DevelopmentOrchestrator:
                     []
                 )
 
-
                 if not values:
 
                     continue
 
-
                 lines.append(
                     f"🔹 {title}:"
                 )
-
 
                 if isinstance(
                     values,
@@ -753,14 +680,11 @@ class DevelopmentOrchestrator:
                         f"- {values}"
                     )
 
-
                 lines.append("")
-
 
             risk_level = analysis.get(
                 "risk_level"
             )
-
 
             if risk_level:
 
@@ -768,7 +692,6 @@ class DevelopmentOrchestrator:
                     f"⚠️ Risk seviyesi: "
                     f"{risk_level}"
                 )
-
 
             return "\n".join(
                 lines
@@ -850,7 +773,7 @@ class DevelopmentOrchestrator:
                 "❌ Kod işlemi başarısız.\n\n"
                 "Code Agent işlemi tamamlayamadı."
             )
-        
+
         #
         # Generic success
         #
@@ -861,18 +784,15 @@ class DevelopmentOrchestrator:
                 "message"
             )
 
-
             if message:
 
                 return (
                     f"✅ {message}"
                 )
 
-
             return (
                 "✅ İşlem başarıyla tamamlandı."
             )
-
 
         #
         # Generic error
@@ -885,7 +805,6 @@ class DevelopmentOrchestrator:
                 "Bilinmeyen hata."
             )
         )
-
 
         return (
             f"❌ İşlem başarısız.\n\n"
