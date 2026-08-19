@@ -78,17 +78,11 @@ class DevelopmentContext:
 
         context = {
             "task": task,
-
             "targets": targets,
-
             "target_files": target_files,
-
             "related_files": related_files,
-
             "relationships": relationships,
-
             "architecture": architecture,
-
             "strategy": strategy
         }
 
@@ -406,7 +400,10 @@ class DevelopmentContext:
 
             for word in task_words:
 
-                if word in lower_path:
+                if self._contains_word(
+                    lower_path,
+                    word
+                ):
 
                     score += 2
 
@@ -426,7 +423,10 @@ class DevelopmentContext:
 
                 if (
                     len(word) >= 4
-                    and word in serialized
+                    and self._contains_word(
+                        serialized,
+                        word
+                    )
                 ):
 
                     score += 1
@@ -484,6 +484,10 @@ class DevelopmentContext:
                 dependency_relationships
             )
 
+            relationship_set = set(
+                relationships
+            )
+
             # A file must have a meaningful relationship before
             # entering the development context.
             #
@@ -491,9 +495,8 @@ class DevelopmentContext:
             # enough. This prevents unrelated files such as
             # app/tools.py from being included merely because
             # they live under app/.
-            meaningful_relationships = {
-                "same_package",
-                "related_module",
+
+            explicit_relationships = {
                 "references_target",
                 "references_target_file",
                 "references_target_module",
@@ -503,9 +506,19 @@ class DevelopmentContext:
                 "architecture_reference"
             }
 
-            has_meaningful_relationship = bool(
-                set(relationships)
-                & meaningful_relationships
+            has_explicit_relationship = bool(
+                relationship_set
+                & explicit_relationships
+            )
+
+            has_structural_relationship = (
+                "same_package" in relationship_set
+                and "related_module" in relationship_set
+            )
+
+            has_meaningful_relationship = (
+                has_explicit_relationship
+                or has_structural_relationship
             )
 
             if not has_meaningful_relationship:
@@ -562,110 +575,343 @@ class DevelopmentContext:
 
         relationships = []
 
-        architecture_text = self.serialize_info(
-            architecture
+        if not isinstance(
+            architecture,
+            dict
+        ):
+
+            return (
+                score,
+                reasons,
+                relationships
+            )
+
+        normalized_path = (
+            str(path)
+            .replace("\\", "/")
+            .lower()
         )
 
-        path_lower = path.lower()
+        target_paths = [
+            str(target)
+            .replace("\\", "/")
+            .lower()
+            for target in targets
+        ]
 
-        # ---------------------------------------------------------
-        # Direct path references
-        # ---------------------------------------------------------
+        # =========================================================
+        # Explicit architecture collections
+        # =========================================================
+
+        explicit_membership_keys = {
+            "files",
+            "components",
+            "modules",
+            "services",
+            "packages",
+            "nodes",
+            "entries",
+        }
+
+        def collect_paths(
+            value
+        ):
+
+            result = []
+
+            if isinstance(
+                value,
+                str
+            ):
+
+                normalized = (
+                    value
+                    .replace(
+                        "\\",
+                        "/"
+                    )
+                    .lower()
+                    .strip()
+                )
+
+                if normalized.endswith(
+                    ".py"
+                ):
+
+                    result.append(
+                        normalized
+                    )
+
+            elif isinstance(
+                value,
+                (list, tuple, set)
+            ):
+
+                for item in value:
+
+                    result.extend(
+                        collect_paths(
+                            item
+                        )
+                    )
+
+            elif isinstance(
+                value,
+                dict
+            ):
+
+                for item in value.values():
+
+                    result.extend(
+                        collect_paths(
+                            item
+                        )
+                    )
+
+            return result
+
+        explicit_members = set()
+
+        for key in explicit_membership_keys:
+
+            if key in architecture:
+
+                explicit_members.update(
+                    collect_paths(
+                        architecture[key]
+                    )
+                )
+
+        # =========================================================
+        # Explicit architecture membership
+        # =========================================================
+
+        if normalized_path in explicit_members:
+
+            for target in targets:
+
+                target_normalized = (
+                    target
+                    .replace(
+                        "\\",
+                        "/"
+                    )
+                    .lower()
+                    .strip()
+                )
+
+                if target_normalized in explicit_members:
+
+                    score += 8
+
+                    reasons.append(
+                        "both files appear in project architecture"
+                    )
+
+                    relationships.append(
+                        "architecture_member"
+                    )
+
+                    break
+
+        # =========================================================
+        # Architecture layer information
+        #
+        # IMPORTANT:
+        #
+        # Same layer alone is NOT meaningful.
+        #
+        # A candidate in the same layer can become related only
+        # when its own memory contains a meaningful integration,
+        # dependency, usage, interface, or implementation signal,
+        # or explicitly mentions the target.
+        # =========================================================
+
+        layer_memberships = []
+
+        layers = architecture.get(
+            "layers"
+        )
+
+        if isinstance(
+            layers,
+            dict
+        ):
+
+            for layer_name, members in layers.items():
+
+                member_paths = set(
+                    collect_paths(
+                        members
+                    )
+                )
+
+                if normalized_path in member_paths:
+
+                    layer_memberships.append(
+                        (
+                            str(
+                                layer_name
+                            ).lower(),
+                            member_paths
+                        )
+                    )
+
+        info_text = self.serialize_info(
+            info
+        )
+
+        # These are semantic indicators, but they must be matched
+        # as complete words/phrases rather than arbitrary substrings.
+        #
+        # This is important because:
+        #
+        #     "unrelated module"
+        #
+        # must NOT match:
+        #
+        #     "related"
+        #
+        # simply because "related" is contained inside "unrelated".
+
+        semantic_indicators = {
+            "integration",
+            "dependency",
+            "depends",
+            "used by",
+            "used_by",
+            "uses",
+            "imports",
+            "import",
+            "related",
+            "connection",
+            "connects",
+            "connect",
+            "pipeline",
+            "interface",
+            "implementation",
+        }
 
         for target in targets:
 
             target_normalized = (
-                target.replace(
+                target
+                .replace(
                     "\\",
                     "/"
-                ).lower()
+                )
+                .lower()
+                .strip()
             )
+
+            target_stem = Path(
+                target_normalized
+            ).stem.lower()
 
             target_name = Path(
                 target_normalized
             ).name.lower()
 
+            same_layer = False
+
+            for _, member_paths in layer_memberships:
+
+                if target_normalized in member_paths:
+
+                    same_layer = True
+
+                    break
+
+            if not same_layer:
+
+                continue
+
+            # -----------------------------------------------------
+            # Match semantic indicators safely.
+            #
+            # Single-word indicators use word boundaries.
+            # Multi-word indicators are matched as normalized
+            # phrases.
+            # -----------------------------------------------------
+
+            has_semantic_indicator = (
+                self._contains_any_semantic_indicator(
+                    info_text,
+                    semantic_indicators
+                )
+            )
+
+            mentions_target = (
+                target_normalized in info_text
+                or self._contains_word(
+                    info_text,
+                    target_name
+                )
+                or self._contains_word(
+                    info_text,
+                    target_stem
+                )
+            )
+
             if (
-                target_normalized in architecture_text
-                and path_lower in architecture_text
+                has_semantic_indicator
+                or mentions_target
             ):
 
-                score += 8
+                score += 6
 
                 reasons.append(
-                    "both files appear in project architecture"
+                    "architecture layer contains a semantically related file"
                 )
 
                 relationships.append(
                     "architecture_member"
                 )
 
-            elif (
-                target_name
-                and target_name in architecture_text
-                and path_lower in architecture_text
-            ):
+                break
 
-                score += 4
+        # =========================================================
+        # Architecture layer is supporting evidence only.
+        # =========================================================
 
-                reasons.append(
-                    "architecture references target and related file"
-                )
+        path_parts = {
+            part.lower()
+            for part in Path(
+                normalized_path
+            ).parts
+        }
 
-                relationships.append(
-                    "architecture_reference"
-                )
+        architecture_keywords = {
+            "agent",
+            "agents",
+            "orchestrator",
+            "orchestrators",
+            "container",
+            "containers",
+            "tool",
+            "tools",
+            "memory",
+            "model",
+            "models",
+            "app",
+            "core"
+        }
 
-        # ---------------------------------------------------------
-        # Layer / component information
-        #
-        # Only consider architecture layers when the architecture
-        # actually contains structural information. Merely having
-        # "app" or "core" in a path must not make every file
-        # architecture-related.
-        # ---------------------------------------------------------
+        if (
+            path_parts
+            &
+            architecture_keywords
+        ):
 
-        if architecture:
+            score += 1
 
-            path_parts = set(
-                part.lower()
-                for part in Path(path).parts
+            reasons.append(
+                "belongs to known project architecture layer"
             )
 
-            architecture_keywords = (
-                "agent",
-                "agents",
-                "orchestrator",
-                "orchestrators",
-                "container",
-                "containers",
-                "tool",
-                "tools",
-                "memory",
-                "model",
-                "models",
-                "app",
-                "core"
+            relationships.append(
+                "architecture_layer"
             )
-
-            matching_layers = (
-                path_parts
-                &
-                set(architecture_keywords)
-            )
-
-            if matching_layers:
-
-                # Layer membership is supporting evidence only.
-                score += 1
-
-                reasons.append(
-                    "belongs to known project architecture layer"
-                )
-
-                relationships.append(
-                    "architecture_layer"
-                )
 
         return (
             score,
@@ -697,10 +943,12 @@ class DevelopmentContext:
         for target in targets:
 
             target_normalized = (
-                target.replace(
+                target
+                .replace(
                     "\\",
                     "/"
-                ).lower()
+                )
+                .lower()
             )
 
             target_stem = Path(
@@ -752,7 +1000,10 @@ class DevelopmentContext:
 
             elif (
                 target_stem
-                and target_stem in serialized
+                and self._contains_word(
+                    serialized,
+                    target_stem
+                )
             ):
 
                 score += 3
@@ -794,10 +1045,12 @@ class DevelopmentContext:
             )
 
             normalized_path = (
-                path.replace(
+                path
+                .replace(
                     "\\",
                     "/"
-                ).lower()
+                )
+                .lower()
             )
 
             filename = Path(
@@ -837,7 +1090,10 @@ class DevelopmentContext:
 
             elif (
                 stem
-                and stem in target_serialized
+                and self._contains_word(
+                    target_serialized,
+                    stem
+                )
             ):
 
                 score += 3
@@ -945,10 +1201,6 @@ class DevelopmentContext:
             for value in relationships.values()
         )
 
-        architecture_text = self.serialize_info(
-            architecture
-        )
-
         # ---------------------------------------------------------
         # Explicit analysis requests
         # ---------------------------------------------------------
@@ -1021,10 +1273,6 @@ class DevelopmentContext:
             )
         ):
 
-            # A related file is enough to make the fix
-            # architecture-aware. Requiring three relationship
-            # edges was too strict and caused valid architectural
-            # contexts to fall back to targeted_fix.
             if related_files:
 
                 strategy_type = (
@@ -1140,7 +1388,10 @@ class DevelopmentContext:
             len(targets) > 1
         )
 
-        if multi_target and strategy_type == "targeted_fix":
+        if (
+            multi_target
+            and strategy_type == "targeted_fix"
+        ):
 
             strategy_type = (
                 "multi_target_targeted_fix"
@@ -1249,6 +1500,118 @@ class DevelopmentContext:
             for word in words
         )
 
+    def _contains_word(
+        self,
+        text,
+        word
+    ):
+        """
+        Check whether a word/token exists as a complete word.
+
+        This prevents false positives such as:
+
+            related -> unrelated
+            app     -> application
+            core    -> hardcore
+        """
+
+        if not text or not word:
+            return False
+
+        text = str(text).lower()
+        word = str(word).lower().strip()
+
+        if not word:
+            return False
+
+        # Paths and identifiers can contain /, _, -, and dots.
+        # For ordinary semantic words, boundaries are enough.
+        #
+        # The negative look-arounds prevent matching the word
+        # inside larger alphabetic/number/underscore identifiers.
+
+        pattern = (
+            rf"(?<![a-z0-9_])"
+            rf"{re.escape(word)}"
+            rf"(?![a-z0-9_])"
+        )
+
+        return re.search(
+            pattern,
+            text,
+            re.IGNORECASE
+        ) is not None
+
+    def _contains_any_semantic_indicator(
+        self,
+        text,
+        indicators
+    ):
+        """
+        Safely detect semantic relationship indicators.
+
+        Single-word indicators are matched as complete words.
+        Multi-word indicators are matched as phrases.
+
+        This intentionally avoids substring matching so that:
+
+            "unrelated"
+
+        does not satisfy:
+
+            "related"
+        """
+
+        if not text:
+            return False
+
+        normalized_text = str(
+            text
+        ).lower()
+
+        for indicator in indicators:
+
+            indicator = str(
+                indicator
+            ).lower().strip()
+
+            if not indicator:
+                continue
+
+            # Multi-word phrases such as:
+            #
+            #   used by
+            #   used_by
+            #
+            # are normalized and matched as phrases.
+
+            if " " in indicator:
+
+                phrase_pattern = (
+                    rf"(?<![a-z0-9_])"
+                    rf"{re.escape(indicator)}"
+                    rf"(?![a-z0-9_])"
+                )
+
+                if re.search(
+                    phrase_pattern,
+                    normalized_text,
+                    re.IGNORECASE
+                ):
+
+                    return True
+
+            else:
+
+                if self._contains_word(
+                    normalized_text,
+                    indicator
+                ):
+
+                    return True
+
+        return False
+
     def _task_words(
         self,
         task
@@ -1281,12 +1644,101 @@ class DevelopmentContext:
             "şu",
             "olan",
             "olarak",
-            "üzerinde"
+            "üzerinde",
+            "add",
+            "a",
+            "feature",
+            "to",
+            "implement",
+            "implementation",
+            "new",
+            "work",
+            "on",
+            "inspect",
+            "analyze",
+            "refactor",
+            "bug",
+            "error",
         }
 
-        return {
-            word
-            for word in words
-            if len(word) >= 3
-            and word not in ignored
-        }
+        # ---------------------------------------------------------
+        # Python file paths mentioned in the task are targets,
+        # not semantic task concepts.
+        #
+        # Example:
+        #
+        #   "Fix app/core/parser.py"
+        #
+        # must not produce:
+        #
+        #   app
+        #   core
+        #   parser
+        #   py
+        #
+        # Otherwise unrelated files can become related merely
+        # because they share a directory name.
+        # ---------------------------------------------------------
+
+        path_words = set()
+
+        candidates = re.findall(
+            r"""
+            (?:
+                [A-Za-z0-9_.-]+[\\/] 
+            )*
+            [A-Za-z0-9_.-]+\.py
+            """,
+            task,
+            re.VERBOSE
+        )
+
+        for candidate in candidates:
+
+            normalized = candidate.replace(
+                "\\",
+                "/"
+            )
+
+            path_without_extension = (
+                normalized[:-3]
+                if normalized.lower().endswith(".py")
+                else normalized
+            )
+
+            for part in Path(
+                path_without_extension
+            ).parts:
+
+                part = part.lower().strip()
+
+                if part:
+                    path_words.add(
+                        part
+                    )
+
+        result = set()
+
+        for word in words:
+
+            word = word.strip()
+
+            if not word:
+                continue
+
+            if len(word) < 3:
+                continue
+
+            if word in ignored:
+                continue
+
+            # Do not treat directory/file path components as
+            # semantic task concepts.
+            if word in path_words:
+                continue
+
+            result.add(
+                word
+            )
+
+        return result
