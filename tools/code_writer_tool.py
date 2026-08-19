@@ -353,25 +353,6 @@ The resulting code MUST be valid Python.
             }
 
         # ---------------------------------------------------------
-        # Detect unchanged source
-        # ---------------------------------------------------------
-
-        if new_code.strip() == old_code.strip():
-
-            self.logger.warning(
-                f"Generated code is identical to the existing "
-                f"file: {filename}"
-            )
-
-            return {
-                "file": filename,
-                "error": (
-                    "Generated code is identical to the "
-                    "existing file."
-                )
-            }
-
-        # ---------------------------------------------------------
         # First syntax validation
         # ---------------------------------------------------------
 
@@ -404,6 +385,45 @@ The resulting code MUST be valid Python.
                 }
 
             new_code = repaired
+
+        # ---------------------------------------------------------
+        # Detect unchanged source
+        # ---------------------------------------------------------
+
+        if new_code.strip() == old_code.strip():
+
+            self.logger.warning(
+                f"Generated code is identical to the existing "
+                f"file: {filename}"
+            )
+
+            return {
+                "file": filename,
+                "error": (
+                    "Generated code is identical to the "
+                    "existing file."
+                )
+            }       
+
+        # ---------------------------------------------------------
+        # Reject semantically unchanged code
+        # ---------------------------------------------------------
+
+        semantic_error = self.validate_semantic_change(
+            old_code,
+            new_code
+        )
+
+        if semantic_error is not None:
+
+            self.logger.warning(
+                f"{semantic_error}: {filename}"
+            )
+
+            return {
+                "file": filename,
+                "error": semantic_error
+            } 
 
         # ---------------------------------------------------------
         # Architecture validation
@@ -1023,6 +1043,53 @@ The resulting code MUST be valid Python.
             )
 
             return None
+
+    # =============================================================
+    # Semantic change validation
+    # =============================================================
+
+    def validate_semantic_change(
+        self,
+        old_code,
+        new_code
+    ):
+
+        try:
+
+            old_tree = ast.parse(
+                old_code
+            )
+
+            new_tree = ast.parse(
+                new_code
+            )
+
+            old_normalized = ast.dump(
+                old_tree,
+                annotate_fields=True,
+                include_attributes=False
+            )
+
+            new_normalized = ast.dump(
+                new_tree,
+                annotate_fields=True,
+                include_attributes=False
+            )
+
+            if old_normalized == new_normalized:
+
+                return (
+                    "Generated code is semantically identical "
+                    "to the existing file."
+                )
+
+        except Exception as error:
+
+            self.logger.warning(
+                f"Semantic comparison skipped: {error}"
+            )
+
+        return None
 
     # =============================================================
     # Syntax validation

@@ -1673,3 +1673,44 @@ def parse(value):
     assert source.read_text(
         encoding="utf-8"
     ) == original_code
+
+@pytest.mark.unit
+def test_code_writer_rejects_semantically_unchanged_generated_code(
+    tmp_path
+):
+    source = tmp_path / "parser.py"
+
+    original_code = """\
+def parse(value):
+    return value
+"""
+
+    source.write_text(
+        original_code,
+        encoding="utf-8"
+    )
+
+    class ReformattedCodeLLM:
+        def generate(self, prompt):
+            return """\
+def parse(value): return value
+"""
+
+    writer = CodeWriterTool(
+        ReformattedCodeLLM(),
+        workspace=tmp_path
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        ["Modify the parser."]
+    )
+
+    assert result["error"] == (
+        "Generated code is semantically identical "
+        "to the existing file."
+    )
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original_code
