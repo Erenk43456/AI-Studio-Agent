@@ -1637,22 +1637,6 @@ def test_code_writer_rejects_file_with_empty_changes():
     )
 
 @pytest.mark.unit
-def test_code_writer_rejects_unchanged_generated_code():
-    original_code = """
-def parse(value):
-    return value
-"""
-
-    class SameCodeLLM:
-        def generate(self, prompt):
-            return original_code
-
-    writer = CodeWriterTool(
-        SameCodeLLM(),
-        workspace="."
-    )
-
-@pytest.mark.unit
 def test_code_writer_rejects_unchanged_generated_code(
     tmp_path
 ):
