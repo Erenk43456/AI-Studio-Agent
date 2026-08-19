@@ -61,7 +61,14 @@ class FakeContext:
 
     def build(self, message):
         self.calls.append(message)
-        return "development-context"
+
+        return {
+            "task": message,
+            "strategy": {
+                "type": "development",
+                "repository_analysis_fallback": False,
+            },
+        }
 
 
 class FakeRegistry:
@@ -93,6 +100,18 @@ class FakeContainer:
         self.registry = FakeRegistry(
             {"fake_tool": tool} if tool else {}
         )
+        self.project_memory_sync = FakeProjectMemorySync()
+
+class FakeProjectMemorySync:
+    def __init__(self):
+        self.calls = []
+
+    def sync(self, changed_files=None):
+        self.calls.append(changed_files)
+
+        return {
+            "success": True,
+        }
 
 
 @pytest.mark.unit

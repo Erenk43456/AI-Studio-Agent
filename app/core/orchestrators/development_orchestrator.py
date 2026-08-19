@@ -22,6 +22,10 @@ class DevelopmentOrchestrator:
             container.development_context
         )
 
+        self.project_memory_sync = (
+            container.project_memory_sync
+        )
+
         self.improvement_agent = (
             container.improvement_agent
         )
@@ -123,6 +127,29 @@ class DevelopmentOrchestrator:
                 message
             )
         )
+
+        if (
+            development_context["strategy"].get(
+                "repository_analysis_fallback",
+                False
+            )
+            and self.project_memory_sync
+        ):
+
+            self.logger.info(
+                "Development context memory is unavailable. "
+                "Running repository analysis fallback."
+            )
+
+            self.project_memory_sync.sync(
+                development_context["targets"]
+            )
+
+            development_context = (
+                self.development_context.build(
+                    message
+                )
+            )
 
         #
         # Planner
