@@ -1081,3 +1081,78 @@ def test_code_agent_returns_files_written_from_code_writer():
         "app/parser.py",
         "app/tokenizer.py",
     ]
+
+@pytest.mark.unit
+def test_code_agent_stores_repository_analysis_in_development_context():
+    llm = FakeLLM(
+        response="""
+        {
+            "summary": "Fix parser",
+            "files": [],
+            "implementation": [],
+            "risks": []
+        }
+        """
+    )
+
+    writer = FakeTool(
+        name="code_writer",
+        result={
+            "success": True,
+        },
+    )
+
+    analyzer = FakeTool(
+        name="repository_analyzer",
+        result={
+            "files": [
+                "app/parser.py",
+                "app/tokenizer.py",
+            ],
+            "architecture": "layered",
+        },
+    )
+
+    registry = FakeRegistry(
+        {
+            "code_writer": writer,
+            "repository_analyzer": analyzer,
+        }
+    )
+
+    context = {
+        "task": "Fix parser",
+        "strategy": {
+            "type": "development",
+            "repository_analysis_fallback": True,
+        },
+        "architecture": {},
+    }
+
+    agent = CodeAgent(
+        llm,
+        registry,
+    )
+
+    result = agent.run(
+        "Fix parser",
+        development_context=context,
+    )
+
+    assert result["success"] is True
+
+    writer_input = writer.calls[0]["args"][0]
+
+    development_context = (
+        writer_input["development_context"]
+    )
+
+    assert development_context["architecture"][
+        "repository_analysis"
+    ] == {
+        "files": [
+            "app/parser.py",
+            "app/tokenizer.py",
+        ],
+        "architecture": "layered",
+    }

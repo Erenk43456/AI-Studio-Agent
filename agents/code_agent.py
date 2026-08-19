@@ -426,8 +426,7 @@ A response that is not valid JSON will be rejected.
             return ""
 
         architecture = context.get(
-            "architecture",
-            {}
+            "architecture"
         )
 
         if isinstance(
@@ -444,7 +443,28 @@ A response that is not valid JSON will be rejected.
                     "available in ProjectMemory."
                 )
 
-        return self._analyze_repository()
+        analysis = self._analyze_repository()
+
+        if not analysis:
+
+            return ""
+
+        if isinstance(
+            analysis,
+            dict
+        ):
+
+            architecture[
+                "repository_analysis"
+            ] = analysis
+
+            return str(
+                analysis
+            )
+
+        return str (
+            analysis
+        )
 
     # =============================================================
     # Repository analyzer
@@ -470,9 +490,7 @@ A response that is not valid JSON will be rejected.
                 "action": "analyze"
             })
 
-            return str(
-                result
-            )
+            return  result
 
         except Exception as error:
 
