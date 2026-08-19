@@ -1555,3 +1555,56 @@ def test_code_writer_excludes_failed_files_from_files_written(tmp_path):
     assert result["files_written"] == [
         "app/parser.py",
     ]
+
+@pytest.mark.unit
+def test_code_writer_detects_removed_import(
+    tmp_path,
+):
+    original = """\
+import os
+
+class Parser:
+    def parse(self, value):
+        return value
+"""
+
+    generated = """\
+class Parser:
+    def parse(self, value):
+        return value.strip()
+"""
+
+    source = tmp_path / "parser.py"
+
+    source.write_text(
+        original,
+        encoding="utf-8",
+    )
+
+    writer = CodeWriterTool(
+        llm=FakeLLM(
+            response=generated
+        ),
+        workspace=tmp_path,
+    )
+
+    result = writer.modify_file(
+        "parser.py",
+        ["Change parser"],
+    )
+
+    assert result["error"] == (
+        "Generated code violates the existing "
+        "architecture."
+    )
+
+    assert (
+        "Existing imports were removed"
+        in result["details"]
+    )
+
+    assert "import os" in result["details"]
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original

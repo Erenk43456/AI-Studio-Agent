@@ -834,6 +834,37 @@ The resulting code MUST be valid Python.
                 f"{sorted(missing_functions)}."
             )
 
+        # ---------------------------------------------------------
+        # Existing imports must remain
+        # ---------------------------------------------------------
+
+        original_imports = set(
+            original.get(
+                "imports",
+                []
+            )
+        )
+
+        new_imports = set(
+            new_structure.get(
+                "imports",
+                []
+            )
+        )
+
+        missing_imports = (
+            original_imports
+            -
+            new_imports
+        )
+
+        if missing_imports:
+
+            return (
+                "Existing imports were removed: "
+                f"{sorted(missing_imports)}."
+            )
+
         return None
 
     # =============================================================
