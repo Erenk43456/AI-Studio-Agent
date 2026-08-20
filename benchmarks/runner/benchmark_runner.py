@@ -410,6 +410,26 @@ class BenchmarkRunner:
             ).is_file()
         ]
 
+        forbidden_files = criteria.get(
+            "forbidden_files",
+            [],
+        )
+
+        if not isinstance(
+            forbidden_files,
+            list,
+        ):
+
+            forbidden_files = []
+
+        forbidden_files_present = [
+            filename
+            for filename in forbidden_files
+            if (
+                workspace / filename
+            ).exists()
+        ]
+
         unexpected_files = [
             filename
             for filename in changed_files
@@ -454,6 +474,7 @@ class BenchmarkRunner:
         success = (
             not missing_files
             and not unexpected_files
+            and not forbidden_files_present
             and tests_passed
         )
 
