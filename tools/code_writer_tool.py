@@ -104,10 +104,24 @@ class CodeWriterTool:
 
                 continue
 
-            result = self.modify_file(
-                path,
-                changes
-            )
+            path_obj = (
+                Path(self.workspace)
+                / path
+            ).resolve()
+
+            if path_obj.exists():
+
+                result = self.modify_file(
+                    path,
+                    changes
+                )
+
+            else:
+
+                result = self.create_file_from_changes(
+                    path,
+                    changes
+                )
 
             results.append(
                 result
@@ -123,7 +137,10 @@ class CodeWriterTool:
 
         success = all(
             isinstance(result, dict)
-            and result.get("status") == "updated"
+            and result.get("status") in {
+                "updated",
+                "created",
+            }
             and "error" not in result
             for result in results
         )
@@ -136,10 +153,309 @@ class CodeWriterTool:
                 for result in results
                 if (
                     isinstance(result, dict)
-                    and result.get("status") == "updated"
+                    and result.get("status") in {
+                        "updated",
+                        "created"
+                    }
                 )
             ]
         }
+
+    def create_file(
+        self,
+        filename,
+        code
+    ):
+        if not self.workspace:
+
+            return {
+                "file": filename,
+                "error": "Workspace is not configured."
+            }
+
+        workspace_path = Path(
+            self.workspace
+        ).resolve()
+
+        path = (
+            workspace_path
+            / filename
+        ).resolve()
+
+        # ---------------------------------------------------------
+        # Workspace security
+        # ---------------------------------------------------------
+
+        try:
+
+            path.relative_to(
+                workspace_path
+            )
+
+        except ValueError:
+
+            self.logger.error(
+                f"Blocked path outside workspace: {filename}"
+            )
+
+            return {
+                "file": filename,
+                "error": "Path is outside the workspace."
+            }
+
+        if path.exists():
+
+            return {
+                "file": filename,
+                "error": "File already exists."
+            }
+
+        if not code.strip():
+
+            return {
+                "file": filename,
+                "error": "Generated code is empty."
+            }
+
+        # ---------------------------------------------------------
+        # Syntax validation
+        # ---------------------------------------------------------
+
+        syntax_error = self.validate_python(
+            code,
+            filename
+        )
+
+        if syntax_error is not None:
+
+            return {
+                "file": filename,
+                "error": (
+                    "Generated code has invalid Python syntax."
+                ),
+                "details": syntax_error
+            }
+
+        # ---------------------------------------------------------
+        # Formatting
+        # ---------------------------------------------------------
+
+        formatted = self.format_code(
+            code
+        )
+
+        if formatted is not None:
+
+            code = formatted
+
+        # ---------------------------------------------------------
+        # Final syntax validation
+        # ---------------------------------------------------------
+
+        syntax_error = self.validate_python(
+            code,
+            filename
+        )
+
+        if syntax_error is not None:
+
+            return {
+                "file": filename,
+                "error": (
+                    "Formatted code failed Python "
+                    "syntax validation."
+                ),
+                "details": syntax_error
+            }
+
+        # ---------------------------------------------------------
+        # Atomic write
+        # ---------------------------------------------------------
+
+        if self.atomic_writer is None:
+
+            return {
+                "file": filename,
+                "error": "Atomic writer is not configured."
+            }
+
+        write_result = self.atomic_writer.write(
+            path,
+            code
+        )
+
+        if not write_result.get(
+            "success",
+            False
+        ):
+
+            return {
+                "file": filename,
+                "error": "Atomic write failed.",
+                "details": write_result.get(
+                    "error"
+                )
+            }
+
+        # ---------------------------------------------------------
+        # Verify written file
+        # ---------------------------------------------------------
+
+        try:
+
+            written_code = path.read_text(
+                encoding="utf-8"
+            )
+
+        except Exception as error:
+
+            return {
+                "file": filename,
+                "error": (
+                    f"Failed to verify written file: {error}"
+                )
+            }
+
+        verification_error = self.validate_python(
+            written_code,
+            filename
+        )
+
+        if verification_error is not None:
+
+            return {
+                "file": filename,
+                "error": (
+                    "Written file failed Python "
+                    "syntax verification."
+                ),
+                "details": verification_error
+            }
+
+        self.logger.info(
+            f"Code file created and verified: {path}"
+        )
+
+        return {
+            "file": filename,
+            "status": "created"
+        }
+
+    def create_file_from_changes(
+        self,
+        filename,
+        changes
+    ):
+
+        if not self.workspace:
+
+            return {
+                "file": filename,
+                "error": "Workspace is not configured."
+            }
+
+        prompt = f"""
+You are creating a NEW Python file inside an existing project.
+
+This is a file creation task.
+
+You must create ONLY the requested file.
+
+==================================================
+FILE
+==================================================
+
+{filename}
+
+==================================================
+REQUIRED CHANGES
+==================================================
+
+{changes}
+
+==================================================
+DEVELOPMENT CONTEXT
+==================================================
+
+{self.current_development_context}
+
+==================================================
+RULES
+==================================================
+
+- Create only the requested file.
+- Do not modify existing files.
+- Do not invent unrelated functionality.
+- Do not introduce unnecessary dependencies.
+- Follow the existing project architecture.
+- Implement exactly the requested functionality.
+- Keep the implementation minimal.
+- The resulting code must be valid Python.
+
+==================================================
+OUTPUT RULES
+==================================================
+
+Return ONLY the complete Python source code.
+
+Do NOT use Markdown.
+
+Do NOT use code fences.
+
+Do NOT include explanations.
+
+Do NOT include text before the Python source.
+
+Do NOT include text after the Python source.
+"""
+
+        try:
+
+            code = self.llm.generate(
+                prompt
+            )
+
+        except Exception as error:
+
+            self.logger.error(
+                f"Code generation exception for new file "
+                f"{filename}: {error}"
+            )
+
+            return {
+                "file": filename,
+                "error": f"Code generation failed: {error}"
+            }
+
+        if isinstance(code, dict):
+
+            return {
+                "file": filename,
+                "error": code
+            }
+
+        if not isinstance(code, str):
+
+            return {
+                "file": filename,
+                "error": "LLM returned an invalid response type."
+            }
+
+        code = self.clean_code(
+            code
+        )
+
+        if not code.strip():
+
+            return {
+                "file": filename,
+                "error": "LLM returned empty code."
+            }
+
+        return self.create_file(
+            filename,
+            code
+        )
 
     def modify_file(
         self,
