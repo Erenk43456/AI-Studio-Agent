@@ -1,0 +1,29 @@
+{
+  "id": "B02",
+  "name": "modify_existing_file",
+  "success": true,
+  "agent_result": "✅ Kod başarıyla güncellendi.",
+  "changed_files": [
+    "calculator.py"
+  ],
+  "validation": {
+    "success": true,
+    "missing_files": [],
+    "unexpected_files": [],
+    "tests": [
+      {
+        "test": "assert add(2, 3) == 5",
+        "success": true
+      },
+      {
+        "test": "assert add(-2, 5) == 3",
+        "success": true
+      },
+      {
+        "test": "assert add(10, -4) == 6",
+        "success": true
+      }
+    ]
+  },
+  "workspace": "C:\\Users\\Admin\\AppData\\Local\\Temp\\ai-studio-benchmark-qi7pk0nf"
+}
