@@ -1,0 +1,25 @@
+{
+  "id": "B01",
+  "name": "create_new_file",
+  "success": true,
+  "agent_result": "✅ Kod başarıyla güncellendi.",
+  "changed_files": [
+    "benchmark_greeting.py"
+  ],
+  "validation": {
+    "success": true,
+    "missing_files": [],
+    "unexpected_files": [],
+    "tests": [
+      {
+        "test": "assert greet('Eren') == 'Hello, Eren!'",
+        "success": true
+      },
+      {
+        "test": "assert greet('World') == 'Hello, World!'",
+        "success": true
+      }
+    ]
+  },
+  "workspace": "C:\\Users\\Admin\\AppData\\Local\\Temp\\ai-studio-benchmark-10_panlm"
+}

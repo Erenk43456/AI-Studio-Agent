@@ -1,0 +1,548 @@
+from __future__ import annotations
+
+import json
+import shutil
+import tempfile
+from pathlib import Path
+from typing import Any
+
+from app.core.containers.main_container import MainContainer
+
+
+class BenchmarkRunner:
+    """Runs AI-Studio benchmark tasks in isolated workspaces."""
+
+    IGNORED_PATHS = {
+        ".ai_memory",
+    }
+
+    def __init__(
+        self,
+        project_root: Path | None = None,
+    ):
+        self.project_root = (
+            project_root
+            if project_root is not None
+            else Path.cwd()
+        ).resolve()
+
+        self.tasks_dir = (
+            self.project_root / "benchmarks" / "tasks"
+        )
+
+        self.results_dir = (
+            self.project_root / "benchmarks" / "results"
+        )
+
+        self.results_dir.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+    def load_task(
+        self,
+        task_id: str,
+    ) -> dict[str, Any]:
+
+        task_path = (
+            self.tasks_dir
+            / f"{task_id}.json"
+        )
+
+        if not task_path.exists():
+
+            raise FileNotFoundError(
+                f"Benchmark task not found: {task_path}"
+            )
+
+        with task_path.open(
+            "r",
+            encoding="utf-8",
+        ) as file:
+
+            return json.load(file)
+
+    def create_workspace(
+        self,
+    ) -> Path:
+
+        return Path(
+            tempfile.mkdtemp(
+                prefix="ai-studio-benchmark-"
+            )
+        )
+
+    def setup_workspace(
+        self,
+        workspace: Path,
+        task: dict[str, Any],
+    ) -> None:
+
+        setup = task.get(
+            "setup",
+            {}
+        )
+
+        if not isinstance(
+            setup,
+            dict,
+        ):
+            return
+
+        files = setup.get(
+            "files",
+            {}
+        )
+
+        if not isinstance(
+            files,
+            dict,
+        ):
+            return
+
+        workspace_path = workspace.resolve()
+
+        for filename, content in files.items():
+
+            if not isinstance(
+                filename,
+                str,
+            ):
+                continue
+
+            if not isinstance(
+                content,
+                str,
+            ):
+                continue
+
+            path = (
+                workspace_path
+                / filename
+            ).resolve()
+
+            try:
+
+                path.relative_to(
+                    workspace_path
+                )
+
+            except ValueError:
+
+                raise ValueError(
+                    "Benchmark setup path is outside "
+                    f"workspace: {filename}"
+                )
+
+            path.parent.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            path.write_text(
+                content,
+                encoding="utf-8",
+            )
+
+    def snapshot_files(
+        self,
+        workspace: Path,
+    ) -> set[str]:
+
+        files = set()
+
+        for path in workspace.rglob("*"):
+
+            if not path.is_file():
+                continue
+
+            relative = path.relative_to(
+                workspace
+            )
+
+            if (
+                relative.parts
+                and relative.parts[0]
+                in self.IGNORED_PATHS
+            ):
+                continue
+
+            files.add(
+                str(relative)
+            )
+
+        return files
+
+    def snapshot_file_contents(
+        self,
+        workspace: Path,
+    ) -> dict[str, str]:
+
+        snapshot = {}
+
+        for path in workspace.rglob("*"):
+
+            if not path.is_file():
+                continue
+
+            relative = path.relative_to(
+                workspace
+            )
+
+            if (
+                relative.parts
+                and relative.parts[0]
+                in self.IGNORED_PATHS
+            ):
+                continue
+
+            try:
+
+                snapshot[str(relative)] = (
+                    path.read_text(
+                        encoding="utf-8"
+                    )
+                )
+
+            except UnicodeDecodeError:
+
+                continue
+
+        return snapshot
+
+    def detect_changed_files(
+        self,
+        before_files: set[str],
+        after_files: set[str],
+        before_contents: dict[str, str],
+        after_contents: dict[str, str],
+    ) -> set[str]:
+
+        created = (
+            after_files
+            - before_files
+        )
+
+        deleted = (
+            before_files
+            - after_files
+        )
+
+        modified = {
+            filename
+            for filename in (
+                before_files
+                & after_files
+            )
+            if (
+                before_contents.get(filename)
+                != after_contents.get(filename)
+            )
+        }
+
+        return (
+            created
+            | deleted
+            | modified
+        )
+
+    def run(
+        self,
+        task_id: str,
+    ) -> dict[str, Any]:
+
+        task = self.load_task(
+            task_id
+        )
+
+        workspace = self.create_workspace()
+
+        try:
+
+            self.setup_workspace(
+                workspace,
+                task,
+            )
+
+            # -----------------------------------------------------
+            # Snapshot BEFORE agent execution
+            # -----------------------------------------------------
+
+            before_files = self.snapshot_files(
+                workspace
+            )
+
+            before_contents = (
+                self.snapshot_file_contents(
+                    workspace
+                )
+            )
+
+            # -----------------------------------------------------
+            # Run AI-Studio
+            # -----------------------------------------------------
+
+            container = MainContainer(
+                workspace_path=workspace
+            )
+
+            agent_result = (
+                container.orchestrator.run(
+                    task["task"]
+                )
+            )
+
+            # -----------------------------------------------------
+            # Snapshot AFTER agent execution
+            # -----------------------------------------------------
+
+            after_files = self.snapshot_files(
+                workspace
+            )
+
+            after_contents = (
+                self.snapshot_file_contents(
+                    workspace
+                )
+            )
+
+            # -----------------------------------------------------
+            # Detect created / modified / deleted files
+            # -----------------------------------------------------
+
+            changed_files = sorted(
+                self.detect_changed_files(
+                    before_files,
+                    after_files,
+                    before_contents,
+                    after_contents,
+                )
+            )
+
+            # -----------------------------------------------------
+            # Validate benchmark
+            # -----------------------------------------------------
+
+            validation = (
+                self.validate_success_criteria(
+                    task,
+                    workspace,
+                    changed_files,
+                )
+            )
+
+            benchmark_result = {
+                "id": task["id"],
+                "name": task["name"],
+                "success": validation["success"],
+                "agent_result": agent_result,
+                "changed_files": changed_files,
+                "validation": validation,
+                "workspace": str(workspace),
+            }
+
+            self._save_result(
+                task_id,
+                benchmark_result,
+            )
+
+            return benchmark_result
+
+        finally:
+
+            if "container" in locals():
+
+                watcher = getattr(
+                    getattr(
+                        container,
+                        "development",
+                        None,
+                    ),
+                    "watcher",
+                    None,
+                )
+
+                if watcher is not None:
+
+                    watcher.stop()
+
+            shutil.rmtree(
+                workspace,
+                ignore_errors=True,
+            )
+
+    def validate_success_criteria(
+        self,
+        task: dict[str, Any],
+        workspace: Path,
+        changed_files: set[str] | list[str],
+    ) -> dict[str, Any]:
+
+        criteria = task.get(
+            "success_criteria",
+            {},
+        )
+
+        if not isinstance(
+            criteria,
+            dict,
+        ):
+
+            criteria = {}
+
+        required_files = criteria.get(
+            "required_files",
+            [],
+        )
+
+        if not isinstance(
+            required_files,
+            list,
+        ):
+
+            required_files = []
+
+        missing_files = [
+            filename
+            for filename in required_files
+            if not (
+                workspace / filename
+            ).is_file()
+        ]
+
+        unexpected_files = [
+            filename
+            for filename in changed_files
+            if filename not in required_files
+        ]
+
+        tests = criteria.get(
+            "tests",
+            [],
+        )
+
+        if not isinstance(
+            tests,
+            list,
+        ):
+
+            tests = []
+
+        test_results = []
+
+        for test in tests:
+
+            if not isinstance(
+                test,
+                str,
+            ):
+                continue
+
+            test_results.append(
+                self.run_test(
+                    test,
+                    workspace,
+                    required_files,
+                )
+            )
+
+        tests_passed = all(
+            result["success"]
+            for result in test_results
+        )
+
+        success = (
+            not missing_files
+            and not unexpected_files
+            and tests_passed
+        )
+
+        return {
+            "success": success,
+            "missing_files": missing_files,
+            "unexpected_files": unexpected_files,
+            "tests": test_results,
+        }
+
+    def run_test(
+        self,
+        test: str,
+        workspace: Path,
+        required_files: list[str],
+    ) -> dict[str, Any]:
+
+        namespace = {}
+
+        try:
+
+            for filename in required_files:
+
+                path = (
+                    workspace
+                    / filename
+                )
+
+                if not path.is_file():
+
+                    return {
+                        "test": test,
+                        "success": False,
+                        "error": (
+                            "Required file not found: "
+                            f"{filename}"
+                        ),
+                    }
+
+                source = path.read_text(
+                    encoding="utf-8"
+                )
+
+                exec(
+                    compile(
+                        source,
+                        str(path),
+                        "exec",
+                    ),
+                    namespace,
+                )
+
+            exec(
+                test,
+                namespace,
+            )
+
+            return {
+                "test": test,
+                "success": True,
+            }
+
+        except Exception as error:
+
+            return {
+                "test": test,
+                "success": False,
+                "error": str(error),
+            }
+
+    def _save_result(
+        self,
+        task_id: str,
+        result: dict[str, Any],
+    ) -> None:
+
+        result_path = (
+            self.results_dir
+            / f"{task_id}.json"
+        )
+
+        with result_path.open(
+            "w",
+            encoding="utf-8",
+        ) as file:
+
+            json.dump(
+                result,
+                file,
+                indent=2,
+                ensure_ascii=False,
+            )

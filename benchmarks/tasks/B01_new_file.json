@@ -1,0 +1,15 @@
+{
+  "id": "B01",
+  "name": "create_new_file",
+  "description": "Create a new Python module implementing a simple greeting function.",
+  "task": "Create a new Python file named benchmark_greeting.py in the workspace. Implement a function greet(name: str) -> str that returns exactly 'Hello, {name}!' using the provided name. Do not modify existing files.",
+  "success_criteria": {
+    "required_files": [
+      "benchmark_greeting.py"
+    ],
+    "tests": [
+      "assert greet('Eren') == 'Hello, Eren!'",
+      "assert greet('World') == 'Hello, World!'"
+    ]
+  }
+}

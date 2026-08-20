@@ -1,0 +1,24 @@
+{
+  "id": "B02",
+  "name": "modify_existing_file",
+  "description": "Modify an existing Python module while preserving its public function.",
+  "setup": {
+    "files": {
+      "calculator.py": "def add(a: int, b: int) -> int:\n    return a - b\n"
+    }
+  },
+  "task": "Modify the existing calculator.py file. Fix the add(a: int, b: int) function so that it correctly returns the sum of a and b. Preserve the existing function name and signature. Do not modify or create any other files.",
+  "success_criteria": {
+    "required_files": [
+      "calculator.py"
+    ],
+    "tests": [
+      "assert add(2, 3) == 5",
+      "assert add(-2, 5) == 3",
+      "assert add(10, -4) == 6"
+    ],
+    "forbidden_files": [
+      "benchmark_greeting.py"
+    ]
+  }
+}
