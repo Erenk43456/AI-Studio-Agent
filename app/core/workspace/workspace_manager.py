@@ -10,7 +10,8 @@ class WorkspaceManager:
 
     def __init__(
         self,
-        source_path
+        source_path,
+        workspace_root=None
     ):
 
         self.logger = AppLogger()
@@ -24,12 +25,10 @@ class WorkspaceManager:
 
 
         self.workspace_root = (
-            self.desktop /
-            "AI-Studio-Workspace"
+            Path(workspace_root)
+            if workspace_root is not None
+            else self.desktop / "AI-Studio-Workspace"
         )
-
-
-
 
 
     def create_workspace(self):

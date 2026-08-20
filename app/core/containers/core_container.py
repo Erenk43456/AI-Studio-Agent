@@ -6,7 +6,10 @@ from app.core.workspace.workspace_manager import WorkspaceManager
 
 class CoreContainer:
 
-    def __init__(self):
+    def __init__(
+        self,
+        workspace_path: str | Path | None = None,
+    ):
 
         #
         # MODEL CONFIG
@@ -29,7 +32,8 @@ class CoreContainer:
         #
 
         self.workspace = WorkspaceManager(
-            project_root
+            project_root,
+            workspace_root=workspace_path,
         )
 
         self.workspace_path = (

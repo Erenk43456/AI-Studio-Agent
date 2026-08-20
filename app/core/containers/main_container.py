@@ -12,13 +12,18 @@ from app.core.orchestrators.memory_orchestrator import MemoryOrchestrator
 
 class MainContainer:
 
-    def __init__(self):
+    def __init__(
+            self, 
+            workspace_path=None
+    ):
 
         #
         # Core
         #
 
-        self.core = CoreContainer()
+        self.core = CoreContainer(
+            workspace_path=workspace_path
+        )
 
 
         #
