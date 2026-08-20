@@ -199,6 +199,133 @@ class ProjectMemory:
             project
         )
 
+    def sync_repository_analysis(
+        self,
+        analysis
+    ):
+        """Synchronize a structured repository analysis into memory."""
+
+        analysis = self._coerce_analysis(
+            analysis
+        )
+
+        if not isinstance(
+            analysis,
+            dict
+        ):
+            self.logger.warning(
+                "Repository analysis is not structured data."
+            )
+            return False
+
+        overview = analysis.get(
+            "overview",
+            {}
+        )
+
+        definitions = analysis.get(
+            "definitions",
+            {}
+        )
+
+        module_roles = analysis.get(
+            "module_roles",
+            {}
+        )
+
+        if not isinstance(overview, dict):
+            return False
+
+        if not isinstance(definitions, dict):
+            return False
+
+        if not isinstance(module_roles, dict):
+            return False
+
+        project_info = dict(
+            overview
+        )
+
+        if "generated_at" in analysis:
+            project_info["analysis_generated_at"] = (
+                analysis["generated_at"]
+            )
+
+        self.update_project_info(
+            project_info
+        )
+
+        file_paths = set(
+            definitions
+        )
+
+        file_paths.update(
+            module_roles
+        )
+
+        files = {}
+
+        for path in sorted(
+            file_paths
+        ):
+            info = {
+                "definitions": definitions.get(
+                    path,
+                    []
+                ),
+            }
+
+            if path in module_roles:
+                info["role"] = module_roles[path]
+
+            files[
+                str(path).replace(
+                    "\\",
+                    "/"
+                )
+            ] = info
+
+        self.files_store.save(
+            files
+        )
+
+        architecture = self.get_architecture()
+
+        architecture[
+            "repository_analysis"
+        ] = analysis
+
+        self.architecture_store.save(
+            architecture
+        )
+
+        self.logger.info(
+            "Project memory synchronized from repository analysis."
+        )
+
+        return True
+
+    @staticmethod
+    def _coerce_analysis(
+        analysis
+    ):
+        if hasattr(
+            analysis,
+            "to_dict"
+        ):
+            try:
+                return analysis.to_dict()
+            except Exception:
+                return None
+
+        if isinstance(
+            analysis,
+            dict
+        ):
+            return analysis
+
+        return None
+
     # =========================================================
     # File memory
     # =========================================================

@@ -400,3 +400,78 @@ def test_project_memory_tool_unknown_action():
     }
 
     assert memory.calls == []
+
+@pytest.mark.unit
+def test_project_memory_sync_repository_analysis(
+    tmp_path
+):
+
+    from memory.project_memory.project_memory import (
+        ProjectMemory,
+    )
+
+    memory = ProjectMemory(
+        tmp_path
+    )
+
+    analysis = {
+        "generated_at": (
+            "2026-08-20 21:00:00"
+        ),
+        "overview": {
+            "python_files": 10,
+            "total_lines": 100,
+        },
+        "module_roles": {
+            "agents/chat_agent.py": (
+                "Conversational agent"
+            ),
+        },
+        "definitions": {
+            "agents/chat_agent.py": [
+                "class ChatAgent"
+            ],
+        },
+        "tools": [],
+        "registry_names": [],
+        "wiring_checks": [],
+        "issues": [],
+    }
+
+    result = memory.sync_repository_analysis(
+        analysis
+    )
+
+    assert result is True
+
+    project = memory.load_json(
+        memory.project_file
+    )
+
+    files = memory.get_all_files()
+
+    architecture = (
+        memory.get_architecture()
+    )
+
+    assert project[
+        "python_files"
+    ] == 10
+
+    assert files[
+        "agents/chat_agent.py"
+    ][
+        "definitions"
+    ] == [
+        "class ChatAgent"
+    ]
+
+    assert files[
+        "agents/chat_agent.py"
+    ][
+        "role"
+    ] == "Conversational agent"
+
+    assert architecture[
+        "repository_analysis"
+    ] == analysis

@@ -1,6 +1,46 @@
 import pytest
 
-from tools.repository_analyzer import RepositoryAnalyzerTool
+from app.core.project_memory_sync import (
+    ProjectMemorySync,
+)
+from tools.repository_analyzer import (
+    RepositoryAnalyzerTool,
+)
+
+
+class FakeRepositoryAnalyzer:
+
+    def __init__(
+        self,
+        analysis=None
+    ):
+        self.calls = []
+
+        self.analysis = (
+            analysis
+            if analysis is not None
+            else {
+                "overview": {
+                    "python_files": 10,
+                },
+                "modules": {},
+                "definitions": {},
+                "tools": [],
+                "registry_names": [],
+                "wiring_checks": [],
+                "issues": [],
+            }
+        )
+
+    def analyze(
+        self,
+        root
+    ):
+        self.calls.append(
+            str(root)
+        )
+
+        return self.analysis
 
 
 class FakeProjectMemory:
@@ -8,20 +48,55 @@ class FakeProjectMemory:
     def __init__(self):
         self.calls = []
 
-    def update_project_info(self, data):
+    def update_project_info(
+        self,
+        data
+    ):
         self.calls.append(
-            ("update_project_info", data)
+            (
+                "project_info",
+                data,
+            )
         )
 
-    def update_architecture(self, name, data):
+    def update_architecture(
+        self,
+        name,
+        data
+    ):
         self.calls.append(
-            ("update_architecture", name, data)
+            (
+                "architecture",
+                name,
+                data,
+            )
         )
 
-    def add_file(self, path, data):
+    def add_file(
+        self,
+        path,
+        data
+    ):
         self.calls.append(
-            ("add_file", path, data)
+            (
+                "file",
+                path,
+                data,
+            )
         )
+
+    def sync_repository_analysis(
+        self,
+        analysis
+    ):
+        self.calls.append(
+            (
+                "repository_analysis",
+                analysis,
+            )
+        )
+
+        return True
 
 
 @pytest.mark.unit
@@ -44,49 +119,17 @@ def test_repository_analyzer_can_analyze_without_project_memory(
     )
 
     assert result is not None
-    assert not isinstance(result, str)
+    assert not isinstance(
+        result,
+        str
+    )
+
 
 @pytest.mark.unit
 def test_project_memory_sync_owns_repository_analysis_result():
 
-    from app.core.project_memory_sync import ProjectMemorySync
-
-    class FakeRepositoryAnalyzer:
-
-        def __init__(self):
-            self.calls = []
-
-        def execute(self, plan):
-            self.calls.append(plan)
-
-            return {
-                "overview": {
-                    "python_files": 10,
-                },
-                "modules": {},
-                "definitions": {},
-                "tools": [],
-                "registry": [],
-                "checks": [],
-                "issues": [],
-            }
-
-    class FakeProjectMemory:
-
-        def __init__(self):
-            self.calls = []
-
-        def update_project_info(self, data):
-            self.calls.append(
-                ("project_info", data)
-            )
-
-        def update_architecture(self, name, data):
-            self.calls.append(
-                ("architecture", name, data)
-            )
-
     analyzer = FakeRepositoryAnalyzer()
+
     project_memory = FakeProjectMemory()
 
     sync = ProjectMemorySync(
@@ -100,21 +143,21 @@ def test_project_memory_sync_owns_repository_analysis_result():
     )
 
     assert analyzer.calls == [
-        {
-            "action": "analyze",
-            "path": "C:/AI-Studio",
-            "changed_files": [
-                "agents/chat_agent.py"
-            ],
-        }
+        "C:/AI-Studio"
     ]
 
     assert result is not None
 
+    assert project_memory.calls == [
+        (
+            "repository_analysis",
+            analyzer.analysis,
+        )
+    ]
+
+
 @pytest.mark.unit
 def test_project_memory_sync_stores_repository_analysis():
-
-    from app.core.project_memory_sync import ProjectMemorySync
 
     analysis = {
         "overview": {
@@ -146,29 +189,14 @@ def test_project_memory_sync_stores_repository_analysis():
         "issues": [],
     }
 
-    class FakeRepositoryAnalyzer:
-
-        def execute(self, plan):
-            return analysis
-
-    class FakeProjectMemory:
-
-        def __init__(self):
-            self.project_info = []
-            self.architecture = []
-
-        def update_project_info(self, data):
-            self.project_info.append(data)
-
-        def update_architecture(self, name, data):
-            self.architecture.append(
-                (name, data)
-            )
+    analyzer = FakeRepositoryAnalyzer(
+        analysis=analysis
+    )
 
     project_memory = FakeProjectMemory()
 
     sync = ProjectMemorySync(
-        repository_analyzer=FakeRepositoryAnalyzer(),
+        repository_analyzer=analyzer,
         project_memory=project_memory,
         workspace="C:/AI-Studio",
     )
@@ -179,38 +207,23 @@ def test_project_memory_sync_stores_repository_analysis():
 
     assert result == analysis
 
-    assert project_memory.architecture == [
+    assert analyzer.calls == [
+        "C:/AI-Studio"
+    ]
+
+    assert project_memory.calls == [
         (
             "repository_analysis",
             analysis,
         )
     ]
 
+
 @pytest.mark.unit
 def test_project_memory_sync_does_not_sync_when_no_files_changed():
 
-    from app.core.project_memory_sync import ProjectMemorySync
-
-    class FakeRepositoryAnalyzer:
-
-        def __init__(self):
-            self.calls = []
-
-        def execute(self, plan):
-            self.calls.append(plan)
-            return {}
-
-    class FakeProjectMemory:
-
-        def __init__(self):
-            self.calls = []
-
-        def update_architecture(self, name, data):
-            self.calls.append(
-                (name, data)
-            )
-
     analyzer = FakeRepositoryAnalyzer()
+
     project_memory = FakeProjectMemory()
 
     sync = ProjectMemorySync(

@@ -28,24 +28,18 @@ class ProjectMemorySync:
         if not changed_files:
             return None
 
-        plan = {
-            "action": "analyze",
-            "path": str(self.workspace),
-            "changed_files": changed_files,
-        }
-
         try:
-            result = self.repository_analyzer.execute(
-                plan
+            result = self.repository_analyzer.analyze(
+                self.workspace
             )
 
             if result is None:
                 return None
 
-            self.project_memory.update_architecture(
-                "repository_analysis",
+            if not self.project_memory.sync_repository_analysis(
                 result
-            )
+            ):
+                return None
 
             return result
 
