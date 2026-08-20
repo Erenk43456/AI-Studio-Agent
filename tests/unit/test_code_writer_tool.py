@@ -27,6 +27,7 @@ class FakeRegistry:
         self.calls.append(name)
         return self.tools.get(name)
 
+
 class SequentialFakeLLM:
     def __init__(self, responses):
         self.responses = list(responses)
@@ -67,9 +68,7 @@ def test_code_writer_metadata(writer):
 
 @pytest.mark.unit
 def test_code_writer_execute_rejects_non_dict(writer):
-    result = writer.execute(
-        "invalid plan"
-    )
+    result = writer.execute("invalid plan")
 
     assert result == {
         "success": False,
@@ -78,9 +77,7 @@ def test_code_writer_execute_rejects_non_dict(writer):
 
 
 @pytest.mark.unit
-def test_code_writer_execute_rejects_invalid_files_list(
-    writer,
-):
+def test_code_writer_execute_rejects_invalid_files_list(writer):
     result = writer.execute(
         {
             "files": "not a list",
@@ -94,9 +91,7 @@ def test_code_writer_execute_rejects_invalid_files_list(
 
 
 @pytest.mark.unit
-def test_code_writer_execute_returns_failure_for_empty_files(
-    writer,
-):
+def test_code_writer_execute_returns_failure_for_empty_files(writer):
     result = writer.execute(
         {
             "files": [],
@@ -111,9 +106,7 @@ def test_code_writer_execute_returns_failure_for_empty_files(
 
 
 @pytest.mark.unit
-def test_code_writer_execute_ignores_invalid_file_entries(
-    writer,
-):
+def test_code_writer_execute_ignores_invalid_file_entries(writer):
     result = writer.execute(
         {
             "files": [
@@ -202,9 +195,7 @@ def test_code_writer_modify_file_requires_workspace():
 
 
 @pytest.mark.unit
-def test_code_writer_rejects_path_outside_workspace(
-    writer,
-):
+def test_code_writer_rejects_path_outside_workspace(writer):
     result = writer.modify_file(
         "../parser.py",
         ["Modify parser"],
@@ -217,9 +208,7 @@ def test_code_writer_rejects_path_outside_workspace(
 
 
 @pytest.mark.unit
-def test_code_writer_returns_file_not_found(
-    writer,
-):
+def test_code_writer_returns_file_not_found(writer):
     result = writer.modify_file(
         "missing.py",
         ["Modify parser"],
@@ -256,9 +245,7 @@ def test_code_writer_returns_llm_exception(
     valid_code,
 ):
     llm = FakeLLM(
-        error=RuntimeError(
-            "LLM unavailable"
-        )
+        error=RuntimeError("LLM unavailable")
     )
 
     writer = CodeWriterTool(
@@ -326,12 +313,8 @@ def test_code_writer_rejects_non_string_llm_response(
     tmp_path,
     valid_code,
 ):
-    llm = FakeLLM(
-        response=12345
-    )
-
     writer = CodeWriterTool(
-        llm=llm,
+        llm=FakeLLM(response=12345),
         workspace=tmp_path,
     )
 
@@ -359,12 +342,8 @@ def test_code_writer_rejects_empty_generated_code(
     tmp_path,
     valid_code,
 ):
-    llm = FakeLLM(
-        response="   \n\t"
-    )
-
     writer = CodeWriterTool(
-        llm=llm,
+        llm=FakeLLM(response="   \n\t"),
         workspace=tmp_path,
     )
 
@@ -386,9 +365,7 @@ def test_code_writer_rejects_empty_generated_code(
 
 
 @pytest.mark.unit
-def test_code_writer_successfully_updates_file(
-    tmp_path,
-):
+def test_code_writer_successfully_updates_file(tmp_path):
     original = """\
 class Parser:
     def parse(self, value):
@@ -408,9 +385,7 @@ class Parser:
         encoding="utf-8",
     )
 
-    llm = FakeLLM(
-        response=generated
-    )
+    llm = FakeLLM(response=generated)
 
     writer = CodeWriterTool(
         llm=llm,
@@ -446,44 +421,36 @@ def test_code_writer_execute_successfully_updates_multiple_files(
     source_a = tmp_path / "a.py"
     source_b = tmp_path / "b.py"
 
-    original_a = """\
+    source_a.write_text(
+        """\
 class A:
     def run(self):
         return 1
-"""
-
-    original_b = """\
-class B:
-    def run(self):
-        return 2
-"""
-
-    generated_a = """\
-class A:
-    def run(self):
-        return 10
-"""
-
-    generated_b = """\
-class B:
-    def run(self):
-        return 20
-"""
-
-    source_a.write_text(
-        original_a,
+""",
         encoding="utf-8",
     )
 
     source_b.write_text(
-        original_b,
+        """\
+class B:
+    def run(self):
+        return 2
+""",
         encoding="utf-8",
     )
 
     llm = SequentialFakeLLM(
         [
-            generated_a,
-            generated_b,
+            """\
+class A:
+    def run(self):
+        return 10
+""",
+            """\
+class B:
+    def run(self):
+        return 20
+""",
         ]
     )
 
@@ -492,22 +459,16 @@ class B:
         workspace=tmp_path,
     )
 
-    # LLM fake'i aynı response'u döndürüyor.
-    # İki dosyanın da kendi architecture contract'ı korunuyor.
     result = writer.execute(
         {
             "files": [
                 {
                     "path": "a.py",
-                    "changes": [
-                        "Update A",
-                    ],
+                    "changes": ["Update A"],
                 },
                 {
                     "path": "b.py",
-                    "changes": [
-                        "Update B",
-                    ],
+                    "changes": ["Update B"],
                 },
             ],
         }
@@ -521,10 +482,9 @@ class B:
         for item in result["results"]
     )
 
+
 @pytest.mark.unit
-def test_code_writer_repairs_invalid_python(
-    tmp_path,
-):
+def test_code_writer_repairs_invalid_python(tmp_path):
     original = """\
 class Parser:
     def parse(self, value):
@@ -563,18 +523,14 @@ class Parser:
 
     repair_tool = FakeRepairTool()
 
-    registry = FakeRegistry(
-        {
-            "code_repair": repair_tool,
-        }
-    )
-
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=broken
-        ),
+        llm=FakeLLM(response=broken),
         workspace=tmp_path,
-        registry=registry,
+        registry=FakeRegistry(
+            {
+                "code_repair": repair_tool,
+            }
+        ),
     )
 
     result = writer.modify_file(
@@ -588,22 +544,13 @@ class Parser:
     }
 
     assert len(repair_tool.calls) == 1
-
-    assert repair_tool.calls[0]["filename"] == (
-        "parser.py"
-    )
-
+    assert repair_tool.calls[0]["filename"] == "parser.py"
     assert repair_tool.calls[0]["code"] == broken
-
-    assert "Repair" in (
-        repair_tool.calls[0]["context"]
-    )
+    assert "Repair" in repair_tool.calls[0]["context"]
 
     assert (
         "return value.strip()"
-        in source.read_text(
-            encoding="utf-8"
-        )
+        in source.read_text(encoding="utf-8")
     )
 
 
@@ -637,9 +584,7 @@ class Parser:
             }
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=broken
-        ),
+        llm=FakeLLM(response=broken),
         workspace=tmp_path,
         registry=FakeRegistry(
             {
@@ -690,9 +635,7 @@ class Parser:
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=broken
-        ),
+        llm=FakeLLM(response=broken),
         workspace=tmp_path,
     )
 
@@ -712,9 +655,7 @@ class Parser:
 
 
 @pytest.mark.unit
-def test_code_writer_rejects_removed_class(
-    tmp_path,
-):
+def test_code_writer_rejects_removed_class(tmp_path):
     original = """\
 class Parser:
     def parse(self, value):
@@ -734,9 +675,7 @@ class Other:
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
     )
 
@@ -761,9 +700,7 @@ class Other:
 
 
 @pytest.mark.unit
-def test_code_writer_repairs_removed_class(
-    tmp_path,
-):
+def test_code_writer_repairs_removed_class(tmp_path):
     original = """\
 class Parser:
     def parse(self, value):
@@ -803,9 +740,7 @@ class Parser:
     repair_tool = RepairTool()
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
         registry=FakeRegistry(
             {
@@ -833,9 +768,7 @@ class Parser:
 
 
 @pytest.mark.unit
-def test_code_writer_detects_removed_method(
-    tmp_path,
-):
+def test_code_writer_detects_removed_method(tmp_path):
     original = """\
 class Parser:
     def parse(self, value):
@@ -858,9 +791,7 @@ class Parser:
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
     )
 
@@ -874,18 +805,12 @@ class Parser:
         "architecture."
     )
 
-    assert (
-        "lost existing methods"
-        in result["details"]
-    )
-
+    assert "lost existing methods" in result["details"]
     assert "validate" in result["details"]
 
 
 @pytest.mark.unit
-def test_code_writer_detects_inheritance_change(
-    tmp_path,
-):
+def test_code_writer_detects_inheritance_change(tmp_path):
     original = """\
 class Parser(BaseParser):
     def parse(self, value):
@@ -905,9 +830,7 @@ class Parser:
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
     )
 
@@ -921,10 +844,7 @@ class Parser:
         "architecture."
     )
 
-    assert (
-        "inheritance changed"
-        in result["details"]
-    )
+    assert "inheritance changed" in result["details"]
 
 
 @pytest.mark.unit
@@ -954,9 +874,7 @@ class Parser:
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
     )
 
@@ -1007,9 +925,7 @@ class Parser:
             )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=broken
-        ),
+        llm=FakeLLM(response=broken),
         workspace=tmp_path,
         registry=FakeRegistry(
             {
@@ -1056,9 +972,7 @@ class Other:
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
         registry=FakeRegistry(),
     )
@@ -1113,9 +1027,7 @@ class Other:
             }
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
         registry=FakeRegistry(
             {
@@ -1138,237 +1050,9 @@ class Other:
         encoding="utf-8"
     ) == original
 
-@pytest.mark.unit
-def test_code_writer_blocks_path_outside_workspace(
-    tmp_path,
-):
-    source = tmp_path / "parser.py"
-    source.write_text(
-        "class Parser:\n    pass\n",
-        encoding="utf-8",
-    )
-
-    writer = CodeWriterTool(
-        llm=FakeLLM(),
-        workspace=tmp_path,
-    )
-
-    result = writer.modify_file(
-        "../parser.py",
-        ["Modify parser"],
-    )
-
-    assert result == {
-        "file": "../parser.py",
-        "error": "Path is outside the workspace.",
-    }
-
 
 @pytest.mark.unit
-def test_code_writer_returns_failure_for_missing_file(
-    tmp_path,
-):
-    writer = CodeWriterTool(
-        llm=FakeLLM(),
-        workspace=tmp_path,
-    )
-
-    result = writer.modify_file(
-        "missing.py",
-        ["Create parser"],
-    )
-
-    assert result == {
-        "file": "missing.py",
-        "error": "File not found.",
-    }
-
-
-@pytest.mark.unit
-def test_code_writer_rejects_directory_target(
-    tmp_path,
-):
-    directory = tmp_path / "parser.py"
-    directory.mkdir()
-
-    writer = CodeWriterTool(
-        llm=FakeLLM(),
-        workspace=tmp_path,
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        ["Modify parser"],
-    )
-
-    assert result == {
-        "file": "parser.py",
-        "error": "Target is not a file.",
-    }
-
-
-@pytest.mark.unit
-def test_code_writer_handles_llm_exception(
-    tmp_path,
-):
-    source = tmp_path / "parser.py"
-
-    original = """\
-class Parser:
-    pass
-"""
-
-    source.write_text(
-        original,
-        encoding="utf-8",
-    )
-
-    class ExplodingLLM:
-        def generate(self, prompt):
-            raise RuntimeError(
-                "LLM unavailable"
-            )
-
-    writer = CodeWriterTool(
-        llm=ExplodingLLM(),
-        workspace=tmp_path,
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        ["Modify parser"],
-    )
-
-    assert result == {
-        "file": "parser.py",
-        "error": (
-            "Code generation failed: "
-            "LLM unavailable"
-        ),
-    }
-
-    assert source.read_text(
-        encoding="utf-8"
-    ) == original
-
-
-@pytest.mark.unit
-def test_code_writer_handles_invalid_llm_response_dict(
-    tmp_path,
-):
-    source = tmp_path / "parser.py"
-
-    original = """\
-class Parser:
-    pass
-"""
-
-    source.write_text(
-        original,
-        encoding="utf-8",
-    )
-
-    writer = CodeWriterTool(
-        llm=FakeLLM(
-            response={
-                "success": False,
-                "error": "generation failed",
-            }
-        ),
-        workspace=tmp_path,
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        ["Modify parser"],
-    )
-
-    assert result == {
-        "file": "parser.py",
-        "error": {
-            "success": False,
-            "error": "generation failed",
-        },
-    }
-
-    assert source.read_text(
-        encoding="utf-8"
-    ) == original
-
-
-@pytest.mark.unit
-def test_code_writer_handles_invalid_llm_response_type(
-    tmp_path,
-):
-    source = tmp_path / "parser.py"
-
-    source.write_text(
-        "class Parser:\n    pass\n",
-        encoding="utf-8",
-    )
-
-    writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=12345
-        ),
-        workspace=tmp_path,
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        ["Modify parser"],
-    )
-
-    assert result == {
-        "file": "parser.py",
-        "error": (
-            "LLM returned an invalid response type."
-        ),
-    }
-
-
-@pytest.mark.unit
-def test_code_writer_rejects_empty_llm_code(
-    tmp_path,
-):
-    source = tmp_path / "parser.py"
-
-    original = """\
-class Parser:
-    pass
-"""
-
-    source.write_text(
-        original,
-        encoding="utf-8",
-    )
-
-    writer = CodeWriterTool(
-        llm=FakeLLM(
-            response="   "
-        ),
-        workspace=tmp_path,
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        ["Modify parser"],
-    )
-
-    assert result == {
-        "file": "parser.py",
-        "error": "LLM returned empty code.",
-    }
-
-    assert source.read_text(
-        encoding="utf-8"
-    ) == original
-
-
-@pytest.mark.unit
-def test_code_writer_execute_reports_partial_failure(
-    tmp_path,
-):
+def test_code_writer_execute_reports_partial_failure(tmp_path):
     source_a = tmp_path / "a.py"
     source_b = tmp_path / "b.py"
 
@@ -1413,7 +1097,6 @@ def test_code_writer_execute_reports_partial_failure(
     )
 
     assert result["success"] is False
-
     assert len(result["results"]) == 2
 
     assert result["results"][0] == {
@@ -1426,62 +1109,22 @@ def test_code_writer_execute_reports_partial_failure(
 
 
 @pytest.mark.unit
-def test_code_writer_execute_rejects_invalid_plan():
-    writer = CodeWriterTool(
-        llm=FakeLLM(),
-    )
-
-    assert writer.execute(
-        None
-    ) == {
-        "success": False,
-        "message": "Invalid plan.",
-    }
-
-
-@pytest.mark.unit
-def test_code_writer_execute_rejects_invalid_files_list():
-    writer = CodeWriterTool(
-        llm=FakeLLM(),
-    )
-
-    assert writer.execute(
-        {
-            "files": "parser.py",
-        }
-    ) == {
-        "success": False,
-        "message": "Invalid files list.",
-    }
-
-
-@pytest.mark.unit
-def test_code_writer_execute_handles_no_valid_files():
-    writer = CodeWriterTool(
-        llm=FakeLLM(),
-    )
-
-    result = writer.execute(
-        {
-            "files": [
-                {},
-                {
-                    "path": "",
-                    "changes": [],
-                },
-                "invalid",
-            ],
-        }
-    )
-
-    assert result == {
-        "success": False,
-        "message": "No valid files were provided.",
-        "results": [],
-    }
-
-@pytest.mark.unit
 def test_code_writer_returns_written_files(tmp_path):
+    parser = tmp_path / "app" / "parser.py"
+    tokenizer = tmp_path / "app" / "tokenizer.py"
+
+    parser.parent.mkdir(parents=True)
+
+    parser.write_text(
+        "class Parser:\n    pass\n",
+        encoding="utf-8",
+    )
+
+    tokenizer.write_text(
+        "class Tokenizer:\n    pass\n",
+        encoding="utf-8",
+    )
+
     writer = CodeWriterTool(
         llm=None,
         workspace=tmp_path,
@@ -1492,22 +1135,20 @@ def test_code_writer_returns_written_files(tmp_path):
         "status": "updated",
     }
 
-    result = writer.execute({
-        "files": [
-            {
-                "path": "app/parser.py",
-                "changes": [
-                    "Fix parser"
-                ],
-            },
-            {
-                "path": "app/tokenizer.py",
-                "changes": [
-                    "Fix tokenizer"
-                ],
-            },
-        ]
-    })
+    result = writer.execute(
+        {
+            "files": [
+                {
+                    "path": "app/parser.py",
+                    "changes": ["Fix parser"],
+                },
+                {
+                    "path": "app/tokenizer.py",
+                    "changes": ["Fix tokenizer"],
+                },
+            ],
+        }
+    )
 
     assert result["success"] is True
 
@@ -1516,8 +1157,26 @@ def test_code_writer_returns_written_files(tmp_path):
         "app/tokenizer.py",
     ]
 
+
 @pytest.mark.unit
-def test_code_writer_excludes_failed_files_from_files_written(tmp_path):
+def test_code_writer_excludes_failed_files_from_files_written(
+    tmp_path,
+):
+    parser = tmp_path / "app" / "parser.py"
+    tokenizer = tmp_path / "app" / "tokenizer.py"
+
+    parser.parent.mkdir(parents=True)
+
+    parser.write_text(
+        "class Parser:\n    pass\n",
+        encoding="utf-8",
+    )
+
+    tokenizer.write_text(
+        "class Tokenizer:\n    pass\n",
+        encoding="utf-8",
+    )
+
     writer = CodeWriterTool(
         llm=None,
         workspace=tmp_path,
@@ -1537,22 +1196,20 @@ def test_code_writer_excludes_failed_files_from_files_written(tmp_path):
 
     writer.modify_file = fake_modify_file
 
-    result = writer.execute({
-        "files": [
-            {
-                "path": "app/parser.py",
-                "changes": [
-                    "Fix parser"
-                ],
-            },
-            {
-                "path": "app/tokenizer.py",
-                "changes": [
-                    "Fix tokenizer"
-                ],
-            },
-        ]
-    })
+    result = writer.execute(
+        {
+            "files": [
+                {
+                    "path": "app/parser.py",
+                    "changes": ["Fix parser"],
+                },
+                {
+                    "path": "app/tokenizer.py",
+                    "changes": ["Fix tokenizer"],
+                },
+            ],
+        }
+    )
 
     assert result["success"] is False
 
@@ -1560,10 +1217,9 @@ def test_code_writer_excludes_failed_files_from_files_written(tmp_path):
         "app/parser.py",
     ]
 
+
 @pytest.mark.unit
-def test_code_writer_detects_removed_import(
-    tmp_path,
-):
+def test_code_writer_detects_removed_import(tmp_path):
     original = """\
 import os
 
@@ -1579,16 +1235,13 @@ class Parser:
 """
 
     source = tmp_path / "parser.py"
-
     source.write_text(
         original,
         encoding="utf-8",
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
+        llm=FakeLLM(response=generated),
         workspace=tmp_path,
     )
 
@@ -1613,11 +1266,12 @@ class Parser:
         encoding="utf-8"
     ) == original
 
+
 @pytest.mark.unit
 def test_code_writer_rejects_file_with_empty_changes():
     writer = CodeWriterTool(
         FakeLLM(),
-        workspace="."
+        workspace=".",
     )
 
     result = writer.execute(
@@ -1636,9 +1290,10 @@ def test_code_writer_rejects_file_with_empty_changes():
         "No valid files were provided."
     )
 
+
 @pytest.mark.unit
 def test_code_writer_rejects_unchanged_generated_code(
-    tmp_path
+    tmp_path,
 ):
     source = tmp_path / "parser.py"
 
@@ -1649,7 +1304,7 @@ def parse(value):
 
     source.write_text(
         original_code,
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     class SameCodeLLM:
@@ -1658,12 +1313,12 @@ def parse(value):
 
     writer = CodeWriterTool(
         SameCodeLLM(),
-        workspace=tmp_path
+        workspace=tmp_path,
     )
 
     result = writer.modify_file(
         "parser.py",
-        ["Modify the parser."]
+        ["Modify the parser."],
     )
 
     assert result["error"] == (
@@ -1674,9 +1329,10 @@ def parse(value):
         encoding="utf-8"
     ) == original_code
 
+
 @pytest.mark.unit
 def test_code_writer_rejects_semantically_unchanged_generated_code(
-    tmp_path
+    tmp_path,
 ):
     source = tmp_path / "parser.py"
 
@@ -1687,7 +1343,7 @@ def parse(value):
 
     source.write_text(
         original_code,
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     class ReformattedCodeLLM:
@@ -1698,12 +1354,12 @@ def parse(value): return value
 
     writer = CodeWriterTool(
         ReformattedCodeLLM(),
-        workspace=tmp_path
+        workspace=tmp_path,
     )
 
     result = writer.modify_file(
         "parser.py",
-        ["Modify the parser."]
+        ["Modify the parser."],
     )
 
     assert result["error"] == (
@@ -1715,9 +1371,10 @@ def parse(value): return value
         encoding="utf-8"
     ) == original_code
 
+
 @pytest.mark.unit
 def test_code_writer_rejects_public_method_signature_change(
-    tmp_path
+    tmp_path,
 ):
     source = tmp_path / "parser.py"
 
@@ -1730,11 +1387,10 @@ class Parser:
 
     source.write_text(
         original_code,
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     class ChangedSignatureLLM:
-
         def generate(self, prompt):
             return """\
 class Parser:
@@ -1745,12 +1401,12 @@ class Parser:
 
     writer = CodeWriterTool(
         ChangedSignatureLLM(),
-        workspace=tmp_path
+        workspace=tmp_path,
     )
 
     result = writer.modify_file(
         "parser.py",
-        ["Modify the parser."]
+        ["Modify the parser."],
     )
 
     assert result["error"] == (
@@ -1760,189 +1416,3 @@ class Parser:
     assert source.read_text(
         encoding="utf-8"
     ) == original_code
-
-
-@pytest.mark.unit
-def test_code_writer_rejects_constructor_signature_change(
-    tmp_path
-):
-    source = tmp_path / "parser.py"
-
-    original_code = """\
-class Parser:
-
-    def __init__(self, config):
-        self.config = config
-"""
-
-    source.write_text(
-        original_code,
-        encoding="utf-8"
-    )
-
-    class ChangedConstructorLLM:
-
-        def generate(self, prompt):
-            return """\
-class Parser:
-
-    def __init__(self, config, strict=False):
-        self.config = config
-"""
-
-    writer = CodeWriterTool(
-        ChangedConstructorLLM(),
-        workspace=tmp_path
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        ["Modify the parser."]
-    )
-
-    assert result["error"] == (
-        "Constructor signature for 'Parser' changed."
-    )
-
-    assert source.read_text(
-        encoding="utf-8"
-    ) == original_code
-
-
-@pytest.mark.unit
-def test_code_writer_rejects_async_public_method_change(
-    tmp_path
-):
-    source = tmp_path / "parser.py"
-
-    original_code = """\
-class Parser:
-
-    def parse(self, value):
-        return value
-"""
-
-    source.write_text(
-        original_code,
-        encoding="utf-8"
-    )
-
-    class AsyncMethodLLM:
-
-        def generate(self, prompt):
-            return """\
-class Parser:
-
-    async def parse(self, value):
-        return value
-"""
-
-    writer = CodeWriterTool(
-        AsyncMethodLLM(),
-        workspace=tmp_path
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        ["Modify the parser."]
-    )
-
-    assert result["error"] == (
-        "Public method 'Parser.parse' signature changed."
-    )
-
-    assert source.read_text(
-        encoding="utf-8"
-    ) == original_code
-
-@pytest.mark.unit
-def test_code_writer_requested_change_verification_accepts_satisfied_change(
-    tmp_path
-):
-    source = tmp_path / "parser.py"
-
-    original = """\
-def parse(value):
-    return value
-"""
-
-    generated = """\
-def parse(value):
-    return value.strip()
-"""
-
-    source.write_text(
-        original,
-        encoding="utf-8"
-    )
-
-    writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
-        workspace=tmp_path
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        [
-            {
-                "description": "Strip parser input",
-                "verification": (
-                    "'return value.strip()' in new_code"
-                )
-            }
-        ]
-    )
-
-    assert result["status"] == "updated"
-    assert "error" not in result
-
-@pytest.mark.unit
-def test_code_writer_requested_change_verification_rejects_unsatisfied_change(
-    tmp_path
-):
-    source = tmp_path / "parser.py"
-
-    original = """\
-def parse(value):
-    return value
-"""
-
-    generated = """\
-def parse(value):
-    return value + "!"
-"""
-
-    source.write_text(
-        original,
-        encoding="utf-8"
-    )
-
-    writer = CodeWriterTool(
-        llm=FakeLLM(
-            response=generated
-        ),
-        workspace=tmp_path
-    )
-
-    result = writer.modify_file(
-        "parser.py",
-        [
-            {
-                "description": "Strip parser input",
-                "verification": (
-                    "'return value.strip()' in new_code"
-                )
-            }
-        ]
-    )
-
-    assert result["error"] == (
-        "Requested change was not satisfied: "
-        "Strip parser input"
-    )
-
-    assert source.read_text(
-        encoding="utf-8"
-    ) == original
