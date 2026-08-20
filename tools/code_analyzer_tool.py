@@ -330,7 +330,32 @@ Python code:
             }
 
 
+    @staticmethod
+    def get_analysis_status(analysis):
+        if not isinstance(analysis, dict):
+            return "fail"
 
+        if analysis.get("parse_error"):
+            return "fail"
+
+        blocking_fields = (
+            "syntax_errors",
+            "logical_errors",
+            "security_issues",
+            "architecture_issues",
+        )
+
+        for field in blocking_fields:
+            if analysis.get(field):
+                return "fail"
+
+        if analysis.get("risk_level") in {
+            "high",
+            "critical",
+        }:
+            return "fail"
+
+        return "pass"
 
 
     def clean_json(

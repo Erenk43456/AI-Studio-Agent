@@ -1,6 +1,7 @@
 import pytest
 
 from tools.repository_analyzer import RepositoryAnalyzerTool
+from tools.code_analyzer_tool import CodeAnalyzerTool
 
 
 @pytest.mark.unit
@@ -560,3 +561,212 @@ def main():
     )
 
     assert isinstance(result, list)
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_passes_clean_analysis():
+    analysis = {
+        "summary": "Looks good",
+        "syntax_errors": [],
+        "logical_errors": [],
+        "security_issues": [],
+        "performance_issues": [],
+        "architecture_issues": [],
+        "improvements": [],
+        "risk_level": "low",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "pass"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_passes_performance_issue():
+    analysis = {
+        "summary": "Minor optimization possible",
+        "syntax_errors": [],
+        "logical_errors": [],
+        "security_issues": [],
+        "performance_issues": [
+            "This loop could be optimized."
+        ],
+        "architecture_issues": [],
+        "improvements": [],
+        "risk_level": "low",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "pass"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_syntax_error():
+    analysis = {
+        "summary": "Syntax problem",
+        "syntax_errors": [
+            "Missing closing parenthesis."
+        ],
+        "logical_errors": [],
+        "security_issues": [],
+        "performance_issues": [],
+        "architecture_issues": [],
+        "improvements": [],
+        "risk_level": "low",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "fail"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_logical_error():
+    analysis = {
+        "summary": "Logical problem",
+        "syntax_errors": [],
+        "logical_errors": [
+            "Function returns the wrong value."
+        ],
+        "security_issues": [],
+        "performance_issues": [],
+        "architecture_issues": [],
+        "improvements": [],
+        "risk_level": "low",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "fail"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_security_issue():
+    analysis = {
+        "summary": "Security problem",
+        "syntax_errors": [],
+        "logical_errors": [],
+        "security_issues": [
+            "Unsafe subprocess usage."
+        ],
+        "performance_issues": [],
+        "architecture_issues": [],
+        "improvements": [],
+        "risk_level": "low",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "fail"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_architecture_issue():
+    analysis = {
+        "summary": "Architecture problem",
+        "syntax_errors": [],
+        "logical_errors": [],
+        "security_issues": [],
+        "performance_issues": [],
+        "architecture_issues": [
+            "Public API was changed."
+        ],
+        "improvements": [],
+        "risk_level": "low",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "fail"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_high_risk_analysis():
+    analysis = {
+        "summary": "High risk",
+        "syntax_errors": [],
+        "logical_errors": [],
+        "security_issues": [],
+        "performance_issues": [],
+        "architecture_issues": [],
+        "improvements": [],
+        "risk_level": "high",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "fail"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_critical_risk_analysis():
+    analysis = {
+        "summary": "Critical risk",
+        "syntax_errors": [],
+        "logical_errors": [],
+        "security_issues": [],
+        "performance_issues": [],
+        "architecture_issues": [],
+        "improvements": [],
+        "risk_level": "critical",
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "fail"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_parse_error():
+    analysis = {
+        "raw_response": '{"broken":}',
+        "parse_error": True,
+    }
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            analysis
+        )
+        == "fail"
+    )
+
+
+@pytest.mark.unit
+def test_code_analyzer_analysis_status_fails_invalid_analysis_type():
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            None
+        )
+        == "fail"
+    )
+
+    assert (
+        CodeAnalyzerTool.get_analysis_status(
+            "invalid"
+        )
+        == "fail"
+    )
