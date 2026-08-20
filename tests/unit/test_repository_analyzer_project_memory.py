@@ -1,5 +1,7 @@
 import pytest
 
+from pathlib import Path
+
 from app.core.project_memory_sync import (
     ProjectMemorySync,
 )
@@ -143,7 +145,7 @@ def test_project_memory_sync_owns_repository_analysis_result():
     )
 
     assert analyzer.calls == [
-        "C:/AI-Studio"
+        str(Path("C:/AI-Studio"))
     ]
 
     assert result is not None
@@ -208,7 +210,7 @@ def test_project_memory_sync_stores_repository_analysis():
     assert result == analysis
 
     assert analyzer.calls == [
-        "C:/AI-Studio"
+        str(Path("C:/AI-Studio"))
     ]
 
     assert project_memory.calls == [

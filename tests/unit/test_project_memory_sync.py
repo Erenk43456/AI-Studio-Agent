@@ -1,5 +1,7 @@
 import pytest
 
+from pathlib import Path
+
 from app.core.project_memory_sync import (
     ProjectMemorySync,
 )
@@ -86,6 +88,17 @@ class FakeProjectMemory:
 
         return True
 
+    def remove_file(
+        self,
+        path
+    ):
+        self.calls.append(
+            (
+                "remove_file",
+                path
+            )
+        )
+
 
 @pytest.mark.unit
 def test_project_memory_sync_accepts_changed_files():
@@ -99,7 +112,9 @@ def test_project_memory_sync_accepts_changed_files():
         workspace="C:/AI-Studio",
     )
 
-    assert sync.workspace == "C:/AI-Studio"
+    assert sync.workspace == Path(
+        "C:/AI-Studio"
+    )
     assert sync.repository_analyzer is analyzer
     assert sync.project_memory is project_memory
 
@@ -124,7 +139,7 @@ def test_project_memory_sync_runs_repository_analysis():
     )
 
     assert analyzer.calls == [
-        "C:/AI-Studio",
+        str(Path("C:/AI-Studio")),
     ]
 
 @pytest.mark.unit
@@ -146,7 +161,10 @@ def test_project_memory_sync_does_not_analyze_without_changes():
 
 class FailingRepositoryAnalyzer:
 
-    def execute(self, plan):
+    def analyze(
+        self,
+        root
+    ):
         raise RuntimeError(
             "repository analysis failed"
         )
@@ -191,7 +209,7 @@ def test_project_memory_sync_uses_workspace_for_repository_analysis():
     )
 
     assert analyzer.calls == [
-        "C:/AI-Studio"
+        str(Path("C:/AI-Studio")),
     ]
 
 @pytest.mark.unit

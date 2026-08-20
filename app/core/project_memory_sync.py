@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from app.core.logger import AppLogger
 
 
@@ -17,7 +19,9 @@ class ProjectMemorySync:
             project_memory
         )
 
-        self.workspace = workspace
+        self.workspace = Path(
+            workspace
+        )
 
         self.logger = AppLogger()
 
