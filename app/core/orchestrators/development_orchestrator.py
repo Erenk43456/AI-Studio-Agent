@@ -36,7 +36,8 @@ class DevelopmentOrchestrator:
         self,
         message,
         decision=None,
-        conversation=None
+        conversation=None,
+        execution=None
     ):
 
         self.logger.info(
@@ -53,6 +54,17 @@ class DevelopmentOrchestrator:
             "action",
             "code"
         )
+
+        #
+        # Execution
+        #
+
+        if execution is None:
+
+            execution = {
+                "agents": {},
+                "models": {},
+            }
 
         #
         # Repository analysis
@@ -103,13 +115,22 @@ class DevelopmentOrchestrator:
         #
 
         return self.execute_code_task(
-            message
+            message,
+            execution
         )
 
     def execute_code_task(
         self,
-        message
+        message,
+        execution=None
     ):
+
+        if execution is None:
+
+            execution = {
+                "agents": {},
+                "models": {},
+            }
 
         development_context = (
             self.development_context.build(
@@ -144,11 +165,44 @@ class DevelopmentOrchestrator:
         # Planner
         #
 
-        plan = self.planner.create_plan(
-            message
+        planner_model = (
+            self.planner.llm.get_current_model()
         )
 
+        execution["models"]["planner"] = (
+            planner_model
+        )
+
+        try:
+
+            plan = self.planner.create_plan(
+                message
+            )
+
+        except Exception as error:
+
+            execution["agents"]["planner"] = {
+                "status": "FAIL",
+                "model": planner_model,
+                "error": str(error),
+            }
+
+            self.logger.error(
+                f"Planner failed: {error}"
+            )
+
+            return (
+                "❌ İstek için bir plan "
+                "oluşturulamadı."
+            )
+
         if not plan:
+
+            execution["agents"]["planner"] = {
+                "status": "FAIL",
+                "model": planner_model,
+                "error": "Planner returned no plan.",
+            }
 
             self.logger.error(
                 "Planner failed."
@@ -158,6 +212,12 @@ class DevelopmentOrchestrator:
                 "❌ İstek için bir plan "
                 "oluşturulamadı."
             )
+
+        execution["agents"]["planner"] = {
+            "status": "PASS",
+            "model": planner_model,
+            "result": plan,
+        }
 
         #
         # Debug
@@ -178,6 +238,14 @@ class DevelopmentOrchestrator:
 
         if not steps:
 
+            execution["agents"]["planner"][
+                "status"
+            ] = "FAIL"
+
+            execution["agents"]["planner"][
+                "error"
+            ] = "Planner returned no steps."
+
             return (
                 "❌ Planner herhangi bir "
                 "işlem oluşturmadı."
@@ -190,6 +258,22 @@ class DevelopmentOrchestrator:
         results = []
 
         overall_success = True
+
+        code_executed = False
+        code_success = None
+
+        #
+        # Code model
+        #
+
+        code_model = (
+            self.container.code_llm
+            .get_current_model()
+        )
+
+        execution["models"]["code"] = (
+            code_model
+        )
 
         for step in steps:
 
@@ -244,6 +328,8 @@ class DevelopmentOrchestrator:
 
             if tool_name == "code":
 
+                code_executed = True
+
                 try:
 
                     result = self.code_agent.run(
@@ -266,32 +352,60 @@ class DevelopmentOrchestrator:
                         dict
                     ):
 
-                        if not result.get(
+                        code_success = result.get(
                             "success",
                             False
-                        ):
+                        )
 
-                            overall_success = False
+                    else:
 
-                    continue
+                        code_success = False
+
+                    execution["agents"]["code"] = {
+
+                        "status": (
+                            "PASS"
+                            if code_success
+                            else "FAIL"
+                        ),
+
+                        "model": code_model,
+
+                        "result": result,
+
+                    }
+
+                    if not code_success:
+
+                        overall_success = False
 
                 except Exception as error:
 
+                    code_success = False
+
                     overall_success = False
+
+                    execution["agents"]["code"] = {
+
+                        "status": "FAIL",
+
+                        "model": code_model,
+
+                        "error": str(error),
+
+                    }
 
                     results.append({
 
                         "success": False,
 
-                        "tool":
-                            "code",
+                        "tool": "code",
 
-                        "error":
-                            str(error)
+                        "error": str(error),
 
                     })
 
-                    continue
+                continue
 
             #
             # Tool registry
@@ -386,6 +500,23 @@ class DevelopmentOrchestrator:
                         str(error)
 
                 })
+
+        #
+        # Code agent was not used
+        #
+
+        if not code_executed:
+
+            execution["agents"]["code"] = {
+
+                "status": "NOT_EVALUATED",
+
+                "model": code_model,
+
+                "reason":
+                    "Planner did not execute the code agent.",
+
+            }
 
         #
         # Human-readable response
@@ -734,6 +865,7 @@ class DevelopmentOrchestrator:
                         item,
                         dict
                     ):
+
                         continue
 
                     error = item.get(
