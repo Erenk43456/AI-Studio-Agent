@@ -1,7 +1,7 @@
 {
   "meta": {
-    "id": "B02",
-    "name": "modify_existing_file",
+    "id": "B03",
+    "name": "preserve_unrelated_files",
     "total_runs": 1,
     "passed_runs": 1,
     "failed_runs": 0,
@@ -11,7 +11,7 @@
   "runs": [
     {
       "run_id": 1,
-      "timestamp": "2026-08-21T20:32:28.623294+00:00",
+      "timestamp": "2026-08-21T20:33:02.807309+00:00",
       "success": true,
       "agent_result": "✅ Kod başarıyla güncellendi.",
       "changed_files": [

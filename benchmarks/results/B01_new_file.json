@@ -1,25 +1,44 @@
 {
-  "id": "B01",
-  "name": "create_new_file",
-  "success": true,
-  "agent_result": "✅ Kod başarıyla güncellendi.",
-  "changed_files": [
-    "benchmark_greeting.py"
-  ],
-  "validation": {
-    "success": true,
-    "missing_files": [],
-    "unexpected_files": [],
-    "tests": [
-      {
-        "test": "assert greet('Eren') == 'Hello, Eren!'",
-        "success": true
-      },
-      {
-        "test": "assert greet('World') == 'Hello, World!'",
-        "success": true
-      }
-    ]
+  "meta": {
+    "id": "B01",
+    "name": "create_new_file",
+    "total_runs": 1,
+    "passed_runs": 1,
+    "failed_runs": 0,
+    "pass_rate": 100.0,
+    "fail_rate": 0.0
   },
-  "workspace": "C:\\Users\\Admin\\AppData\\Local\\Temp\\ai-studio-benchmark-10_panlm"
+  "runs": [
+    {
+      "run_id": 1,
+      "timestamp": "2026-08-21T20:32:03.675315+00:00",
+      "success": true,
+      "agent_result": "✅ Kod başarıyla güncellendi.",
+      "changed_files": [
+        "benchmark_greeting.py"
+      ],
+      "validation": {
+        "success": true,
+        "missing_files": [],
+        "unexpected_files": [],
+        "forbidden_files_changed": [],
+        "tests": [
+          {
+            "test": "assert greet('Eren') == 'Hello, Eren!'",
+            "success": true
+          },
+          {
+            "test": "assert greet('World') == 'Hello, World!'",
+            "success": true
+          }
+        ]
+      },
+      "models": {
+        "chat": "minimaxai/minimax-m3",
+        "code": "nvidia/nemotron-3-super-120b-a12b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b"
+      }
+    }
+  ]
 }
