@@ -5,9 +5,21 @@ from app.core.orchestrators.development_orchestrator import (
 )
 
 
+class FakeLLM:
+    def __init__(
+        self,
+        model="fake-model",
+    ):
+        self.model = model
+
+    def get_current_model(self):
+        return self.model
+
+
 class FakePlanner:
     def __init__(self, plan):
         self.plan = plan
+        self.llm = FakeLLM()
         self.calls = []
 
     def create_plan(self, message):
@@ -90,6 +102,7 @@ class FakeContainer:
     ):
         self.planner = FakePlanner(plan)
         self.code_agent = FakeCodeAgent(code_result)
+        self.code_llm = FakeLLM()
         self.repository_analyzer = FakeRepositoryAnalyzer(
             repository_result
         )

@@ -2,6 +2,15 @@ import pytest
 
 from app.core.orchestrators.main_orchestrator import MainOrchestrator
 
+class FakeLLM:
+    def __init__(
+        self,
+        model="fake-model",
+    ):
+        self.model = model
+
+    def get_current_model(self):
+        return self.model
 
 class FakeOrchestrator:
 
@@ -9,9 +18,20 @@ class FakeOrchestrator:
         self.result = result
         self.calls = []
 
-    def run(self, message, decision, conversation):
+    def run(
+        self,
+        message,
+        decision,
+        conversation=None,
+        execution=None,
+    ):
         self.calls.append(
-            (message, decision, conversation)
+            (
+                message,
+                decision,
+                conversation,
+                execution,
+            )
         )
         return self.result
 
@@ -30,6 +50,14 @@ class FakeDecisionAgent:
 class FakeContainer:
 
     def __init__(self, decision):
+
+        self.models = type(
+            "Models",
+            (),
+            {
+                "decision_llm": FakeLLM()
+            }
+        )
 
         self.agents = type(
             "Agents",
@@ -90,16 +118,21 @@ def test_main_orchestrator_routes_to_chat():
 
     assert result == "chat result"
 
-    assert (
+    assert len(
         container.chat.orchestrator.calls
-        == [
-            (
-                "hello",
-                {"system": "chat"},
-                "conversation",
-            )
-        ]
+    ) == 1
+
+    message, decision, conversation, execution = (
+        container.chat.orchestrator.calls[0]
     )
+
+    assert message == "hello"
+    assert decision == {"system": "chat"}
+    assert conversation == "conversation"
+
+    assert execution is not None
+    assert "agents" in execution
+    assert "models" in execution
 
 
 @pytest.mark.unit

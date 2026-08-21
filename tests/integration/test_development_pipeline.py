@@ -8,8 +8,13 @@ from app.core.development_context import DevelopmentContext
 
 
 class FakeLLM:
-    def __init__(self, response):
+    def __init__(
+        self,
+        response,
+        model="fake-model",
+    ):
         self.response = response
+        self.model = model
         self.calls = []
 
     def generate(self, prompt, **kwargs):
@@ -21,6 +26,18 @@ class FakeLLM:
         )
 
         return self.response
+
+    def get_current_model(self):
+        return self.model
+
+    def get_models(self):
+        return [self.model]
+
+    def has_model(self, model):
+        return model == self.model
+
+    def check_connection(self):
+        return True
 
 
 class FakeDevelopmentContext:
@@ -139,6 +156,11 @@ class FakeContainer:
     ):
         self.planner = planner
         self.code_agent = code_agent
+
+        self.code_llm = FakeLLM(
+            response=""
+        )
+
         self.development_context = (
             development_context
         )
