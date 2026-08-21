@@ -23,7 +23,9 @@ class CodeRepairTool:
 
     requires_information = True
 
-    version = "1.2"
+    version = "1.3"
+
+    MAX_REPAIR_ATTEMPTS = 2
 
     def __init__(
         self,
@@ -184,7 +186,230 @@ class CodeRepairTool:
                 "message": "Code is empty."
             }
 
-        prompt = f"""
+        context = (
+            context
+            or
+            "Repair the broken Python code."
+        )
+
+        current_code = code
+        last_error = None
+
+        # =========================================================
+        # REPAIR ATTEMPTS
+        # =========================================================
+
+        for attempt in range(
+            1,
+            self.MAX_REPAIR_ATTEMPTS + 1
+        ):
+
+            if attempt == 1:
+
+                prompt = self.build_repair_prompt(
+                    current_code,
+                    context
+                )
+
+            else:
+
+                prompt = self.build_retry_prompt(
+                    current_code,
+                    context,
+                    last_error
+                )
+
+            try:
+
+                response = self.llm.generate(
+                    prompt
+                )
+
+            except Exception as error:
+
+                return {
+                    "success": False,
+                    "message": (
+                        f"LLM repair failed: {error}"
+                    )
+                }
+
+            if isinstance(
+                response,
+                dict
+            ):
+
+                return {
+                    "success": False,
+                    "message": (
+                        f"LLM returned an error: {response}"
+                    )
+                }
+
+            if not isinstance(
+                response,
+                str
+            ):
+
+                return {
+                    "success": False,
+                    "message": (
+                        "LLM returned an invalid response type."
+                    )
+                }
+
+            repaired_code = self.clean_code(
+                response
+            )
+
+            if not repaired_code.strip():
+
+                return {
+                    "success": False,
+                    "message": (
+                        "LLM returned empty repaired code."
+                    )
+                }
+
+            # -----------------------------------------------------
+            # Validate generated code BEFORE formatting
+            # -----------------------------------------------------
+
+            syntax_error = self.validate_python(
+                repaired_code
+            )
+
+            if syntax_error is not None:
+
+                last_error = syntax_error
+                current_code = repaired_code
+
+                # If there is another attempt available,
+                # retry with the syntax error included.
+                if attempt < self.MAX_REPAIR_ATTEMPTS:
+                    continue
+
+                return {
+                    "success": False,
+                    "message": (
+                        "Code repair returned invalid code."
+                    ),
+                    "details": syntax_error
+                }
+
+            # -----------------------------------------------------
+            # Format only AFTER syntax is valid
+            # -----------------------------------------------------
+
+            formatted = self.formatter.format_code(
+                repaired_code
+            )
+
+            if not formatted.get(
+                "success",
+                False
+            ):
+
+                last_error = formatted.get(
+                    "message",
+                    "Formatting failed."
+                )
+
+                current_code = repaired_code
+
+                if attempt < self.MAX_REPAIR_ATTEMPTS:
+                    continue
+
+                return {
+                    "success": False,
+                    "message": (
+                        "Repaired code could not be formatted."
+                    ),
+                    "details": last_error
+                }
+
+            repaired_code = formatted.get(
+                "code",
+                ""
+            )
+
+            if not isinstance(
+                repaired_code,
+                str
+            ):
+
+                last_error = (
+                    "Formatter returned invalid code."
+                )
+
+                current_code = ""
+
+                if attempt < self.MAX_REPAIR_ATTEMPTS:
+                    continue
+
+                return {
+                    "success": False,
+                    "message": (
+                        "Formatter returned invalid code."
+                    )
+                }
+
+            repaired_code = (
+                repaired_code.strip()
+                +
+                "\n"
+            )
+
+            # -----------------------------------------------------
+            # Validate AGAIN after formatting
+            # -----------------------------------------------------
+
+            syntax_error = self.validate_python(
+                repaired_code
+            )
+
+            if syntax_error is not None:
+
+                last_error = syntax_error
+                current_code = repaired_code
+
+                if attempt < self.MAX_REPAIR_ATTEMPTS:
+                    continue
+
+                return {
+                    "success": False,
+                    "message": (
+                        "Formatted repaired code is invalid."
+                    ),
+                    "details": syntax_error
+                }
+
+            # -----------------------------------------------------
+            # SUCCESS
+            # -----------------------------------------------------
+
+            return {
+                "success": True,
+                "code": repaired_code
+            }
+
+        # Should never be reached.
+        return {
+            "success": False,
+            "message": (
+                "Code repair failed after "
+                f"{self.MAX_REPAIR_ATTEMPTS} attempts."
+            ),
+            "details": last_error
+        }
+
+    @staticmethod
+    def build_repair_prompt(
+        code,
+        context
+    ):
+
+        return f"""
 You are an expert Python code repair agent.
 
 You are repairing Python source code generated by another
@@ -247,144 +472,61 @@ END SOURCE
 Return ONLY the repaired Python source code.
 """
 
-        try:
+    @staticmethod
+    def build_retry_prompt(
+        code,
+        context,
+        error
+    ):
 
-            response = self.llm.generate(
-                prompt
-            )
+        return f"""
+You are an expert Python code repair agent.
 
-        except Exception as error:
+Your previous repair attempt produced INVALID Python code.
 
-            return {
-                "success": False,
-                "message": (
-                    f"LLM repair failed: {error}"
-                )
-            }
+You MUST fix the syntax error and return a COMPLETE,
+VALID Python source file.
 
-        if isinstance(
-            response,
-            dict
-        ):
+IMPORTANT:
 
-            return {
-                "success": False,
-                "message": (
-                    f"LLM returned an error: {response}"
-                )
-            }
+- Return ONLY Python source code.
+- Do NOT return Markdown.
+- Do NOT use code fences.
+- Do NOT explain anything.
+- Do NOT return partial code.
+- Do NOT remove existing classes.
+- Do NOT remove existing methods.
+- Preserve existing imports.
+- Preserve existing architecture.
+- Preserve existing functionality.
+- Make the smallest possible repair.
+- The final result MUST compile successfully.
+- The final result MUST be valid Python.
+- Do not leave TODO placeholders.
+- Do not simply repeat the previous invalid output.
 
-        if not isinstance(
-            response,
-            str
-        ):
+Original repair context:
 
-            return {
-                "success": False,
-                "message": (
-                    "LLM returned an invalid response type."
-                )
-            }
+{context}
 
-        repaired_code = self.clean_code(
-            response
-        )
+==================================================
+SYNTAX ERROR FROM PREVIOUS ATTEMPT
+==================================================
 
-        if not repaired_code.strip():
+{error}
 
-            return {
-                "success": False,
-                "message": (
-                    "LLM returned empty repaired code."
-                )
-            }
+==================================================
+PREVIOUS REPAIR OUTPUT
+==================================================
 
-        # ---------------------------------------------------------
-        # Validate repaired code BEFORE formatting
-        # ---------------------------------------------------------
+{code}
 
-        syntax_error = self.validate_python(
-            repaired_code
-        )
+==================================================
+END PREVIOUS OUTPUT
+==================================================
 
-        if syntax_error is not None:
-
-            return {
-                "success": False,
-                "message": (
-                    "Code repair returned invalid code."
-                ),
-                "details": syntax_error
-            }
-
-        # ---------------------------------------------------------
-        # Format only AFTER syntax is valid
-        # ---------------------------------------------------------
-
-        formatted = self.formatter.format_code(
-            repaired_code
-        )
-
-        if not formatted.get(
-            "success",
-            False
-        ):
-
-            return {
-                "success": False,
-                "message": (
-                    "Repaired code could not be formatted."
-                ),
-                "details": formatted.get(
-                    "message"
-                )
-            }
-
-        repaired_code = formatted.get(
-            "code",
-            ""
-        )
-
-        if not isinstance(
-            repaired_code,
-            str
-        ):
-
-            return {
-                "success": False,
-                "message": (
-                    "Formatter returned invalid code."
-                )
-            }
-
-        repaired_code = (
-            repaired_code.strip()
-            +
-            "\n"
-        )
-
-        # ---------------------------------------------------------
-        # Validate AGAIN after formatting
-        # ---------------------------------------------------------
-
-        syntax_error = self.validate_python(
-            repaired_code
-        )
-
-        if syntax_error is not None:
-
-            return {
-                "success": False,
-                "message": (
-                    "Formatted repaired code is invalid."
-                ),
-                "details": syntax_error
-            }
-
-        return {
-            "success": True,
-            "code": repaired_code
-        }
+Return ONLY the corrected Python source code.
+"""
 
     @staticmethod
     def validate_python(

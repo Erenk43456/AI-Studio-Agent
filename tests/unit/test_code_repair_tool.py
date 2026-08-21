@@ -516,3 +516,40 @@ def test_code_repair_execute_without_workspace_does_not_read_file():
         "success": False,
         "message": "Code is empty.",
     }
+
+@pytest.mark.unit
+def test_code_repair_retries_when_first_generated_code_is_invalid():
+    invalid_code = """\
+def calculate_product(a: int, b: int) -> int:
+    return a * b
+    print("broken
+"""
+
+    valid_code = """\
+def calculate_product(a: int, b: int) -> int:
+    return a * b
+"""
+
+    class FakeLLM:
+        def __init__(self):
+            self.calls = 0
+
+        def generate(self, prompt):
+            self.calls += 1
+
+            if self.calls == 1:
+                return invalid_code
+
+            return valid_code
+
+    tool = CodeRepairTool(
+        llm=FakeLLM()
+    )
+
+    result = tool.execute({
+        "code": invalid_code,
+        "context": "Repair the syntax error."
+    })
+
+    assert result["success"] is True
+    assert "calculate_product" in result["code"]
