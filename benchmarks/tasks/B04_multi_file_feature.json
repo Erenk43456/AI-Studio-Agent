@@ -1,0 +1,31 @@
+{
+  "id": "B04",
+  "name": "multi_file_feature",
+  "description": "Implement a small feature that requires coordinated changes across multiple Python files.",
+  "setup": {
+    "files": {
+      "calculator.py": "def add(a: int, b: int) -> int:\n    return a + b\n",
+      "main.py": "from calculator import add\n\ndef calculate_total(a: int, b: int) -> int:\n    return add(a, b)\n"
+    }
+  },
+  "task": "Update the calculator module to add a multiply(a: int, b: int) -> int function that correctly returns the product of a and b. Update main.py so it exposes a calculate_product(a: int, b: int) -> int function that uses calculator.multiply. Preserve the existing add function and calculate_total function unchanged. Do not modify or create any other files.",
+  "success_criteria": {
+    "required_files": [
+      "calculator.py",
+      "main.py"
+    ],
+    "allowed_changed_files": [
+      "calculator.py",
+      "main.py"
+    ],
+    "forbidden_files": [],
+    "tests": [
+      "assert add(2, 3) == 5",
+      "assert add(-2, 5) == 3",
+      "assert multiply(4, 5) == 20",
+      "assert multiply(-2, 6) == -12",
+      "assert calculate_total(2, 3) == 5",
+      "assert calculate_product(4, 5) == 20"
+    ]
+  }
+}
