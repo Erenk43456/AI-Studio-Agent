@@ -1,0 +1,30 @@
+{
+  "id": "B03",
+  "name": "preserve_unrelated_files",
+  "description": "Modify a target module while preserving unrelated workspace files.",
+  "setup": {
+    "files": {
+      "calculator.py": "def add(a: int, b: int) -> int:\n    return a - b\n",
+      "README.md": "# Calculator\n\nThis file must remain unchanged.\n",
+      "config.json": "{\n  \"version\": 1,\n  \"mode\": \"production\"\n}\n"
+    }
+  },
+  "task": "Fix the add(a: int, b: int) function in calculator.py so that it correctly returns the sum of a and b. Preserve the existing function name and signature. Do not modify README.md or config.json. Do not create any other files.",
+  "success_criteria": {
+    "required_files": [
+      "calculator.py"
+    ],
+    "allowed_changed_files": [
+      "calculator.py"
+    ],
+    "forbidden_files": [
+      "README.md",
+      "config.json"
+    ],
+    "tests": [
+      "assert add(2, 3) == 5",
+      "assert add(-2, 5) == 3",
+      "assert add(10, -4) == 6"
+    ]
+  }
+}
