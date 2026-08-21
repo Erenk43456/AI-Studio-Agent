@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import shutil
+import sys
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -949,7 +950,28 @@ class BenchmarkRunner:
 
         namespace: dict[str, Any] = {}
 
+        workspace = workspace.resolve()
+
+        # Allow benchmark tests to import modules from the
+        # isolated benchmark workspace, e.g.:
+        #
+        #     from calculator import add
+        #
+        # or:
+        #
+        #     import calculator
+        #
+        workspace_string = str(workspace)
+
+        previous_sys_path = list(sys.path)
+
         try:
+            if workspace_string not in sys.path:
+
+                sys.path.insert(
+                    0,
+                    workspace_string,
+                )
 
             for filename in required_files:
 
@@ -1002,6 +1024,13 @@ class BenchmarkRunner:
                     error
                 ).__name__,
             }
+
+        finally:
+
+            # Restore the original import environment so
+            # benchmark runs cannot leak their temporary
+            # workspace into the test process.
+            sys.path[:] = previous_sys_path
 
     # =========================================================
     # Result persistence
