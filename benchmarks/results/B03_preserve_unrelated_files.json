@@ -2,16 +2,94 @@
   "meta": {
     "id": "B03",
     "name": "preserve_unrelated_files",
-    "total_runs": 1,
+    "total_runs": 2,
     "passed_runs": 1,
-    "failed_runs": 0,
-    "pass_rate": 100.0,
-    "fail_rate": 0.0
+    "failed_runs": 1,
+    "pass_rate": 50.0,
+    "fail_rate": 50.0
   },
   "runs": [
     {
       "run_id": 1,
-      "timestamp": "2026-08-21T20:33:02.807309+00:00",
+      "timestamp": "2026-08-21T21:43:20.785539+00:00",
+      "success": false,
+      "agent_result": null,
+      "changed_files": [],
+      "validation": {
+        "success": false,
+        "missing_files": [],
+        "unexpected_files": [],
+        "forbidden_files_changed": [],
+        "tests": [
+          {
+            "test": "assert add(2, 3) == 5",
+            "success": false,
+            "error": "",
+            "error_type": "AssertionError"
+          },
+          {
+            "test": "assert add(-2, 5) == 3",
+            "success": false,
+            "error": "",
+            "error_type": "AssertionError"
+          },
+          {
+            "test": "assert add(10, -4) == 6",
+            "success": false,
+            "error": "",
+            "error_type": "AssertionError"
+          }
+        ],
+        "runtime_error": {
+          "type": "AttributeError",
+          "message": "'DevelopmentContainer' object has no attribute 'models'"
+        }
+      },
+      "models": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "chat": "minimaxai/minimax-m3",
+        "code": "nvidia/nemotron-3-super-120b-a12b"
+      },
+      "execution": {
+        "agents": {
+          "decision": {
+            "status": "PASS",
+            "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+            "result": {
+              "system": "development"
+            }
+          },
+          "planner": {
+            "status": "PASS",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b",
+            "result": {
+              "steps": [
+                {
+                  "tool": "code",
+                  "action": "implement",
+                  "input": "Fix the add(a: int, b: int) function in calculator.py so that it correctly returns the sum of a and b. Preserve the existing function name and signature. Do not modify README.md or config.json. Do not create any other files."
+                }
+              ],
+              "user_message": "Fix the add(a: int, b: int) function in calculator.py so that it correctly returns the sum of a and b. Preserve the existing function name and signature. Do not modify README.md or config.json. Do not create any other files."
+            }
+          }
+        },
+        "models": {
+          "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+          "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+          "chat": "minimaxai/minimax-m3",
+          "code": "nvidia/nemotron-3-super-120b-a12b"
+        },
+        "runtime_error": {
+          "type": "AttributeError",
+          "message": "'DevelopmentContainer' object has no attribute 'models'"
+        }
+      }
+    },
+    {
+      "run_id": 2,
+      "timestamp": "2026-08-21T21:48:19.990515+00:00",
       "success": true,
       "agent_result": "✅ Kod başarıyla güncellendi.",
       "changed_files": [
@@ -38,10 +116,113 @@
         ]
       },
       "models": {
-        "chat": "minimaxai/minimax-m3",
-        "code": "nvidia/nemotron-3-super-120b-a12b",
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
         "planner": "nvidia/nemotron-3-ultra-550b-a55b",
-        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b"
+        "code": "nvidia/nemotron-3-super-120b-a12b",
+        "chat": "minimaxai/minimax-m3"
+      },
+      "execution": {
+        "agents": {
+          "decision": {
+            "status": "PASS",
+            "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+            "result": {
+              "system": "development"
+            }
+          },
+          "planner": {
+            "status": "PASS",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b",
+            "result": {
+              "steps": [
+                {
+                  "tool": "code",
+                  "action": "implement",
+                  "input": "Fix the add(a: int, b: int) function in calculator.py so that it correctly returns the sum of a and b. Preserve the existing function name and signature. Do not modify README.md or config.json. Do not create any other files."
+                }
+              ],
+              "user_message": "Fix the add(a: int, b: int) function in calculator.py so that it correctly returns the sum of a and b. Preserve the existing function name and signature. Do not modify README.md or config.json. Do not create any other files."
+            }
+          },
+          "code": {
+            "status": "PASS",
+            "model": "nvidia/nemotron-3-super-120b-a12b",
+            "result": {
+              "success": true,
+              "plan": {
+                "summary": "Fix the add function in calculator.py to return the sum of its parameters",
+                "files": [
+                  {
+                    "path": "calculator.py",
+                    "purpose": "The add function currently does not return the correct sum; needs to be fixed to return a + b",
+                    "changes": [
+                      "Replace the function body of add(a: int, b: int) with 'return a + b'"
+                    ]
+                  }
+                ],
+                "implementation": [
+                  "Open calculator.py and locate the add function definition",
+                  "Replace the existing function body with a single line: return a + b",
+                  "Ensure the function signature remains unchanged: def add(a: int, b: int) -> int:"
+                ],
+                "risks": [
+                  "If the function is part of a class or has decorators, changing only the body preserves the structure; however, if the function relies on external state (unlikely for a simple add), the fix may break context-dependent behavior"
+                ],
+                "development_context": {
+                  "task": "Fix the add(a: int, b: int) function in calculator.py so that it correctly returns the sum of a and b. Preserve the existing function name and signature. Do not modify README.md or config.json. Do not create any other files.",
+                  "targets": [
+                    "calculator.py"
+                  ],
+                  "target_files": {},
+                  "related_files": {},
+                  "relationships": {
+                    "calculator.py": []
+                  },
+                  "architecture": {},
+                  "strategy": {
+                    "type": "targeted_fix",
+                    "phases": [
+                      "inspect_memory",
+                      "inspect_target",
+                      "inspect_dependencies",
+                      "identify_root_cause",
+                      "apply_minimal_fix",
+                      "validate"
+                    ],
+                    "target_count": 1,
+                    "related_file_count": 0,
+                    "relationship_count": 0,
+                    "memory_first": true,
+                    "memory_available": false,
+                    "repository_analysis_fallback": true,
+                    "architecture_aware": true,
+                    "architecture_preserving": true,
+                    "minimal_change": true,
+                    "multi_target": false
+                  }
+                }
+              },
+              "write_result": {
+                "success": true,
+                "results": [
+                  {
+                    "file": "calculator.py",
+                    "status": "updated"
+                  }
+                ],
+                "files_written": [
+                  "calculator.py"
+                ]
+              }
+            }
+          }
+        },
+        "models": {
+          "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+          "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+          "code": "nvidia/nemotron-3-super-120b-a12b",
+          "chat": "minimaxai/minimax-m3"
+        }
       }
     }
   ]
