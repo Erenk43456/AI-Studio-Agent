@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import shutil
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -27,17 +28,25 @@ class BenchmarkRunner:
         ).resolve()
 
         self.tasks_dir = (
-            self.project_root / "benchmarks" / "tasks"
+            self.project_root
+            / "benchmarks"
+            / "tasks"
         )
 
         self.results_dir = (
-            self.project_root / "benchmarks" / "results"
+            self.project_root
+            / "benchmarks"
+            / "results"
         )
 
         self.results_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
+
+    # =========================================================
+    # Task
+    # =========================================================
 
     def load_task(
         self,
@@ -50,7 +59,6 @@ class BenchmarkRunner:
         )
 
         if not task_path.exists():
-
             raise FileNotFoundError(
                 f"Benchmark task not found: {task_path}"
             )
@@ -59,12 +67,13 @@ class BenchmarkRunner:
             "r",
             encoding="utf-8",
         ) as file:
-
             return json.load(file)
 
-    def create_workspace(
-        self,
-    ) -> Path:
+    # =========================================================
+    # Workspace
+    # =========================================================
+
+    def create_workspace(self) -> Path:
 
         return Path(
             tempfile.mkdtemp(
@@ -80,7 +89,7 @@ class BenchmarkRunner:
 
         setup = task.get(
             "setup",
-            {}
+            {},
         )
 
         if not isinstance(
@@ -91,7 +100,7 @@ class BenchmarkRunner:
 
         files = setup.get(
             "files",
-            {}
+            {},
         )
 
         if not isinstance(
@@ -122,13 +131,10 @@ class BenchmarkRunner:
             ).resolve()
 
             try:
-
                 path.relative_to(
                     workspace_path
                 )
-
             except ValueError:
-
                 raise ValueError(
                     "Benchmark setup path is outside "
                     f"workspace: {filename}"
@@ -144,12 +150,16 @@ class BenchmarkRunner:
                 encoding="utf-8",
             )
 
+    # =========================================================
+    # Snapshots
+    # =========================================================
+
     def snapshot_files(
         self,
         workspace: Path,
     ) -> set[str]:
 
-        files = set()
+        files: set[str] = set()
 
         for path in workspace.rglob("*"):
 
@@ -178,7 +188,7 @@ class BenchmarkRunner:
         workspace: Path,
     ) -> dict[str, str]:
 
-        snapshot = {}
+        snapshot: dict[str, str] = {}
 
         for path in workspace.rglob("*"):
 
@@ -197,15 +207,12 @@ class BenchmarkRunner:
                 continue
 
             try:
-
                 snapshot[str(relative)] = (
                     path.read_text(
                         encoding="utf-8"
                     )
                 )
-
             except UnicodeDecodeError:
-
                 continue
 
         return snapshot
@@ -246,6 +253,10 @@ class BenchmarkRunner:
             | modified
         )
 
+    # =========================================================
+    # Run
+    # =========================================================
+
     def run(
         self,
         task_id: str,
@@ -257,16 +268,22 @@ class BenchmarkRunner:
 
         workspace = self.create_workspace()
 
+        container = None
+
         try:
+
+            # -------------------------------------------------
+            # Setup
+            # -------------------------------------------------
 
             self.setup_workspace(
                 workspace,
                 task,
             )
 
-            # -----------------------------------------------------
-            # Snapshot BEFORE agent execution
-            # -----------------------------------------------------
+            # -------------------------------------------------
+            # Snapshot BEFORE
+            # -------------------------------------------------
 
             before_files = self.snapshot_files(
                 workspace
@@ -278,9 +295,9 @@ class BenchmarkRunner:
                 )
             )
 
-            # -----------------------------------------------------
+            # -------------------------------------------------
             # Run AI-Studio
-            # -----------------------------------------------------
+            # -------------------------------------------------
 
             container = MainContainer(
                 workspace_path=workspace
@@ -292,9 +309,28 @@ class BenchmarkRunner:
                 )
             )
 
-            # -----------------------------------------------------
-            # Snapshot AFTER agent execution
-            # -----------------------------------------------------
+            models = {
+                "chat": (
+                    container.models.chat_llm
+                    .get_current_model()
+                ),
+                "code": (
+                    container.models.code_llm
+                    .get_current_model()
+                ),
+                "planner": (
+                    container.models.planner_llm
+                    .get_current_model()
+                ),
+                "decision": (
+                    container.models.decision_llm
+                    .get_current_model()
+                ),
+            }
+
+            # -------------------------------------------------
+            # Snapshot AFTER
+            # -------------------------------------------------
 
             after_files = self.snapshot_files(
                 workspace
@@ -306,9 +342,9 @@ class BenchmarkRunner:
                 )
             )
 
-            # -----------------------------------------------------
-            # Detect created / modified / deleted files
-            # -----------------------------------------------------
+            # -------------------------------------------------
+            # Detect changes
+            # -------------------------------------------------
 
             changed_files = sorted(
                 self.detect_changed_files(
@@ -319,9 +355,9 @@ class BenchmarkRunner:
                 )
             )
 
-            # -----------------------------------------------------
-            # Validate benchmark
-            # -----------------------------------------------------
+            # -------------------------------------------------
+            # Validate
+            # -------------------------------------------------
 
             validation = (
                 self.validate_success_criteria(
@@ -331,6 +367,10 @@ class BenchmarkRunner:
                 )
             )
 
+            # -------------------------------------------------
+            # Result
+            # -------------------------------------------------
+
             benchmark_result = {
                 "id": task["id"],
                 "name": task["name"],
@@ -338,7 +378,7 @@ class BenchmarkRunner:
                 "agent_result": agent_result,
                 "changed_files": changed_files,
                 "validation": validation,
-                "workspace": str(workspace),
+                "models": models,
             }
 
             self._save_result(
@@ -350,7 +390,7 @@ class BenchmarkRunner:
 
         finally:
 
-            if "container" in locals():
+            if container is not None:
 
                 watcher = getattr(
                     getattr(
@@ -363,13 +403,16 @@ class BenchmarkRunner:
                 )
 
                 if watcher is not None:
-
                     watcher.stop()
 
             shutil.rmtree(
                 workspace,
                 ignore_errors=True,
             )
+
+    # =========================================================
+    # Validation
+    # =========================================================
 
     def validate_success_criteria(
         self,
@@ -387,8 +430,11 @@ class BenchmarkRunner:
             criteria,
             dict,
         ):
-
             criteria = {}
+
+        # -----------------------------------------------------
+        # Required files
+        # -----------------------------------------------------
 
         required_files = criteria.get(
             "required_files",
@@ -399,7 +445,6 @@ class BenchmarkRunner:
             required_files,
             list,
         ):
-
             required_files = []
 
         missing_files = [
@@ -410,6 +455,34 @@ class BenchmarkRunner:
             ).is_file()
         ]
 
+        # -----------------------------------------------------
+        # Allowed changed files
+        # -----------------------------------------------------
+
+        allowed_changed_files = criteria.get(
+            "allowed_changed_files",
+            [],
+        )
+
+        if not isinstance(
+            allowed_changed_files,
+            list,
+        ):
+            allowed_changed_files = []
+
+        if not allowed_changed_files:
+            allowed_changed_files = required_files
+
+        unexpected_files = [
+            filename
+            for filename in changed_files
+            if filename not in allowed_changed_files
+        ]
+
+        # -----------------------------------------------------
+        # Forbidden files
+        # -----------------------------------------------------
+
         forbidden_files = criteria.get(
             "forbidden_files",
             [],
@@ -419,22 +492,17 @@ class BenchmarkRunner:
             forbidden_files,
             list,
         ):
-
             forbidden_files = []
 
-        forbidden_files_present = [
-            filename
-            for filename in forbidden_files
-            if (
-                workspace / filename
-            ).exists()
-        ]
-
-        unexpected_files = [
+        forbidden_files_changed = [
             filename
             for filename in changed_files
-            if filename not in required_files
+            if filename in forbidden_files
         ]
+
+        # -----------------------------------------------------
+        # Tests
+        # -----------------------------------------------------
 
         tests = criteria.get(
             "tests",
@@ -445,7 +513,6 @@ class BenchmarkRunner:
             tests,
             list,
         ):
-
             tests = []
 
         test_results = []
@@ -471,10 +538,14 @@ class BenchmarkRunner:
             for result in test_results
         )
 
+        # -----------------------------------------------------
+        # Final result
+        # -----------------------------------------------------
+
         success = (
             not missing_files
             and not unexpected_files
-            and not forbidden_files_present
+            and not forbidden_files_changed
             and tests_passed
         )
 
@@ -482,8 +553,15 @@ class BenchmarkRunner:
             "success": success,
             "missing_files": missing_files,
             "unexpected_files": unexpected_files,
+            "forbidden_files_changed": (
+                forbidden_files_changed
+            ),
             "tests": test_results,
         }
+
+    # =========================================================
+    # Tests
+    # =========================================================
 
     def run_test(
         self,
@@ -492,7 +570,7 @@ class BenchmarkRunner:
         required_files: list[str],
     ) -> dict[str, Any]:
 
-        namespace = {}
+        namespace: dict[str, Any] = {}
 
         try:
 
@@ -545,6 +623,10 @@ class BenchmarkRunner:
                 "error": str(error),
             }
 
+    # =========================================================
+    # Result persistence
+    # =========================================================
+
     def _save_result(
         self,
         task_id: str,
@@ -556,13 +638,146 @@ class BenchmarkRunner:
             / f"{task_id}.json"
         )
 
+        # -----------------------------------------------------
+        # Load previous history
+        # -----------------------------------------------------
+
+        if result_path.exists():
+
+            try:
+
+                with result_path.open(
+                    "r",
+                    encoding="utf-8",
+                ) as file:
+                    history = json.load(file)
+
+            except (
+                json.JSONDecodeError,
+                OSError,
+            ):
+                history = {}
+
+        else:
+            history = {}
+
+        if not isinstance(
+            history,
+            dict,
+        ):
+            history = {}
+
+        # -----------------------------------------------------
+        # Existing runs
+        # -----------------------------------------------------
+
+        runs = history.get(
+            "runs",
+            [],
+        )
+
+        if not isinstance(
+            runs,
+            list,
+        ):
+            runs = []
+
+        run_id = len(runs) + 1
+
+        # -----------------------------------------------------
+        # New run
+        # -----------------------------------------------------
+
+        run = {
+            "run_id": run_id,
+            "timestamp": datetime.now(
+                timezone.utc
+            ).isoformat(),
+            "success": result["success"],
+            "agent_result": result["agent_result"],
+            "changed_files": result["changed_files"],
+            "validation": result["validation"],
+            "models": result.get(
+                "models",
+                {},
+            ),
+        }
+
+        runs.append(run)
+
+        # -----------------------------------------------------
+        # Statistics
+        # -----------------------------------------------------
+
+        passed_runs = sum(
+            1
+            for item in runs
+            if (
+                isinstance(item, dict)
+                and item.get("success") is True
+            )
+        )
+
+        failed_runs = sum(
+            1
+            for item in runs
+            if (
+                isinstance(item, dict)
+                and item.get("success") is False
+            )
+        )
+
+        total_runs = (
+            passed_runs
+            + failed_runs
+        )
+
+        pass_rate = (
+            (passed_runs / total_runs) * 100
+            if total_runs
+            else 0.0
+        )
+
+        fail_rate = (
+            (failed_runs / total_runs) * 100
+            if total_runs
+            else 0.0
+        )
+
+        # -----------------------------------------------------
+        # History document
+        # -----------------------------------------------------
+
+        history = {
+            "meta": {
+                "id": result["id"],
+                "name": result["name"],
+                "total_runs": total_runs,
+                "passed_runs": passed_runs,
+                "failed_runs": failed_runs,
+                "pass_rate": round(
+                    pass_rate,
+                    2,
+                ),
+                "fail_rate": round(
+                    fail_rate,
+                    2,
+                ),
+            },
+            "runs": runs,
+        }
+
+        # -----------------------------------------------------
+        # Save
+        # -----------------------------------------------------
+
         with result_path.open(
             "w",
             encoding="utf-8",
         ) as file:
 
             json.dump(
-                result,
+                history,
                 file,
                 indent=2,
                 ensure_ascii=False,
