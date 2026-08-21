@@ -1095,21 +1095,28 @@ The resulting code MUST be valid Python.
 
             elif isinstance(
                 node,
-                (
-                    ast.Import,
-                    ast.ImportFrom
-                )
+                ast.Import
             ):
 
-                try:
+                for alias in node.names:
+                    imports.append({
+                        "module": alias.name,
+                        "name": None,
+                        "kind": "import",
+                    })
 
-                    imports.append(
-                        ast.unparse(node)
-                    )
+            elif isinstance(
+                node,
+                ast.ImportFrom
+            ):
+                module = node.module or ""
 
-                except Exception:
-
-                    pass
+                for alias in node.names:
+                    imports.append({
+                        "module": module,
+                        "name": alias.name,
+                        "kind": "from",
+                    })
 
         return {
             "classes": classes,
@@ -1290,34 +1297,110 @@ The resulting code MUST be valid Python.
             )
 
         # ---------------------------------------------------------
-        # Existing imports must remain
+        # Existing dependencies must remain
+        # ---------------------------------------------------------
+        #
+        # Import syntax itself is not part of the architecture.
+        #
+        # These two forms can represent the same dependency:
+        #
+        #     from calculator import add
+        #
+        #     import calculator
+        #
+        # What matters is that the imported module/dependency has
+        # not disappeared completely.
         # ---------------------------------------------------------
 
-        original_imports = set(
-            original.get(
-                "imports",
-                []
-            )
+        original_imports = original.get(
+            "imports",
+            []
         )
 
-        new_imports = set(
-            new_structure.get(
-                "imports",
-                []
-            )
+        new_imports = new_structure.get(
+            "imports",
+            []
         )
 
-        missing_imports = (
+        def import_modules(imports):
+            modules = set()
+
+            for item in imports:
+
+                if isinstance(item, dict):
+
+                    module = item.get(
+                        "module"
+                    )
+
+                    if module:
+                        modules.add(
+                            str(module).lower()
+                        )
+
+                elif isinstance(item, str):
+
+                    # Backward compatibility with older
+                    # structure representations.
+                    try:
+
+                        tree = ast.parse(
+                            item
+                        )
+
+                        for node in tree.body:
+
+                            if isinstance(
+                                node,
+                                ast.Import
+                            ):
+
+                                for alias in node.names:
+                                    modules.add(
+                                        alias.name.lower()
+                                    )
+
+                            elif isinstance(
+                                node,
+                                ast.ImportFrom
+                            ):
+
+                                if node.module:
+                                    modules.add(
+                                        node.module.lower()
+                                    )
+
+                    except Exception:
+                        continue
+
+            return modules
+
+        original_modules = import_modules(
             original_imports
-            -
+        )
+
+        new_modules = import_modules(
             new_imports
         )
 
-        if missing_imports:
+        missing_dependencies = (
+            original_modules
+            -
+            new_modules
+        )
+
+        if missing_dependencies:
+
+            removed_imports = [
+                f"import {module}"
+                for module in sorted(
+                    missing_dependencies
+                )
+            ]
 
             return (
                 "Existing imports were removed: "
-                f"{sorted(missing_imports)}."
+                f"{removed_imports}."
             )
 
         return None
