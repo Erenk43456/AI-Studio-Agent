@@ -212,7 +212,10 @@ class BenchmarkRunner:
                         encoding="utf-8"
                     )
                 )
-            except UnicodeDecodeError:
+            except (
+                UnicodeDecodeError,
+                OSError,
+            ):
                 continue
 
         return snapshot
@@ -254,6 +257,160 @@ class BenchmarkRunner:
         )
 
     # =========================================================
+    # Models
+    # =========================================================
+
+    def collect_models(
+        self,
+        container: MainContainer | None,
+        execution: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+
+        models: dict[str, Any] = {}
+
+        if isinstance(
+            execution,
+            dict,
+        ):
+
+            execution_models = execution.get(
+                "models",
+                {},
+            )
+
+            if isinstance(
+                execution_models,
+                dict,
+            ):
+
+                for name, model in execution_models.items():
+
+                    if model:
+                        models[name] = model
+
+            agents = execution.get(
+                "agents",
+                {},
+            )
+
+            if isinstance(
+                agents,
+                dict,
+            ):
+
+                for name, agent_data in agents.items():
+
+                    if not isinstance(
+                        agent_data,
+                        dict,
+                    ):
+                        continue
+
+                    model = agent_data.get(
+                        "model"
+                    )
+
+                    if model:
+                        models[name] = model
+
+        if container is not None:
+
+            container_models = getattr(
+                container,
+                "models",
+                None,
+            )
+
+            if container_models is not None:
+
+                model_mapping = {
+                    "chat": "chat_llm",
+                    "code": "code_llm",
+                    "planner": "planner_llm",
+                    "decision": "decision_llm",
+                }
+
+                for name, attribute in model_mapping.items():
+
+                    if name in models:
+                        continue
+
+                    llm = getattr(
+                        container_models,
+                        attribute,
+                        None,
+                    )
+
+                    if llm is None:
+                        continue
+
+                    getter = getattr(
+                        llm,
+                        "get_current_model",
+                        None,
+                    )
+
+                    if not callable(getter):
+                        continue
+
+                    try:
+
+                        model = getter()
+
+                    except Exception:
+                        continue
+
+                    if model:
+                        models[name] = model
+
+        return models
+
+    # =========================================================
+    # Execution
+    # =========================================================
+
+    def normalize_execution(
+        self,
+        execution: Any,
+    ) -> dict[str, Any]:
+
+        if not isinstance(
+            execution,
+            dict,
+        ):
+            return {
+                "agents": {},
+                "models": {},
+            }
+
+        agents = execution.get(
+            "agents",
+            {},
+        )
+
+        models = execution.get(
+            "models",
+            {},
+        )
+
+        if not isinstance(
+            agents,
+            dict,
+        ):
+            agents = {}
+
+        if not isinstance(
+            models,
+            dict,
+        ):
+            models = {}
+
+        return {
+            "agents": agents,
+            "models": models,
+        }
+
+    # =========================================================
     # Run
     # =========================================================
 
@@ -269,6 +426,31 @@ class BenchmarkRunner:
         workspace = self.create_workspace()
 
         container = None
+
+        execution: dict[str, Any] = {
+            "agents": {},
+            "models": {},
+        }
+
+        agent_result: Any = None
+        runtime_error: str | None = None
+        runtime_error_type: str | None = None
+
+        before_files: set[str] = set()
+        before_contents: dict[str, str] = {}
+
+        after_files: set[str] = set()
+        after_contents: dict[str, str] = {}
+
+        changed_files: list[str] = []
+
+        validation: dict[str, Any] = {
+            "success": False,
+            "missing_files": [],
+            "unexpected_files": [],
+            "forbidden_files_changed": [],
+            "tests": [],
+        }
 
         try:
 
@@ -303,29 +485,91 @@ class BenchmarkRunner:
                 workspace_path=workspace
             )
 
-            agent_result = (
-                container.orchestrator.run(
-                    task["task"]
+            try:
+
+                agent_result = (
+                    container.orchestrator.run(
+                        task["task"]
+                    )
                 )
+
+            except Exception as error:
+
+                runtime_error = str(error)
+                runtime_error_type = type(
+                    error
+                ).__name__
+
+                # ---------------------------------------------
+                # Preserve execution trace even on failure
+                # ---------------------------------------------
+
+                orchestrator = getattr(
+                    container,
+                    "orchestrator",
+                    None,
+                )
+
+                last_execution = getattr(
+                    orchestrator,
+                    "last_execution",
+                    None,
+                )
+
+                execution = self.normalize_execution(
+                    last_execution
+                )
+
+                execution["runtime_error"] = {
+                    "type": runtime_error_type,
+                    "message": runtime_error,
+                }
+
+                # Do not re-raise here.
+                #
+                # A benchmark runtime exception is itself a
+                # benchmark result and must be persisted.
+                agent_result = None
+
+            else:
+
+                # ---------------------------------------------
+                # Successful orchestrator return
+                # ---------------------------------------------
+
+                orchestrator = getattr(
+                    container,
+                    "orchestrator",
+                    None,
+                )
+
+                last_execution = getattr(
+                    orchestrator,
+                    "last_execution",
+                    None,
+                )
+
+                execution = self.normalize_execution(
+                    last_execution
+                )
+
+            # -------------------------------------------------
+            # Models
+            # -------------------------------------------------
+
+            models = self.collect_models(
+                container,
+                execution,
             )
 
-            models = {
-                "chat": (
-                    container.models.chat_llm
-                    .get_current_model()
+            # Keep model information synchronized with the
+            # execution trace.
+            execution["models"] = {
+                **execution.get(
+                    "models",
+                    {},
                 ),
-                "code": (
-                    container.models.code_llm
-                    .get_current_model()
-                ),
-                "planner": (
-                    container.models.planner_llm
-                    .get_current_model()
-                ),
-                "decision": (
-                    container.models.decision_llm
-                    .get_current_model()
-                ),
+                **models,
             }
 
             # -------------------------------------------------
@@ -368,23 +612,151 @@ class BenchmarkRunner:
             )
 
             # -------------------------------------------------
-            # Result
+            # Runtime exception always means benchmark FAIL
             # -------------------------------------------------
+
+            if runtime_error is not None:
+
+                validation["success"] = False
+
+                validation["runtime_error"] = {
+                    "type": runtime_error_type,
+                    "message": runtime_error,
+                }
+
+            # -------------------------------------------------
+            # Final result
+            # -------------------------------------------------
+
+            benchmark_success = (
+                validation["success"]
+                and runtime_error is None
+            )
 
             benchmark_result = {
                 "id": task["id"],
                 "name": task["name"],
-                "success": validation["success"],
+                "success": benchmark_success,
                 "agent_result": agent_result,
                 "changed_files": changed_files,
                 "validation": validation,
                 "models": models,
+                "execution": execution,
             }
 
             self._save_result(
                 task_id,
                 benchmark_result,
             )
+
+            return benchmark_result
+
+        except Exception as error:
+
+            # =================================================
+            # Runner-level failure
+            #
+            # This is different from an agent failure.
+            # We still persist it as a benchmark result.
+            # =================================================
+
+            runtime_error = str(error)
+            runtime_error_type = type(
+                error
+            ).__name__
+
+            try:
+
+                after_files = self.snapshot_files(
+                    workspace
+                )
+
+                after_contents = (
+                    self.snapshot_file_contents(
+                        workspace
+                    )
+                )
+
+                changed_files = sorted(
+                    self.detect_changed_files(
+                        before_files,
+                        after_files,
+                        before_contents,
+                        after_contents,
+                    )
+                )
+
+            except Exception:
+                changed_files = []
+
+            execution = self.normalize_execution(
+                execution
+            )
+
+            execution["runtime_error"] = {
+                "type": runtime_error_type,
+                "message": runtime_error,
+            }
+
+            models = self.collect_models(
+                container,
+                execution,
+            )
+
+            execution["models"] = {
+                **execution.get(
+                    "models",
+                    {},
+                ),
+                **models,
+            }
+
+            validation = {
+                "success": False,
+                "missing_files": [],
+                "unexpected_files": [],
+                "forbidden_files_changed": [],
+                "tests": [],
+                "runtime_error": {
+                    "type": runtime_error_type,
+                    "message": runtime_error,
+                },
+            }
+
+            benchmark_result = {
+                "id": task.get(
+                    "id",
+                    task_id,
+                ),
+                "name": task.get(
+                    "name",
+                    task_id,
+                ),
+                "success": False,
+                "agent_result": agent_result,
+                "changed_files": changed_files,
+                "validation": validation,
+                "models": models,
+                "execution": execution,
+            }
+
+            # ---------------------------------------------
+            # IMPORTANT:
+            # Even a BenchmarkRunner-level exception is
+            # persisted.
+            # ---------------------------------------------
+
+            try:
+
+                self._save_result(
+                    task_id,
+                    benchmark_result,
+                )
+
+            except Exception:
+                # Never hide the original benchmark error
+                # because result persistence itself failed.
+                pass
 
             return benchmark_result
 
@@ -403,7 +775,12 @@ class BenchmarkRunner:
                 )
 
                 if watcher is not None:
-                    watcher.stop()
+
+                    try:
+                        watcher.stop()
+
+                    except Exception:
+                        pass
 
             shutil.rmtree(
                 workspace,
@@ -621,6 +998,9 @@ class BenchmarkRunner:
                 "test": test,
                 "success": False,
                 "error": str(error),
+                "error_type": type(
+                    error
+                ).__name__,
             }
 
     # =========================================================
@@ -650,15 +1030,20 @@ class BenchmarkRunner:
                     "r",
                     encoding="utf-8",
                 ) as file:
-                    history = json.load(file)
+
+                    history = json.load(
+                        file
+                    )
 
             except (
                 json.JSONDecodeError,
                 OSError,
             ):
+
                 history = {}
 
         else:
+
             history = {}
 
         if not isinstance(
@@ -693,17 +1078,34 @@ class BenchmarkRunner:
             "timestamp": datetime.now(
                 timezone.utc
             ).isoformat(),
-            "success": result["success"],
-            "agent_result": result["agent_result"],
-            "changed_files": result["changed_files"],
-            "validation": result["validation"],
+            "success": result.get(
+                "success",
+                False,
+            ),
+            "agent_result": result.get(
+                "agent_result",
+            ),
+            "changed_files": result.get(
+                "changed_files",
+                [],
+            ),
+            "validation": result.get(
+                "validation",
+                {},
+            ),
             "models": result.get(
                 "models",
                 {},
             ),
+            "execution": result.get(
+                "execution",
+                {},
+            ),
         }
 
-        runs.append(run)
+        runs.append(
+            run
+        )
 
         # -----------------------------------------------------
         # Statistics
@@ -750,8 +1152,14 @@ class BenchmarkRunner:
 
         history = {
             "meta": {
-                "id": result["id"],
-                "name": result["name"],
+                "id": result.get(
+                    "id",
+                    task_id,
+                ),
+                "name": result.get(
+                    "name",
+                    task_id,
+                ),
                 "total_runs": total_runs,
                 "passed_runs": passed_runs,
                 "failed_runs": failed_runs,
