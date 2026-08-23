@@ -1,0 +1,30 @@
+{
+  "id": "B05",
+  "name": "existing_code_preservation",
+  "description": "Add a new method to an existing class without removing or changing existing functionality.",
+  "setup": {
+    "files": {
+      "calculator.py": "import math\n\n\nclass Calculator:\n    def add(self, a: int, b: int) -> int:\n        return a + b\n\n    def subtract(self, a: int, b: int) -> int:\n        return a - b\n\n\ndef square(value: int) -> int:\n    return value * value\n"
+    }
+  },
+  "task": "Add a multiply(a: int, b: int) -> int method to the existing Calculator class that correctly returns the product of a and b. Preserve the existing add method, subtract method, and square function unchanged. Preserve the existing import. Do not modify or create any other files.",
+  "success_criteria": {
+    "required_files": [
+      "calculator.py"
+    ],
+    "allowed_changed_files": [
+      "calculator.py"
+    ],
+    "forbidden_files": [],
+    "tests": [
+      "assert Calculator().add(2, 3) == 5",
+      "assert Calculator().add(-2, 5) == 3",
+      "assert Calculator().subtract(5, 3) == 2",
+      "assert Calculator().subtract(-2, 5) == -7",
+      "assert Calculator().multiply(4, 5) == 20",
+      "assert Calculator().multiply(-2, 6) == -12",
+      "assert square(5) == 25",
+      "assert math.sqrt(16) == 4"
+    ]
+  }
+}
