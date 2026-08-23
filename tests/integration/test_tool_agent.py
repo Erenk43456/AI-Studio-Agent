@@ -16,6 +16,16 @@ class FakeToolRegistry:
         return self.tools.get(name)
 
 
+class FakeCodeAgent:
+    def __init__(self, result):
+        self.result = result
+        self.calls = []
+
+    def run(self, task, development_context=None):
+        self.calls.append((task, development_context))
+        return self.result
+
+
 @pytest.mark.integration
 def test_tool_agent_executes_registered_tool():
 
@@ -106,9 +116,7 @@ def test_tool_agent_executes_multiple_steps():
         ]
     }
 
-    result = agent.execute_steps(
-        plan
-    )
+    result = agent.execute_steps(plan)
 
     assert len(result) == 2
 
@@ -122,6 +130,40 @@ def test_tool_agent_executes_multiple_steps():
     assert result[1]["result"] == "step-result"
 
     assert tool.call_count == 2
+
+
+@pytest.mark.integration
+def test_tool_agent_delegates_code_step_to_injected_code_agent():
+
+    registry = FakeToolRegistry()
+    code_agent = FakeCodeAgent(
+        {
+            "success": True,
+            "message": "code-result",
+        }
+    )
+    development_context = {"task": "fix bug"}
+
+    agent = ToolAgent(
+        registry=registry,
+        code_agent=code_agent,
+    )
+
+    result = agent.execute_steps(
+        {
+            "steps": [
+                {
+                    "tool": "code",
+                    "action": "implement",
+                    "input": "fix bug",
+                }
+            ]
+        },
+        development_context=development_context,
+    )
+
+    assert result[0]["result"]["message"] == "code-result"
+    assert code_agent.calls == [("fix bug", development_context)]
 
 
 @pytest.mark.integration
@@ -141,9 +183,7 @@ def test_tool_agent_normalizes_file_write_input():
         "input": "print('hello')",
     }
 
-    result = agent.normalize_tool_input(
-        plan
-    )
+    result = agent.normalize_tool_input(plan)
 
     assert result["content"] == "print('hello')"
 
@@ -163,9 +203,7 @@ def test_tool_agent_normalizes_calculator_input():
         "input": "10 + 5",
     }
 
-    result = agent.normalize_tool_input(
-        plan
-    )
+    result = agent.normalize_tool_input(plan)
 
     assert result["operation"] == "add"
     assert result["numbers"] == ["10", "5"]

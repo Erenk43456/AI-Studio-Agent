@@ -1,5 +1,7 @@
 import pytest
 
+from agents.tool_agent import ToolAgent
+
 from app.core.orchestrators.development_orchestrator import (
     DevelopmentOrchestrator,
 )
@@ -103,17 +105,16 @@ class FakeContainer:
         self.planner = FakePlanner(plan)
         self.code_agent = FakeCodeAgent(code_result)
         self.code_llm = FakeLLM()
-        self.repository_analyzer = FakeRepositoryAnalyzer(
-            repository_result
-        )
-        self.improvement_agent = FakeImprovementAgent(
-            improvement_result
-        )
+        self.repository_analyzer = FakeRepositoryAnalyzer(repository_result)
+        self.improvement_agent = FakeImprovementAgent(improvement_result)
         self.development_context = FakeContext()
-        self.registry = FakeRegistry(
-            {"fake_tool": tool} if tool else {}
-        )
+        self.registry = FakeRegistry({"fake_tool": tool} if tool else {})
         self.project_memory_sync = FakeProjectMemorySync()
+        self.tool_agent = ToolAgent(
+            registry=self.registry,
+            code_agent=self.code_agent,
+        )
+
 
 class FakeProjectMemorySync:
     def __init__(self):
@@ -146,9 +147,7 @@ def test_development_analyze():
 
     assert result == "✅ Repository analyzed"
 
-    assert container.repository_analyzer.calls == [
-        {"action": "analyze"}
-    ]
+    assert container.repository_analyzer.calls == [{"action": "analyze"}]
 
 
 @pytest.mark.unit
@@ -170,9 +169,7 @@ def test_development_improve():
 
     assert result == "✅ Improved"
 
-    assert container.improvement_agent.calls == [
-        "improve project"
-    ]
+    assert container.improvement_agent.calls == ["improve project"]
 
 
 @pytest.mark.unit
@@ -189,63 +186,43 @@ def test_development_executes_code_task():
         },
         code_result={
             "success": True,
-            "write_result": {
-                "success": True
-            },
+            "write_result": {"success": True},
         },
     )
 
     orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "fix bug"
-    )
+    result = orchestrator.run("fix bug")
 
     assert result == "✅ Kod başarıyla güncellendi."
 
-    assert container.planner.calls == [
-        "fix bug"
-    ]
+    assert container.planner.calls == ["fix bug"]
 
-    assert container.development_context.calls == [
-        "fix bug"
-    ]
+    assert container.development_context.calls == ["fix bug"]
 
 
 @pytest.mark.unit
 def test_development_planner_failure():
 
-    container = FakeContainer(
-        plan=None
-    )
+    container = FakeContainer(plan=None)
 
     orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "fix bug"
-    )
+    result = orchestrator.run("fix bug")
 
-    assert result == (
-        "❌ İstek için bir plan oluşturulamadı."
-    )
+    assert result == ("❌ İstek için bir plan oluşturulamadı.")
 
 
 @pytest.mark.unit
 def test_development_empty_plan():
 
-    container = FakeContainer(
-        plan={"steps": []}
-    )
+    container = FakeContainer(plan={"steps": []})
 
     orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "fix bug"
-    )
+    result = orchestrator.run("fix bug")
 
-    assert result == (
-        "❌ Planner herhangi bir işlem oluşturmadı."
-    )
+    assert result == ("❌ Planner herhangi bir işlem oluşturmadı.")
 
 
 @pytest.mark.unit
@@ -263,9 +240,7 @@ def test_development_unknown_tool():
 
     orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "do something"
-    )
+    result = orchestrator.run("do something")
 
     assert "Tool not found: missing_tool" in result
 
@@ -294,9 +269,7 @@ def test_development_tool_execution():
 
     orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "run tool"
-    )
+    result = orchestrator.run("run tool")
 
     assert result == "✅ Tool executed"
 
@@ -305,4 +278,58 @@ def test_development_tool_execution():
             "tool": "fake_tool",
             "action": "execute",
         }
+    ]
+
+
+@pytest.mark.unit
+def test_development_delegates_plan_execution_to_tool_agent():
+
+    container = FakeContainer(
+        plan={
+            "steps": [
+                {
+                    "tool": "fake_tool",
+                    "action": "execute",
+                }
+            ]
+        }
+    )
+
+    class SpyToolAgent:
+        def __init__(self):
+            self.calls = []
+
+        def execute_steps(self, plan, development_context=None):
+            self.calls.append((plan, development_context))
+
+            return [
+                {
+                    "step": 1,
+                    "tool": "fake_tool",
+                    "result": {
+                        "success": True,
+                        "message": "Delegated",
+                    },
+                }
+            ]
+
+    container.tool_agent = SpyToolAgent()
+
+    orchestrator = DevelopmentOrchestrator(container)
+
+    result = orchestrator.run("run tool")
+
+    assert result == "✅ Delegated"
+    assert container.tool_agent.calls == [
+        (
+            container.planner.plan,
+            container.development_context.calls[0]
+            and {
+                "task": "run tool",
+                "strategy": {
+                    "type": "development",
+                    "repository_analysis_fallback": False,
+                },
+            },
+        )
     ]

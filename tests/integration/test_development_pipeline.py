@@ -1,6 +1,7 @@
 import pytest
 
 from agents.planner_agent import PlannerAgent
+from agents.tool_agent import ToolAgent
 from app.core.orchestrators.development_orchestrator import (
     DevelopmentOrchestrator,
 )
@@ -55,16 +56,12 @@ class FakeDevelopmentContext:
             "task": task,
             "strategy": {
                 "type": "development",
-                "repository_analysis_fallback": (
-                    self.fallback
-                ),
+                "repository_analysis_fallback": (self.fallback),
             },
         }
 
         if self.fallback:
-            result["targets"] = [
-                "app/core/parser.py"
-            ]
+            result["targets"] = ["app/core/parser.py"]
 
         return result
 
@@ -103,6 +100,7 @@ class FakeRepositoryAnalyzer:
             "action": "analyze",
         }
 
+
 class FakeProjectMemorySync:
     def __init__(self):
         self.calls = []
@@ -119,9 +117,7 @@ class FakeRegistry:
     def __init__(self):
         self.tools = {
             "code": object(),
-            "repository_analyzer": (
-                FakeRepositoryAnalyzer()
-            ),
+            "repository_analyzer": (FakeRepositoryAnalyzer()),
         }
 
         self.calls = []
@@ -157,33 +153,26 @@ class FakeContainer:
         self.planner = planner
         self.code_agent = code_agent
 
-        self.code_llm = FakeLLM(
-            response=""
-        )
+        self.code_llm = FakeLLM(response="")
 
-        self.development_context = (
-            development_context
-        )
+        self.development_context = development_context
         self.registry = registry
 
-        self.repository_analyzer = (
-            registry.get(
-                "repository_analyzer"
-            )
+        self.repository_analyzer = registry.get("repository_analyzer")
+
+        self.tool_agent = ToolAgent(
+            registry=registry,
+            code_agent=code_agent,
         )
 
-        self.project_memory_sync = (
-            project_memory_sync
-            or FakeProjectMemorySync()
-        )
+        self.project_memory_sync = project_memory_sync or FakeProjectMemorySync()
 
         self.improvement_agent = None
 
 
 @pytest.mark.integration
 def test_development_pipeline_executes_code_task():
-    llm = FakeLLM(
-        response="""
+    llm = FakeLLM(response="""
         {
             "steps": [
                 {
@@ -193,8 +182,7 @@ def test_development_pipeline_executes_code_task():
                 }
             ]
         }
-        """
-    )
+        """)
 
     registry = FakeRegistry()
 
@@ -205,30 +193,20 @@ def test_development_pipeline_executes_code_task():
 
     code_agent = FakeCodeAgent()
 
-    development_context = (
-        FakeDevelopmentContext()
-    )
+    development_context = FakeDevelopmentContext()
 
     container = FakeContainer(
         planner=planner,
         code_agent=code_agent,
-        development_context=(
-            development_context
-        ),
+        development_context=(development_context),
         registry=registry,
     )
 
-    orchestrator = DevelopmentOrchestrator(
-        container
-    )
+    orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "Fix parser"
-    )
+    result = orchestrator.run("Fix parser")
 
-    assert result == (
-        "✅ Kod başarıyla güncellendi."
-    )
+    assert result == ("✅ Kod başarıyla güncellendi.")
 
     assert development_context.calls == [
         "Fix parser",
@@ -252,8 +230,7 @@ def test_development_pipeline_executes_code_task():
 
 @pytest.mark.integration
 def test_development_pipeline_executes_repository_analysis():
-    llm = FakeLLM(
-        response="""
+    llm = FakeLLM(response="""
         {
             "steps": [
                 {
@@ -263,8 +240,7 @@ def test_development_pipeline_executes_repository_analysis():
                 }
             ]
         }
-        """
-    )
+        """)
 
     registry = FakeRegistry()
 
@@ -275,30 +251,20 @@ def test_development_pipeline_executes_repository_analysis():
 
     code_agent = FakeCodeAgent()
 
-    development_context = (
-        FakeDevelopmentContext()
-    )
+    development_context = FakeDevelopmentContext()
 
     container = FakeContainer(
         planner=planner,
         code_agent=code_agent,
-        development_context=(
-            development_context
-        ),
+        development_context=(development_context),
         registry=registry,
     )
 
-    orchestrator = DevelopmentOrchestrator(
-        container
-    )
+    orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "Analyze repository"
-    )
+    result = orchestrator.run("Analyze repository")
 
-    assert result == (
-        "✅ İşlem başarıyla tamamlandı."
-    )
+    assert result == ("✅ İşlem başarıyla tamamlandı.")
 
     assert registry.calls == [
         "repository_analyzer",
@@ -312,10 +278,10 @@ def test_development_pipeline_executes_repository_analysis():
 
     assert code_agent.calls == []
 
+
 @pytest.mark.integration
 def test_development_pipeline_executes_multiple_steps_in_order():
-    llm = FakeLLM(
-        response="""
+    llm = FakeLLM(response="""
         {
             "steps": [
                 {
@@ -330,8 +296,7 @@ def test_development_pipeline_executes_multiple_steps_in_order():
                 }
             ]
         }
-        """
-    )
+        """)
 
     registry = FakeRegistry()
 
@@ -342,30 +307,21 @@ def test_development_pipeline_executes_multiple_steps_in_order():
 
     code_agent = FakeCodeAgent()
 
-    development_context = (
-        FakeDevelopmentContext()
-    )
+    development_context = FakeDevelopmentContext()
 
     container = FakeContainer(
         planner=planner,
         code_agent=code_agent,
-        development_context=(
-            development_context
-        ),
+        development_context=(development_context),
         registry=registry,
     )
 
-    orchestrator = DevelopmentOrchestrator(
-        container
-    )
+    orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "Analyze repository and fix parser"
-    )
+    result = orchestrator.run("Analyze repository and fix parser")
 
     assert result == (
-        "✅ İşlem başarıyla tamamlandı.\n\n"
-        "✅ Kod başarıyla güncellendi."
+        "✅ İşlem başarıyla tamamlandı.\n\n" "✅ Kod başarıyla güncellendi."
     )
 
     assert development_context.calls == [
@@ -394,10 +350,10 @@ def test_development_pipeline_executes_multiple_steps_in_order():
 
     assert len(llm.calls) == 1
 
+
 @pytest.mark.integration
 def test_development_pipeline_passes_architecture_aware_context_to_code_agent():
-    llm = FakeLLM(
-        response="""
+    llm = FakeLLM(response="""
         {
             "steps": [
                 {
@@ -407,14 +363,11 @@ def test_development_pipeline_passes_architecture_aware_context_to_code_agent():
                 }
             ]
         }
-        """
-    )
+        """)
 
     files = {
         "app/core/parser.py": {
-            "imports": [
-                "app/core/tokenizer.py"
-            ],
+            "imports": ["app/core/tokenizer.py"],
             "summary": "Parser implementation",
         },
         "app/core/tokenizer.py": {
@@ -461,65 +414,39 @@ def test_development_pipeline_passes_architecture_aware_context_to_code_agent():
         registry=FakeRegistry(),
     )
 
-    orchestrator = DevelopmentOrchestrator(
-        container
-    )
+    orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "Fix app/core/parser.py"
-    )
+    result = orchestrator.run("Fix app/core/parser.py")
 
-    assert result == (
-        "✅ Kod başarıyla güncellendi."
-    )
+    assert result == ("✅ Kod başarıyla güncellendi.")
 
     assert len(code_agent.calls) == 1
 
-    passed_context = (
-        code_agent.calls[0][
-            "development_context"
-        ]
-    )
+    passed_context = code_agent.calls[0]["development_context"]
 
-    assert passed_context["task"] == (
-        "Fix app/core/parser.py"
-    )
+    assert passed_context["task"] == ("Fix app/core/parser.py")
 
-    assert passed_context["targets"] == [
-        "app/core/parser.py"
-    ]
+    assert passed_context["targets"] == ["app/core/parser.py"]
 
     assert passed_context["target_files"] == {
-        "app/core/parser.py": files[
-            "app/core/parser.py"
-        ]
+        "app/core/parser.py": files["app/core/parser.py"]
     }
 
-    assert "app/core/tokenizer.py" in (
-        passed_context["related_files"]
-    )
+    assert "app/core/tokenizer.py" in (passed_context["related_files"])
 
-    assert "app/core/parser.py" not in (
-        passed_context["related_files"]
-    )
+    assert "app/core/parser.py" not in (passed_context["related_files"])
 
-    assert passed_context["strategy"]["type"] == (
-        "architecture_aware_targeted_fix"
-    )
+    assert passed_context["strategy"]["type"] == ("architecture_aware_targeted_fix")
 
-    assert passed_context["strategy"][
-        "architecture_aware"
-    ] is True
+    assert passed_context["strategy"]["architecture_aware"] is True
 
-    assert passed_context["strategy"][
-        "minimal_change"
-    ] is True
+    assert passed_context["strategy"]["minimal_change"] is True
+
 
 @pytest.mark.integration
 def test_development_pipeline_runs_repository_analysis_fallback_when_memory_is_unavailable():
 
-    llm = FakeLLM(
-        response="""
+    llm = FakeLLM(response="""
         {
             "steps": [
                 {
@@ -529,8 +456,7 @@ def test_development_pipeline_runs_repository_analysis_fallback_when_memory_is_u
                 }
             ]
         }
-        """
-    )
+        """)
 
     registry = FakeRegistry()
 
@@ -541,47 +467,29 @@ def test_development_pipeline_runs_repository_analysis_fallback_when_memory_is_u
 
     code_agent = FakeCodeAgent()
 
-    development_context = FakeDevelopmentContext(
-        fallback=True
-    )
+    development_context = FakeDevelopmentContext(fallback=True)
 
-    project_memory_sync = (
-        FakeProjectMemorySync()
-    )
+    project_memory_sync = FakeProjectMemorySync()
 
     container = FakeContainer(
         planner=planner,
         code_agent=code_agent,
-        development_context=(
-            development_context
-        ),
+        development_context=(development_context),
         registry=registry,
-        project_memory_sync=(
-            project_memory_sync
-        ),
+        project_memory_sync=(project_memory_sync),
     )
 
-    orchestrator = DevelopmentOrchestrator(
-        container
-    )
+    orchestrator = DevelopmentOrchestrator(container)
 
-    result = orchestrator.run(
-        "Fix parser"
-    )
+    result = orchestrator.run("Fix parser")
 
-    assert result == (
-        "✅ Kod başarıyla güncellendi."
-    )
+    assert result == ("✅ Kod başarıyla güncellendi.")
 
     assert development_context.calls == [
         "Fix parser",
         "Fix parser",
     ]
 
-    assert project_memory_sync.calls == [
-        [
-            "app/core/parser.py"
-        ]
-    ]
+    assert project_memory_sync.calls == [["app/core/parser.py"]]
 
     assert len(code_agent.calls) == 1
