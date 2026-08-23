@@ -12,19 +12,23 @@ class ModelContainer:
         self.registry = ModelRegistry()
 
         self.chat_llm = LLMProvider(
-            self.registry.get("chat")
+            self.registry.get("chat"),
+            agent_name="chat"
         )
 
         self.code_llm = LLMProvider(
-            self.registry.get("code")
+            self.registry.get("code"),
+            agent_name="code"
         )
 
         self.planner_llm = LLMProvider(
-            self.registry.get("planner")
+            self.registry.get("planner"),
+            agent_name="planner"
         )
 
         self.decision_llm = LLMProvider(
-            self.registry.get("decision")
+            self.registry.get("decision"),
+            agent_name="decision"
         )
 
     # =========================================================
@@ -47,7 +51,8 @@ class ModelContainer:
             )
 
         provider = LLMProvider(
-            config
+            config,
+            agent_name=slot
         )
 
         if slot == "chat":
