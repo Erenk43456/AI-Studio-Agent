@@ -1,0 +1,174 @@
+{
+  "meta": {
+    "id": "B05",
+    "name": "existing_code_preservation",
+    "total_runs": 2,
+    "passed_runs": 1,
+    "failed_runs": 1,
+    "inconclusive_runs": 0,
+    "pass_rate": 50.0,
+    "fail_rate": 50.0
+  },
+  "benchmark": {
+    "passed": [
+      2
+    ],
+    "failures": [
+      {
+        "run_id": 1,
+        "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+      }
+    ],
+    "inconclusive": []
+  },
+  "agents": {
+    "decision": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    },
+    "planner": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    },
+    "code": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    }
+  },
+  "models": {
+    "nvidia/nemotron-3.5-lightning-30b-a3b": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    },
+    "nvidia/nemotron-3-ultra-550b-a55b": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    },
+    "nvidia/nemotron-3-super-120b-a12b": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    }
+  },
+  "agent_model": {
+    "decision@nvidia/nemotron-3.5-lightning-30b-a3b": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    },
+    "planner@nvidia/nemotron-3-ultra-550b-a55b": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    },
+    "code@nvidia/nemotron-3-super-120b-a12b": {
+      "total": 2,
+      "passed": [
+        2
+      ],
+      "failures": [
+        {
+          "run_id": 1,
+          "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'"
+        }
+      ],
+      "inconclusive": [],
+      "pass_rate": 50.0,
+      "failure_rate": 50.0,
+      "inconclusive_rate": 0.0
+    }
+  }
+}

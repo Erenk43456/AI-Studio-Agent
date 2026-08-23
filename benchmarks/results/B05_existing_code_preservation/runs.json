@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "id": "B05",
+    "name": "existing_code_preservation",
+    "total_runs": 2
+  },
+  "runs": [
+    {
+      "run_id": 1,
+      "timestamp": "2026-08-23T01:46:42.415297+00:00",
+      "status": "FAILURE",
+      "changed_files": [
+        "relative\\path.py"
+      ],
+      "validation": {
+        "success": false,
+        "missing_files": [],
+        "unexpected_files": [
+          "relative\\path.py"
+        ],
+        "forbidden_files_changed": [],
+        "tests": [
+          {
+            "test": "assert Calculator().add(2, 3) == 5",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().add(-2, 5) == 3",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().subtract(5, 3) == 2",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().subtract(-2, 5) == -7",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().multiply(4, 5) == 20",
+            "success": false,
+            "error": "'Calculator' object has no attribute 'multiply'",
+            "error_type": "AttributeError"
+          },
+          {
+            "test": "assert Calculator().multiply(-2, 6) == -12",
+            "success": false,
+            "error": "'Calculator' object has no attribute 'multiply'",
+            "error_type": "AttributeError"
+          },
+          {
+            "test": "assert square(5) == 25",
+            "success": true
+          },
+          {
+            "test": "assert math.sqrt(16) == 4",
+            "success": true
+          }
+        ]
+      },
+      "agents": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b"
+      },
+      "models": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b",
+        "chat": "minimaxai/minimax-m3"
+      },
+      "failure": {
+        "cause": "'Calculator' object has no attribute 'multiply'; 'Calculator' object has no attribute 'multiply'",
+        "error_type": "AttributeError"
+      }
+    },
+    {
+      "run_id": 2,
+      "timestamp": "2026-08-23T01:50:58.693371+00:00",
+      "status": "PASS",
+      "changed_files": [
+        "calculator.py"
+      ],
+      "validation": {
+        "success": true,
+        "missing_files": [],
+        "unexpected_files": [],
+        "forbidden_files_changed": [],
+        "tests": [
+          {
+            "test": "assert Calculator().add(2, 3) == 5",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().add(-2, 5) == 3",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().subtract(5, 3) == 2",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().subtract(-2, 5) == -7",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().multiply(4, 5) == 20",
+            "success": true
+          },
+          {
+            "test": "assert Calculator().multiply(-2, 6) == -12",
+            "success": true
+          },
+          {
+            "test": "assert square(5) == 25",
+            "success": true
+          },
+          {
+            "test": "assert math.sqrt(16) == 4",
+            "success": true
+          }
+        ]
+      },
+      "agents": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b"
+      },
+      "models": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b",
+        "chat": "minimaxai/minimax-m3"
+      }
+    }
+  ]
+}
