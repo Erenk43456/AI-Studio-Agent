@@ -6,10 +6,13 @@ class LLMProvider:
 
     def __init__(
         self,
-        model_config
+        model_config,
+        agent_name=None
     ):
 
         self.config = model_config
+
+        self.agent_name = agent_name
 
         self.model_slot = model_config.name
 
@@ -25,7 +28,8 @@ class LLMProvider:
         if provider == "api":
 
             self.llm = APILLM(
-                model_config
+                model_config,
+                agent_name=self.agent_name
             )
 
         else:

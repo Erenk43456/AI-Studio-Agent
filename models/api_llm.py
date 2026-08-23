@@ -1,3 +1,5 @@
+import time
+
 import requests
 
 from app.core.logger import AppLogger
@@ -7,10 +9,13 @@ class APILLM:
 
     def __init__(
         self,
-        config
+        config,
+        agent_name="API"
     ):
 
         self.config = config
+
+        self.agent_name = agent_name or "unknown"
 
         self.logger = AppLogger()
 
@@ -50,8 +55,28 @@ class APILLM:
             180
         )
 
+        self.max_retries = getattr(
+            config,
+            "max_retries",
+            3
+        )
+
+        self.retry_backoff = getattr(
+            config,
+            "retry_backoff",
+            2
+        )
+
+        self.retryable_status_codes = {
+            429,
+            500,
+            502,
+            503,
+            504
+        }
+
         self.logger.info(
-            f"API LLM initialized: {self.model}"
+            f"{self.agent_name} API LLM initialized: {self.model}"
         )
 
 
@@ -126,24 +151,123 @@ class APILLM:
                 "stream": False
             }
 
-            self.logger.info(
-                f"Sending API request: {self.model}"
-            )
+            last_error = None
 
-            response = requests.post(
+            for attempt in range(
+                self.max_retries + 1
+            ):
 
-                self.url,
+                try:
 
-                headers=headers,
+                    self.logger.info(
+                        f"[{self.agent_name}] Sending API request: {self.model}"
+                        f"(attempt {attempt + 1}/{self.max_retries + 1})"
+                    )
 
-                json=payload,
+                    response = requests.post(
 
-                timeout=request_timeout
-            )
+                        self.url,
 
-            response.raise_for_status()
+                        headers=headers,
 
-            data = response.json()
+                        json=payload,
+
+                        timeout=request_timeout
+                    )
+
+                    if (
+                        response.status_code
+                        in self.retryable_status_codes
+                    ):
+
+                        if attempt < self.max_retries:
+
+                            delay = (
+                                self.retry_backoff
+                                * (2 ** attempt)
+                            )
+
+                            self.logger.warning(
+                                f"API returned HTTP "
+                                f"{response.status_code}. "
+                                f"Retrying in {delay}s..."
+                            )
+
+                            time.sleep(
+                                delay
+                            )
+
+                            continue
+
+                        response.raise_for_status()
+
+                    response.raise_for_status()
+
+                    data = response.json()
+
+                    break
+
+                except requests.exceptions.Timeout as error:
+
+                    last_error = error
+
+                    if attempt < self.max_retries:
+
+                        delay = (
+                            self.retry_backoff
+                            * (2 ** attempt)
+                        )
+
+                        self.logger.warning(
+                            f"API request timed out. "
+                            f"Retrying in {delay}s..."
+                        )
+
+                        time.sleep(
+                            delay
+                        )
+
+                        continue
+
+                    raise
+
+                except requests.exceptions.ConnectionError as error:
+
+                    last_error = error
+
+                    if attempt < self.max_retries:
+
+                        delay = (
+                            self.retry_backoff
+                            * (2 ** attempt)
+                        )
+
+                        self.logger.warning(
+                            f"API connection error. "
+                            f"Retrying in {delay}s..."
+                        )
+
+                        time.sleep(
+                            delay
+                        )
+
+                        continue
+
+                    raise
+
+                except requests.exceptions.HTTPError:
+
+                    raise
+
+            else:
+
+                if last_error is not None:
+
+                    raise last_error
+
+                raise RuntimeError(
+                    "API request failed after all retries."
+                )
 
             choices = data.get(
                 "choices",
@@ -206,11 +330,11 @@ class APILLM:
         except requests.exceptions.RequestException as error:
 
             self.logger.error(
-                f"API request error: {error}"
+                f"[{self.agent_name}] API request error: {error}"
             )
 
             return {
-                "error": f"API request error: {error}"
+                "error": f"[{self.agent_name}] API request error: {error}"
             }
 
         except ValueError as error:
