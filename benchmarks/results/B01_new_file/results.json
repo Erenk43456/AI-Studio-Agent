@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "id": "B01",
+    "name": "create_new_file",
+    "total_runs": 1,
+    "passed_runs": 1,
+    "failed_runs": 0,
+    "inconclusive_runs": 0,
+    "pass_rate": 100.0,
+    "fail_rate": 0.0
+  },
+  "benchmark": {
+    "passed": [
+      1
+    ],
+    "failures": [],
+    "inconclusive": []
+  },
+  "agents": {
+    "decision": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    },
+    "planner": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    },
+    "code": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    }
+  },
+  "models": {
+    "nvidia/nemotron-3.5-lightning-30b-a3b": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    },
+    "nvidia/nemotron-3-ultra-550b-a55b": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    },
+    "nvidia/nemotron-3-super-120b-a12b": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    }
+  },
+  "agent_model": {
+    "decision@nvidia/nemotron-3.5-lightning-30b-a3b": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    },
+    "planner@nvidia/nemotron-3-ultra-550b-a55b": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    },
+    "code@nvidia/nemotron-3-super-120b-a12b": {
+      "total": 1,
+      "passed": [
+        1
+      ],
+      "failures": [],
+      "inconclusive": [],
+      "pass_rate": 100.0,
+      "failure_rate": 0.0,
+      "inconclusive_rate": 0.0
+    }
+  }
+}

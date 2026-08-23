@@ -10,6 +10,8 @@ from typing import Any
 
 from app.core.containers.main_container import MainContainer
 
+from benchmarks.runner.result_store import BenchmarkResultStore
+
 
 class BenchmarkRunner:
     """Runs AI-Studio benchmark tasks in isolated workspaces."""
@@ -43,6 +45,10 @@ class BenchmarkRunner:
         self.results_dir.mkdir(
             parents=True,
             exist_ok=True,
+        )
+
+        self.result_store = BenchmarkResultStore(
+            self.results_dir
         )
 
     # =========================================================
@@ -179,7 +185,7 @@ class BenchmarkRunner:
                 continue
 
             files.add(
-                str(relative)
+                str(relative).replace("\\", "/")
             )
 
         return files
@@ -208,7 +214,7 @@ class BenchmarkRunner:
                 continue
 
             try:
-                snapshot[str(relative)] = (
+                snapshot[str(relative).replace("\\", "/")] = (
                     path.read_text(
                         encoding="utf-8"
                     )
@@ -1042,180 +1048,12 @@ class BenchmarkRunner:
         result: dict[str, Any],
     ) -> None:
 
-        result_path = (
-            self.results_dir
-            / f"{task_id}.json"
+        self.result_store.save_run(
+            task_id,
+            result,
         )
 
-        # -----------------------------------------------------
-        # Load previous history
-        # -----------------------------------------------------
-
-        if result_path.exists():
-
-            try:
-
-                with result_path.open(
-                    "r",
-                    encoding="utf-8",
-                ) as file:
-
-                    history = json.load(
-                        file
-                    )
-
-            except (
-                json.JSONDecodeError,
-                OSError,
-            ):
-
-                history = {}
-
-        else:
-
-            history = {}
-
-        if not isinstance(
-            history,
-            dict,
-        ):
-            history = {}
-
-        # -----------------------------------------------------
-        # Existing runs
-        # -----------------------------------------------------
-
-        runs = history.get(
-            "runs",
-            [],
+        self.result_store.rebuild_results(
+            task_id,
+            result,
         )
-
-        if not isinstance(
-            runs,
-            list,
-        ):
-            runs = []
-
-        run_id = len(runs) + 1
-
-        # -----------------------------------------------------
-        # New run
-        # -----------------------------------------------------
-
-        run = {
-            "run_id": run_id,
-            "timestamp": datetime.now(
-                timezone.utc
-            ).isoformat(),
-            "success": result.get(
-                "success",
-                False,
-            ),
-            "agent_result": result.get(
-                "agent_result",
-            ),
-            "changed_files": result.get(
-                "changed_files",
-                [],
-            ),
-            "validation": result.get(
-                "validation",
-                {},
-            ),
-            "models": result.get(
-                "models",
-                {},
-            ),
-            "execution": result.get(
-                "execution",
-                {},
-            ),
-        }
-
-        runs.append(
-            run
-        )
-
-        # -----------------------------------------------------
-        # Statistics
-        # -----------------------------------------------------
-
-        passed_runs = sum(
-            1
-            for item in runs
-            if (
-                isinstance(item, dict)
-                and item.get("success") is True
-            )
-        )
-
-        failed_runs = sum(
-            1
-            for item in runs
-            if (
-                isinstance(item, dict)
-                and item.get("success") is False
-            )
-        )
-
-        total_runs = (
-            passed_runs
-            + failed_runs
-        )
-
-        pass_rate = (
-            (passed_runs / total_runs) * 100
-            if total_runs
-            else 0.0
-        )
-
-        fail_rate = (
-            (failed_runs / total_runs) * 100
-            if total_runs
-            else 0.0
-        )
-
-        # -----------------------------------------------------
-        # History document
-        # -----------------------------------------------------
-
-        history = {
-            "meta": {
-                "id": result.get(
-                    "id",
-                    task_id,
-                ),
-                "name": result.get(
-                    "name",
-                    task_id,
-                ),
-                "total_runs": total_runs,
-                "passed_runs": passed_runs,
-                "failed_runs": failed_runs,
-                "pass_rate": round(
-                    pass_rate,
-                    2,
-                ),
-                "fail_rate": round(
-                    fail_rate,
-                    2,
-                ),
-            },
-            "runs": runs,
-        }
-
-        # -----------------------------------------------------
-        # Save
-        # -----------------------------------------------------
-
-        with result_path.open(
-            "w",
-            encoding="utf-8",
-        ) as file:
-
-            json.dump(
-                history,
-                file,
-                indent=2,
-                ensure_ascii=False,
-            )

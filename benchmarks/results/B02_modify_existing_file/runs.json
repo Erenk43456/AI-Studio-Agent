@@ -1,0 +1,48 @@
+{
+  "meta": {
+    "id": "B02",
+    "name": "modify_existing_file",
+    "total_runs": 1
+  },
+  "runs": [
+    {
+      "run_id": 1,
+      "timestamp": "2026-08-23T01:43:43.679085+00:00",
+      "status": "PASS",
+      "changed_files": [
+        "calculator.py"
+      ],
+      "validation": {
+        "success": true,
+        "missing_files": [],
+        "unexpected_files": [],
+        "forbidden_files_changed": [],
+        "tests": [
+          {
+            "test": "assert add(2, 3) == 5",
+            "success": true
+          },
+          {
+            "test": "assert add(-2, 5) == 3",
+            "success": true
+          },
+          {
+            "test": "assert add(10, -4) == 6",
+            "success": true
+          }
+        ]
+      },
+      "agents": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b"
+      },
+      "models": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b",
+        "chat": "minimaxai/minimax-m3"
+      }
+    }
+  ]
+}

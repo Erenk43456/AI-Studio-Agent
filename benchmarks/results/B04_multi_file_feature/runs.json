@@ -1,0 +1,61 @@
+{
+  "meta": {
+    "id": "B04",
+    "name": "multi_file_feature",
+    "total_runs": 1
+  },
+  "runs": [
+    {
+      "run_id": 1,
+      "timestamp": "2026-08-23T01:44:53.703822+00:00",
+      "status": "PASS",
+      "changed_files": [
+        "calculator.py",
+        "main.py"
+      ],
+      "validation": {
+        "success": true,
+        "missing_files": [],
+        "unexpected_files": [],
+        "forbidden_files_changed": [],
+        "tests": [
+          {
+            "test": "assert add(2, 3) == 5",
+            "success": true
+          },
+          {
+            "test": "assert add(-2, 5) == 3",
+            "success": true
+          },
+          {
+            "test": "assert multiply(4, 5) == 20",
+            "success": true
+          },
+          {
+            "test": "assert multiply(-2, 6) == -12",
+            "success": true
+          },
+          {
+            "test": "assert calculate_total(2, 3) == 5",
+            "success": true
+          },
+          {
+            "test": "assert calculate_product(4, 5) == 20",
+            "success": true
+          }
+        ]
+      },
+      "agents": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b"
+      },
+      "models": {
+        "decision": "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "planner": "nvidia/nemotron-3-ultra-550b-a55b",
+        "code": "nvidia/nemotron-3-super-120b-a12b",
+        "chat": "minimaxai/minimax-m3"
+      }
+    }
+  ]
+}
