@@ -35,6 +35,19 @@ class FailingProjectMemory:
         raise RuntimeError("file unavailable")
 
 
+class SpyResolver:
+    def __init__(self, result=None, error=None):
+        self.result = result if result is not None else {}
+        self.error = error
+        self.calls = []
+
+    def resolve(self, target_files, target_symbols=None, max_files=12):
+        self.calls.append((target_files, target_symbols, max_files))
+        if self.error:
+            raise self.error
+        return self.result
+
+
 @pytest.fixture
 def context():
     return DevelopmentContext(
@@ -59,21 +72,91 @@ def test_extract_target_files_normalizes_and_deduplicates(context):
 
 
 @pytest.mark.unit
+def test_development_context_returns_targeted_context():
+    resolver = SpyResolver({"targets": ["app/parser.py"]})
+    context = DevelopmentContext(
+        FakeProjectMemory(),
+        "C:/AI-Studio",
+        repository_context_resolver=resolver,
+    )
+
+    result = context.get_targeted_context(["app/parser.py"])
+
+    assert result == {"targets": ["app/parser.py"]}
+
+
+@pytest.mark.unit
+def test_development_context_forwards_targets_symbols_and_max_files():
+    resolver = SpyResolver({"targets": ["app/parser.py"]})
+    context = DevelopmentContext(
+        FakeProjectMemory(),
+        "C:/AI-Studio",
+        repository_context_resolver=resolver,
+    )
+
+    context.get_targeted_context(
+        ["app/parser.py"],
+        target_symbols=["Parser"],
+        max_files=3,
+    )
+
+    assert resolver.calls == [(["app/parser.py"], ["Parser"], 3)]
+
+
+@pytest.mark.unit
+def test_development_context_minimal_memory_constructor_remains_compatible():
+    context = DevelopmentContext(
+        FakeProjectMemory(),
+        "C:/AI-Studio",
+    )
+
+    result = context.get_targeted_context(["missing.py"])
+
+    assert result["targets"] == ["missing.py"]
+    assert result["related_files"] == []
+
+
+@pytest.mark.unit
+def test_development_context_handles_resolver_failure_safely():
+    context = DevelopmentContext(
+        FakeProjectMemory(),
+        "C:/AI-Studio",
+        repository_context_resolver=SpyResolver(
+            error=RuntimeError("resolver unavailable")
+        ),
+    )
+
+    assert context.get_targeted_context(["app/parser.py"]) == {}
+
+
+@pytest.mark.unit
+def test_development_context_targeted_context_does_not_use_filesystem_or_analyzer():
+    class SnapshotMemory:
+        def get_all_files(self):
+            return {"app/parser.py": {"language": "python"}}
+
+        def get_file(self, path):
+            return None
+
+    context = DevelopmentContext(SnapshotMemory(), "C:/missing-workspace")
+
+    result = context.get_targeted_context(["app/parser.py"])
+
+    assert result["target_files"] == {"app/parser.py": {"language": "python"}}
+
+
+@pytest.mark.unit
 def test_build_collects_targets_related_files_relationships_and_strategy():
 
     files = {
         "app/core/parser.py": {
-            "imports": [
-                "app/core/tokenizer.py"
-            ],
+            "imports": ["app/core/tokenizer.py"],
             "summary": "Parser implementation",
         },
-
         "app/core/tokenizer.py": {
             "imports": [],
             "summary": "Tokenizer used by parser",
         },
-
         "tools/unrelated.py": {
             "summary": "Unrelated utility",
         },
@@ -96,39 +179,21 @@ def test_build_collects_targets_related_files_relationships_and_strategy():
         "C:/AI-Studio",
     )
 
-    result = context.build(
-        "Fix the bug in app/core/parser.py"
-    )
+    result = context.build("Fix the bug in app/core/parser.py")
 
-    assert result["task"] == (
-        "Fix the bug in app/core/parser.py"
-    )
+    assert result["task"] == ("Fix the bug in app/core/parser.py")
 
-    assert result["targets"] == [
-        "app/core/parser.py"
-    ]
+    assert result["targets"] == ["app/core/parser.py"]
 
-    assert result["target_files"] == {
-        "app/core/parser.py": files[
-            "app/core/parser.py"
-        ]
-    }
+    assert result["target_files"] == {"app/core/parser.py": files["app/core/parser.py"]}
 
-    assert "app/core/tokenizer.py" in result[
-        "related_files"
-    ]
+    assert "app/core/tokenizer.py" in result["related_files"]
 
-    assert "app/core/parser.py" not in result[
-        "related_files"
-    ]
+    assert "app/core/parser.py" not in result["related_files"]
 
-    assert result["relationships"][
-        "app/core/parser.py"
-    ]
+    assert result["relationships"]["app/core/parser.py"]
 
-    assert result["strategy"]["type"] == (
-        "architecture_aware_targeted_fix"
-    )
+    assert result["strategy"]["type"] == ("architecture_aware_targeted_fix")
 
     assert result["strategy"]["memory_first"] is True
     assert result["strategy"]["architecture_aware"] is True
@@ -140,17 +205,11 @@ def test_find_related_files_scores_same_package_and_dependency_relationships():
 
     files = {
         "app/core/parser.py": {
-            "imports": [
-                "app/core/tokenizer.py"
-            ],
+            "imports": ["app/core/tokenizer.py"],
         },
-
         "app/core/tokenizer.py": {
-            "imports": [
-                "app/core/parser.py"
-            ],
+            "imports": ["app/core/parser.py"],
         },
-
         "app/tools.py": {
             "imports": [],
         },
@@ -168,19 +227,13 @@ def test_find_related_files_scores_same_package_and_dependency_relationships():
         {},
     )
 
-    tokenizer = related[
-        "app/core/tokenizer.py"
-    ]
+    tokenizer = related["app/core/tokenizer.py"]
 
     assert tokenizer["score"] > 5
 
-    assert "same_package" in tokenizer[
-        "relationships"
-    ]
+    assert "same_package" in tokenizer["relationships"]
 
-    assert "references_target" in tokenizer[
-        "relationships"
-    ]
+    assert "references_target" in tokenizer["relationships"]
 
     assert "app/tools.py" not in related
 
@@ -188,26 +241,21 @@ def test_find_related_files_scores_same_package_and_dependency_relationships():
 @pytest.mark.unit
 def test_architecture_relationship_adds_architecture_score(context):
 
-    score, reasons, relationships = (
-        context.score_architecture_relationship(
-            "app/core/tokenizer.py",
-            ["app/core/parser.py"],
-            {
-                "files": [
-                    "app/core/parser.py",
-                    "app/core/tokenizer.py",
-                ]
-            },
-            {},
-        )
+    score, reasons, relationships = context.score_architecture_relationship(
+        "app/core/tokenizer.py",
+        ["app/core/parser.py"],
+        {
+            "files": [
+                "app/core/parser.py",
+                "app/core/tokenizer.py",
+            ]
+        },
+        {},
     )
 
     assert score >= 9
 
-    assert (
-        "both files appear in project architecture"
-        in reasons
-    )
+    assert "both files appear in project architecture" in reasons
 
     assert "architecture_member" in relationships
     assert "architecture_layer" in relationships
@@ -226,22 +274,18 @@ def test_determine_strategy_selects_expected_strategy_types():
             "Analyze app/core/parser.py",
             "analysis",
         ),
-
         (
             "Refactor app/core/parser.py",
             "architecture_preserving_refactor",
         ),
-
         (
             "Fix app/core/parser.py",
             "targeted_fix",
         ),
-
         (
             "Add a feature to app/core/parser.py",
             "feature_implementation",
         ),
-
         (
             "Work on app/core/parser.py",
             "architecture_aware_development",
@@ -250,13 +294,9 @@ def test_determine_strategy_selects_expected_strategy_types():
 
     for task, expected in cases:
 
-        result = context.build(
-            task
-        )
+        result = context.build(task)
 
-        assert result["strategy"]["type"] == (
-            expected
-        )
+        assert result["strategy"]["type"] == (expected)
 
 
 @pytest.mark.unit
@@ -272,10 +312,7 @@ def test_multiple_targets_use_multi_target_fix_strategy():
         "C:/AI-Studio",
     )
 
-    result = context.build(
-        "Fix app/core/parser.py "
-        "and app/core/tokenizer.py"
-    )
+    result = context.build("Fix app/core/parser.py " "and app/core/tokenizer.py")
 
     assert result["targets"] == [
         "app/core/parser.py",
@@ -284,9 +321,7 @@ def test_multiple_targets_use_multi_target_fix_strategy():
 
     assert result["strategy"]["multi_target"] is True
 
-    assert result["strategy"]["type"] == (
-        "multi_target_targeted_fix"
-    )
+    assert result["strategy"]["type"] == ("multi_target_targeted_fix")
 
 
 @pytest.mark.unit
@@ -297,15 +332,11 @@ def test_repository_analysis_fallback_is_enabled_when_memory_is_empty():
         "C:/AI-Studio",
     )
 
-    result = context.build(
-        "Fix app/core/parser.py"
-    )
+    result = context.build("Fix app/core/parser.py")
 
     assert result["strategy"]["memory_available"] is False
 
-    assert result["strategy"][
-        "repository_analysis_fallback"
-    ] is True
+    assert result["strategy"]["repository_analysis_fallback"] is True
 
 
 @pytest.mark.unit
@@ -316,9 +347,7 @@ def test_memory_errors_fall_back_to_empty_context():
         "C:/AI-Studio",
     )
 
-    result = context.build(
-        "Fix app/core/parser.py"
-    )
+    result = context.build("Fix app/core/parser.py")
 
     assert result["target_files"] == {}
     assert result["related_files"] == {}
@@ -326,9 +355,7 @@ def test_memory_errors_fall_back_to_empty_context():
 
     assert result["strategy"]["memory_available"] is False
 
-    assert result["strategy"][
-        "repository_analysis_fallback"
-    ] is True
+    assert result["strategy"]["repository_analysis_fallback"] is True
 
 
 @pytest.mark.unit
@@ -346,13 +373,9 @@ def test_to_prompt_returns_valid_json():
         },
     }
 
-    prompt = context.to_prompt(
-        value
-    )
+    prompt = context.to_prompt(value)
 
-    parsed = json.loads(
-        prompt
-    )
+    parsed = json.loads(prompt)
 
     assert parsed == value
 
@@ -369,11 +392,9 @@ def test_same_layer_or_directory_alone_does_not_make_file_related():
         "app/core/parser.py": {
             "summary": "Parser implementation",
         },
-
         "app/core/unrelated.py": {
             "summary": "Completely unrelated module",
         },
-
         "app/tools.py": {
             "summary": "Unrelated tool",
         },
@@ -394,10 +415,7 @@ def test_same_layer_or_directory_alone_does_not_make_file_related():
                     "app/core/parser.py",
                     "app/core/unrelated.py",
                 ],
-
-                "tools": [
-                    "app/tools.py"
-                ],
+                "tools": ["app/tools.py"],
             }
         },
     )
@@ -413,28 +431,18 @@ def test_direct_dependency_reference_is_meaningful_relationship():
         "C:/AI-Studio",
     )
 
-    score, reasons, relationships = (
-        context.score_dependency_relationship(
-            "app/core/tokenizer.py",
-            ["app/core/parser.py"],
-            {
-                "imports": [
-                    "app/core/parser.py"
-                ],
-
-                "summary": (
-                    "Tokenizer depends on parser"
-                ),
-            },
-        )
+    score, reasons, relationships = context.score_dependency_relationship(
+        "app/core/tokenizer.py",
+        ["app/core/parser.py"],
+        {
+            "imports": ["app/core/parser.py"],
+            "summary": ("Tokenizer depends on parser"),
+        },
     )
 
     assert score >= 7
 
-    assert any(
-        "references target" in reason
-        for reason in reasons
-    )
+    assert any("references target" in reason for reason in reasons)
 
     assert "references_target" in relationships
 
@@ -444,11 +452,8 @@ def test_target_memory_reference_makes_related_file_meaningful():
 
     files = {
         "app/core/parser.py": {
-            "imports": [
-                "app/core/tokenizer.py"
-            ],
+            "imports": ["app/core/tokenizer.py"],
         },
-
         "app/core/tokenizer.py": {
             "summary": "Tokenizer",
         },
@@ -466,13 +471,9 @@ def test_target_memory_reference_makes_related_file_meaningful():
         {},
     )
 
-    tokenizer = related[
-        "app/core/tokenizer.py"
-    ]
+    tokenizer = related["app/core/tokenizer.py"]
 
-    assert "target_references_file" in tokenizer[
-        "relationships"
-    ]
+    assert "target_references_file" in tokenizer["relationships"]
 
     assert tokenizer["score"] >= 5
 
@@ -485,19 +486,11 @@ def test_architecture_layer_is_supporting_evidence_not_meaningful_relationship()
         "C:/AI-Studio",
     )
 
-    score, reasons, relationships = (
-        context.score_architecture_relationship(
-            "app/core/unrelated.py",
-            ["app/core/parser.py"],
-            {
-                "layers": {
-                    "core": [
-                        "app/core/parser.py"
-                    ]
-                }
-            },
-            {},
-        )
+    score, reasons, relationships = context.score_architecture_relationship(
+        "app/core/unrelated.py",
+        ["app/core/parser.py"],
+        {"layers": {"core": ["app/core/parser.py"]}},
+        {},
     )
 
     assert score == 1
@@ -521,7 +514,6 @@ def test_feature_with_architecture_related_file_uses_architecture_aware_strategy
         "app/core/parser.py": {
             "summary": "Parser implementation",
         },
-
         "app/core/tokenizer.py": {
             "summary": "Tokenizer integration",
         },
@@ -553,27 +545,17 @@ def test_feature_with_architecture_related_file_uses_architecture_aware_strategy
             return architecture
 
     context = DevelopmentContext(
-        ArchitectureProjectMemory(
-            files=files
-        ),
+        ArchitectureProjectMemory(files=files),
         "C:/AI-Studio",
     )
 
-    result = context.build(
-        "Add a feature to app/core/parser.py"
-    )
+    result = context.build("Add a feature to app/core/parser.py")
 
-    assert result["strategy"]["type"] == (
-        "architecture_aware_feature_implementation"
-    )
+    assert result["strategy"]["type"] == ("architecture_aware_feature_implementation")
 
-    assert "app/core/tokenizer.py" in (
-        result["related_files"]
-    )
+    assert "app/core/tokenizer.py" in (result["related_files"])
 
     assert (
         "architecture_member"
-        in result["related_files"][
-            "app/core/tokenizer.py"
-        ]["relationships"]
+        in result["related_files"]["app/core/tokenizer.py"]["relationships"]
     )

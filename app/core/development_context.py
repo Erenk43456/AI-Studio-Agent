@@ -3,6 +3,7 @@ import re
 from pathlib import Path
 
 from app.core.logger import AppLogger
+from app.core.repository_context_resolver import RepositoryContextResolver
 
 
 class DevelopmentContext:
@@ -10,11 +11,16 @@ class DevelopmentContext:
     def __init__(
         self,
         project_memory,
-        workspace
+        workspace,
+        repository_context_resolver=None,
     ):
 
         self.project_memory = project_memory
         self.workspace = Path(workspace)
+
+        self.repository_context_resolver = (
+            repository_context_resolver or RepositoryContextResolver(project_memory)
+        )
 
         self.logger = AppLogger()
 
@@ -26,54 +32,49 @@ class DevelopmentContext:
         # usable project memory.
         self._memory_available = False
 
+    def get_targeted_context(
+        self,
+        target_files,
+        target_symbols=None,
+        max_files=12,
+    ):
+        try:
+            return self.repository_context_resolver.resolve(
+                target_files,
+                target_symbols=target_symbols,
+                max_files=max_files,
+            )
+        except Exception as error:
+            self.logger.error(f"Targeted repository context failed: {error}")
+            return {}
+
     # =============================================================
     # Public API
     # =============================================================
 
-    def build(
-        self,
-        task
-    ):
+    def build(self, task):
 
         task = str(task or "").strip()
 
         # Reset memory state for every build.
         self._memory_available = False
 
-        targets = self.extract_target_files(
-            task
-        )
+        targets = self.extract_target_files(task)
 
         architecture = self.get_architecture()
 
         all_files = self.get_all_files()
 
-        target_files = self.collect_target_files(
-            targets,
-            all_files
-        )
+        target_files = self.collect_target_files(targets, all_files)
 
-        related_files = self.find_related_files(
-            task,
-            targets,
-            all_files,
-            architecture
-        )
+        related_files = self.find_related_files(task, targets, all_files, architecture)
 
         relationships = self.build_relationships(
-            targets,
-            target_files,
-            related_files,
-            architecture
+            targets, target_files, related_files, architecture
         )
 
         strategy = self.determine_strategy(
-            task,
-            targets,
-            target_files,
-            related_files,
-            relationships,
-            architecture
+            task, targets, target_files, related_files, relationships, architecture
         )
 
         context = {
@@ -83,7 +84,7 @@ class DevelopmentContext:
             "related_files": related_files,
             "relationships": relationships,
             "architecture": architecture,
-            "strategy": strategy
+            "strategy": strategy,
         }
 
         self.logger.info(
@@ -99,10 +100,7 @@ class DevelopmentContext:
     # Target detection
     # =============================================================
 
-    def extract_target_files(
-        self,
-        task
-    ):
+    def extract_target_files(self, task):
 
         if not task:
             return []
@@ -115,17 +113,14 @@ class DevelopmentContext:
             [A-Za-z0-9_.-]+\.py
             """,
             task,
-            re.VERBOSE
+            re.VERBOSE,
         )
 
         result = []
 
         for candidate in candidates:
 
-            candidate = candidate.replace(
-                "\\",
-                "/"
-            )
+            candidate = candidate.replace("\\", "/")
 
             # Remove only an actual leading "./" or ".\".
             while candidate.startswith("./"):
@@ -143,29 +138,19 @@ class DevelopmentContext:
     # Project memory
     # =============================================================
 
-    def get_all_files(
-        self
-    ):
+    def get_all_files(self):
 
         try:
 
-            files = (
-                self.project_memory.get_all_files()
-            )
+            files = self.project_memory.get_all_files()
 
         except Exception as error:
 
-            self.logger.error(
-                f"Failed to load project files from memory: "
-                f"{error}"
-            )
+            self.logger.error(f"Failed to load project files from memory: " f"{error}")
 
             return {}
 
-        if not isinstance(
-            files,
-            dict
-        ):
+        if not isinstance(files, dict):
 
             return {}
 
@@ -174,11 +159,7 @@ class DevelopmentContext:
 
         return files
 
-    def collect_target_files(
-        self,
-        targets,
-        all_files
-    ):
+    def collect_target_files(self, targets, all_files):
 
         result = {}
 
@@ -186,32 +167,17 @@ class DevelopmentContext:
 
             info = None
 
-            if isinstance(
-                all_files,
-                dict
-            ):
+            if isinstance(all_files, dict):
 
-                info = all_files.get(
-                    target
-                )
+                info = all_files.get(target)
 
                 if info is None:
 
-                    normalized_target = (
-                        target.replace(
-                            "\\",
-                            "/"
-                        )
-                    )
+                    normalized_target = target.replace("\\", "/")
 
                     for path, value in all_files.items():
 
-                        normalized_path = str(
-                            path
-                        ).replace(
-                            "\\",
-                            "/"
-                        )
+                        normalized_path = str(path).replace("\\", "/")
 
                         if normalized_path == normalized_target:
 
@@ -222,15 +188,12 @@ class DevelopmentContext:
 
                 try:
 
-                    info = self.project_memory.get_file(
-                        target
-                    )
+                    info = self.project_memory.get_file(target)
 
                 except Exception as error:
 
                     self.logger.error(
-                        f"Failed to load target file "
-                        f"{target} from memory: {error}"
+                        f"Failed to load target file " f"{target} from memory: {error}"
                     )
 
             if info is not None:
@@ -245,20 +208,13 @@ class DevelopmentContext:
     # Architecture
     # =============================================================
 
-    def get_architecture(
-        self
-    ):
+    def get_architecture(self):
 
         try:
 
-            architecture = (
-                self.project_memory.get_architecture()
-            )
+            architecture = self.project_memory.get_architecture()
 
-            if not isinstance(
-                architecture,
-                dict
-            ):
+            if not isinstance(architecture, dict):
 
                 return {}
 
@@ -270,8 +226,7 @@ class DevelopmentContext:
         except Exception as error:
 
             self.logger.error(
-                f"Failed to load project architecture "
-                f"from memory: {error}"
+                f"Failed to load project architecture " f"from memory: {error}"
             )
 
             return {}
@@ -280,61 +235,34 @@ class DevelopmentContext:
     # Related files
     # =============================================================
 
-    def find_related_files(
-        self,
-        task,
-        targets,
-        all_files,
-        architecture=None
-    ):
+    def find_related_files(self, task, targets, all_files, architecture=None):
 
-        if not isinstance(
-            all_files,
-            dict
-        ):
+        if not isinstance(all_files, dict):
 
             return {}
 
-        architecture = (
-            architecture
-            if isinstance(
-                architecture,
-                dict
-            )
-            else {}
-        )
+        architecture = architecture if isinstance(architecture, dict) else {}
 
         related = {}
 
-        task_words = self._task_words(
-            task
-        )
+        task_words = self._task_words(task)
 
         target_paths = []
 
         for target in targets:
 
-            target_paths.append(
-                Path(target)
-            )
+            target_paths.append(Path(target))
 
         for path, info in all_files.items():
 
-            normalized = str(
-                path
-            ).replace(
-                "\\",
-                "/"
-            )
+            normalized = str(path).replace("\\", "/")
 
             # Never duplicate target files.
             if normalized in targets:
 
                 continue
 
-            path_obj = Path(
-                normalized
-            )
+            path_obj = Path(normalized)
 
             score = 0
 
@@ -354,13 +282,9 @@ class DevelopmentContext:
 
                     score += 5
 
-                    reasons.append(
-                        "same package or directory"
-                    )
+                    reasons.append("same package or directory")
 
-                    relationships.append(
-                        "same_package"
-                    )
+                    relationships.append("same_package")
 
             # -----------------------------------------------------
             # Same module concept
@@ -368,31 +292,19 @@ class DevelopmentContext:
 
             for target_path in target_paths:
 
-                target_stem = (
-                    target_path.stem.lower()
-                )
+                target_stem = target_path.stem.lower()
 
-                stem = (
-                    path_obj.stem.lower()
-                )
+                stem = path_obj.stem.lower()
 
-                if (
-                    target_stem
-                    and target_stem in stem
-                ) or (
-                    stem
-                    and stem in target_stem
+                if (target_stem and target_stem in stem) or (
+                    stem and stem in target_stem
                 ):
 
                     score += 3
 
-                    reasons.append(
-                        "related module name"
-                    )
+                    reasons.append("related module name")
 
-                    relationships.append(
-                        "related_module"
-                    )
+                    relationships.append("related_module")
 
             # -----------------------------------------------------
             # Task words in path
@@ -400,93 +312,57 @@ class DevelopmentContext:
 
             for word in task_words:
 
-                if self._contains_word(
-                    lower_path,
-                    word
-                ):
+                if self._contains_word(lower_path, word):
 
                     score += 2
 
-                    reasons.append(
-                        f"task word in path: {word}"
-                    )
+                    reasons.append(f"task word in path: {word}")
 
             # -----------------------------------------------------
             # Project memory information
             # -----------------------------------------------------
 
-            serialized = self.serialize_info(
-                info
-            )
+            serialized = self.serialize_info(info)
 
             for word in task_words:
 
-                if (
-                    len(word) >= 4
-                    and self._contains_word(
-                        serialized,
-                        word
-                    )
-                ):
+                if len(word) >= 4 and self._contains_word(serialized, word):
 
                     score += 1
 
-                    reasons.append(
-                        f"task concept in memory: {word}"
-                    )
+                    reasons.append(f"task concept in memory: {word}")
 
             # -----------------------------------------------------
             # Architecture relationships
             # -----------------------------------------------------
 
-            (
-                architecture_score,
-                architecture_reasons,
-                architecture_relationships
-            ) = self.score_architecture_relationship(
-                normalized,
-                targets,
-                architecture,
-                info
+            architecture_score, architecture_reasons, architecture_relationships = (
+                self.score_architecture_relationship(
+                    normalized, targets, architecture, info
+                )
             )
 
             score += architecture_score
 
-            reasons.extend(
-                architecture_reasons
-            )
+            reasons.extend(architecture_reasons)
 
-            relationships.extend(
-                architecture_relationships
-            )
+            relationships.extend(architecture_relationships)
 
             # -----------------------------------------------------
             # Explicit dependency information
             # -----------------------------------------------------
 
-            (
-                dependency_score,
-                dependency_reasons,
-                dependency_relationships
-            ) = self.score_dependency_relationship(
-                normalized,
-                targets,
-                info
+            dependency_score, dependency_reasons, dependency_relationships = (
+                self.score_dependency_relationship(normalized, targets, info)
             )
 
             score += dependency_score
 
-            reasons.extend(
-                dependency_reasons
-            )
+            reasons.extend(dependency_reasons)
 
-            relationships.extend(
-                dependency_relationships
-            )
+            relationships.extend(dependency_relationships)
 
-            relationship_set = set(
-                relationships
-            )
+            relationship_set = set(relationships)
 
             # A file must have a meaningful relationship before
             # entering the development context.
@@ -503,13 +379,10 @@ class DevelopmentContext:
                 "target_references_file",
                 "target_references_module",
                 "architecture_member",
-                "architecture_reference"
+                "architecture_reference",
             }
 
-            has_explicit_relationship = bool(
-                relationship_set
-                & explicit_relationships
-            )
+            has_explicit_relationship = bool(relationship_set & explicit_relationships)
 
             has_structural_relationship = (
                 "same_package" in relationship_set
@@ -517,8 +390,7 @@ class DevelopmentContext:
             )
 
             has_meaningful_relationship = (
-                has_explicit_relationship
-                or has_structural_relationship
+                has_explicit_relationship or has_structural_relationship
             )
 
             if not has_meaningful_relationship:
@@ -527,47 +399,29 @@ class DevelopmentContext:
             # Remove duplicate information while
             # preserving order.
 
-            reasons = list(
-                dict.fromkeys(
-                    reasons
-                )
-            )
+            reasons = list(dict.fromkeys(reasons))
 
-            relationships = list(
-                dict.fromkeys(
-                    relationships
-                )
-            )
+            relationships = list(dict.fromkeys(relationships))
 
             related[normalized] = {
                 "score": score,
                 "reasons": reasons,
                 "relationships": relationships,
-                "info": info
+                "info": info,
             }
 
         ordered = sorted(
-            related.items(),
-            key=lambda item: item[1]["score"],
-            reverse=True
+            related.items(), key=lambda item: item[1]["score"], reverse=True
         )
 
         # Keep development context bounded.
-        return dict(
-            ordered[:12]
-        )
+        return dict(ordered[:12])
 
     # =============================================================
     # Architecture relationship scoring
     # =============================================================
 
-    def score_architecture_relationship(
-        self,
-        path,
-        targets,
-        architecture,
-        info
-    ):
+    def score_architecture_relationship(self, path, targets, architecture, info):
 
         score = 0
 
@@ -575,29 +429,13 @@ class DevelopmentContext:
 
         relationships = []
 
-        if not isinstance(
-            architecture,
-            dict
-        ):
+        if not isinstance(architecture, dict):
 
-            return (
-                score,
-                reasons,
-                relationships
-            )
+            return (score, reasons, relationships)
 
-        normalized_path = (
-            str(path)
-            .replace("\\", "/")
-            .lower()
-        )
+        normalized_path = str(path).replace("\\", "/").lower()
 
-        target_paths = [
-            str(target)
-            .replace("\\", "/")
-            .lower()
-            for target in targets
-        ]
+        target_paths = [str(target).replace("\\", "/").lower() for target in targets]
 
         # =========================================================
         # Explicit architecture collections
@@ -613,60 +451,29 @@ class DevelopmentContext:
             "entries",
         }
 
-        def collect_paths(
-            value
-        ):
+        def collect_paths(value):
 
             result = []
 
-            if isinstance(
-                value,
-                str
-            ):
+            if isinstance(value, str):
 
-                normalized = (
-                    value
-                    .replace(
-                        "\\",
-                        "/"
-                    )
-                    .lower()
-                    .strip()
-                )
+                normalized = value.replace("\\", "/").lower().strip()
 
-                if normalized.endswith(
-                    ".py"
-                ):
+                if normalized.endswith(".py"):
 
-                    result.append(
-                        normalized
-                    )
+                    result.append(normalized)
 
-            elif isinstance(
-                value,
-                (list, tuple, set)
-            ):
+            elif isinstance(value, (list, tuple, set)):
 
                 for item in value:
 
-                    result.extend(
-                        collect_paths(
-                            item
-                        )
-                    )
+                    result.extend(collect_paths(item))
 
-            elif isinstance(
-                value,
-                dict
-            ):
+            elif isinstance(value, dict):
 
                 for item in value.values():
 
-                    result.extend(
-                        collect_paths(
-                            item
-                        )
-                    )
+                    result.extend(collect_paths(item))
 
             return result
 
@@ -676,11 +483,7 @@ class DevelopmentContext:
 
             if key in architecture:
 
-                explicit_members.update(
-                    collect_paths(
-                        architecture[key]
-                    )
-                )
+                explicit_members.update(collect_paths(architecture[key]))
 
         # =========================================================
         # Explicit architecture membership
@@ -690,27 +493,15 @@ class DevelopmentContext:
 
             for target in targets:
 
-                target_normalized = (
-                    target
-                    .replace(
-                        "\\",
-                        "/"
-                    )
-                    .lower()
-                    .strip()
-                )
+                target_normalized = target.replace("\\", "/").lower().strip()
 
                 if target_normalized in explicit_members:
 
                     score += 8
 
-                    reasons.append(
-                        "both files appear in project architecture"
-                    )
+                    reasons.append("both files appear in project architecture")
 
-                    relationships.append(
-                        "architecture_member"
-                    )
+                    relationships.append("architecture_member")
 
                     break
 
@@ -729,37 +520,19 @@ class DevelopmentContext:
 
         layer_memberships = []
 
-        layers = architecture.get(
-            "layers"
-        )
+        layers = architecture.get("layers")
 
-        if isinstance(
-            layers,
-            dict
-        ):
+        if isinstance(layers, dict):
 
             for layer_name, members in layers.items():
 
-                member_paths = set(
-                    collect_paths(
-                        members
-                    )
-                )
+                member_paths = set(collect_paths(members))
 
                 if normalized_path in member_paths:
 
-                    layer_memberships.append(
-                        (
-                            str(
-                                layer_name
-                            ).lower(),
-                            member_paths
-                        )
-                    )
+                    layer_memberships.append((str(layer_name).lower(), member_paths))
 
-        info_text = self.serialize_info(
-            info
-        )
+        info_text = self.serialize_info(info)
 
         # These are semantic indicators, but they must be matched
         # as complete words/phrases rather than arbitrary substrings.
@@ -794,23 +567,11 @@ class DevelopmentContext:
 
         for target in targets:
 
-            target_normalized = (
-                target
-                .replace(
-                    "\\",
-                    "/"
-                )
-                .lower()
-                .strip()
-            )
+            target_normalized = target.replace("\\", "/").lower().strip()
 
-            target_stem = Path(
-                target_normalized
-            ).stem.lower()
+            target_stem = Path(target_normalized).stem.lower()
 
-            target_name = Path(
-                target_normalized
-            ).name.lower()
+            target_name = Path(target_normalized).name.lower()
 
             same_layer = False
 
@@ -834,29 +595,17 @@ class DevelopmentContext:
             # phrases.
             # -----------------------------------------------------
 
-            has_semantic_indicator = (
-                self._contains_any_semantic_indicator(
-                    info_text,
-                    semantic_indicators
-                )
+            has_semantic_indicator = self._contains_any_semantic_indicator(
+                info_text, semantic_indicators
             )
 
             mentions_target = (
                 target_normalized in info_text
-                or self._contains_word(
-                    info_text,
-                    target_name
-                )
-                or self._contains_word(
-                    info_text,
-                    target_stem
-                )
+                or self._contains_word(info_text, target_name)
+                or self._contains_word(info_text, target_stem)
             )
 
-            if (
-                has_semantic_indicator
-                or mentions_target
-            ):
+            if has_semantic_indicator or mentions_target:
 
                 score += 6
 
@@ -864,9 +613,7 @@ class DevelopmentContext:
                     "architecture layer contains a semantically related file"
                 )
 
-                relationships.append(
-                    "architecture_member"
-                )
+                relationships.append("architecture_member")
 
                 break
 
@@ -874,12 +621,7 @@ class DevelopmentContext:
         # Architecture layer is supporting evidence only.
         # =========================================================
 
-        path_parts = {
-            part.lower()
-            for part in Path(
-                normalized_path
-            ).parts
-        }
+        path_parts = {part.lower() for part in Path(normalized_path).parts}
 
         architecture_keywords = {
             "agent",
@@ -894,41 +636,24 @@ class DevelopmentContext:
             "model",
             "models",
             "app",
-            "core"
+            "core",
         }
 
-        if (
-            path_parts
-            &
-            architecture_keywords
-        ):
+        if path_parts & architecture_keywords:
 
             score += 1
 
-            reasons.append(
-                "belongs to known project architecture layer"
-            )
+            reasons.append("belongs to known project architecture layer")
 
-            relationships.append(
-                "architecture_layer"
-            )
+            relationships.append("architecture_layer")
 
-        return (
-            score,
-            reasons,
-            relationships
-        )
+        return (score, reasons, relationships)
 
     # =============================================================
     # Dependency relationship scoring
     # =============================================================
 
-    def score_dependency_relationship(
-        self,
-        path,
-        targets,
-        info
-    ):
+    def score_dependency_relationship(self, path, targets, info):
 
         score = 0
 
@@ -936,28 +661,15 @@ class DevelopmentContext:
 
         relationships = []
 
-        serialized = self.serialize_info(
-            info
-        )
+        serialized = self.serialize_info(info)
 
         for target in targets:
 
-            target_normalized = (
-                target
-                .replace(
-                    "\\",
-                    "/"
-                )
-                .lower()
-            )
+            target_normalized = target.replace("\\", "/").lower()
 
-            target_stem = Path(
-                target_normalized
-            ).stem.lower()
+            target_stem = Path(target_normalized).stem.lower()
 
-            target_name = Path(
-                target_normalized
-            ).name.lower()
+            target_name = Path(target_normalized).name.lower()
 
             # -----------------------------------------------------
             # Direct target path reference
@@ -967,54 +679,33 @@ class DevelopmentContext:
 
                 score += 7
 
-                reasons.append(
-                    f"memory references target: {target}"
-                )
+                reasons.append(f"memory references target: {target}")
 
-                relationships.append(
-                    "references_target"
-                )
+                relationships.append("references_target")
 
             # -----------------------------------------------------
             # Target filename reference
             # -----------------------------------------------------
 
-            elif (
-                target_name
-                and target_name in serialized
-            ):
+            elif target_name and target_name in serialized:
 
                 score += 5
 
-                reasons.append(
-                    f"memory references target file: {target_name}"
-                )
+                reasons.append(f"memory references target file: {target_name}")
 
-                relationships.append(
-                    "references_target_file"
-                )
+                relationships.append("references_target_file")
 
             # -----------------------------------------------------
             # Target module reference
             # -----------------------------------------------------
 
-            elif (
-                target_stem
-                and self._contains_word(
-                    serialized,
-                    target_stem
-                )
-            ):
+            elif target_stem and self._contains_word(serialized, target_stem):
 
                 score += 3
 
-                reasons.append(
-                    f"memory references target module: {target_stem}"
-                )
+                reasons.append(f"memory references target module: {target_stem}")
 
-                relationships.append(
-                    "references_target_module"
-                )
+                relationships.append("references_target_module")
 
         # ---------------------------------------------------------
         # Target may reference this file.
@@ -1026,11 +717,7 @@ class DevelopmentContext:
 
             try:
 
-                target_info = (
-                    self.project_memory.get_file(
-                        target
-                    )
-                )
+                target_info = self.project_memory.get_file(target)
 
             except Exception:
 
@@ -1040,89 +727,45 @@ class DevelopmentContext:
 
                 continue
 
-            target_serialized = self.serialize_info(
-                target_info
-            )
+            target_serialized = self.serialize_info(target_info)
 
-            normalized_path = (
-                path
-                .replace(
-                    "\\",
-                    "/"
-                )
-                .lower()
-            )
+            normalized_path = path.replace("\\", "/").lower()
 
-            filename = Path(
-                normalized_path
-            ).name.lower()
+            filename = Path(normalized_path).name.lower()
 
-            stem = Path(
-                normalized_path
-            ).stem.lower()
+            stem = Path(normalized_path).stem.lower()
 
             if normalized_path in target_serialized:
 
                 score += 8
 
-                reasons.append(
-                    f"target memory references related file: {path}"
-                )
+                reasons.append(f"target memory references related file: {path}")
 
-                relationships.append(
-                    "target_references_file"
-                )
+                relationships.append("target_references_file")
 
-            elif (
-                filename
-                and filename in target_serialized
-            ):
+            elif filename and filename in target_serialized:
 
                 score += 5
 
-                reasons.append(
-                    f"target references related file: {filename}"
-                )
+                reasons.append(f"target references related file: {filename}")
 
-                relationships.append(
-                    "target_references_file"
-                )
+                relationships.append("target_references_file")
 
-            elif (
-                stem
-                and self._contains_word(
-                    target_serialized,
-                    stem
-                )
-            ):
+            elif stem and self._contains_word(target_serialized, stem):
 
                 score += 3
 
-                reasons.append(
-                    f"target references related module: {stem}"
-                )
+                reasons.append(f"target references related module: {stem}")
 
-                relationships.append(
-                    "target_references_module"
-                )
+                relationships.append("target_references_module")
 
-        return (
-            score,
-            reasons,
-            relationships
-        )
+        return (score, reasons, relationships)
 
     # =============================================================
     # Relationship graph
     # =============================================================
 
-    def build_relationships(
-        self,
-        targets,
-        target_files,
-        related_files,
-        architecture
-    ):
+    def build_relationships(self, targets, target_files, related_files, architecture):
 
         relationships = {}
 
@@ -1130,53 +773,30 @@ class DevelopmentContext:
 
             target_relationships = []
 
-            target_info = target_files.get(
-                target,
-                {}
-            )
+            target_info = target_files.get(target, {})
 
-            target_serialized = self.serialize_info(
-                target_info
-            )
+            target_serialized = self.serialize_info(target_info)
 
             for related_path, related_info in related_files.items():
 
                 metadata = related_info
 
-                relation_types = metadata.get(
-                    "relationships",
-                    []
-                )
+                relation_types = metadata.get("relationships", [])
 
-                reasons = metadata.get(
-                    "reasons",
-                    []
-                )
+                reasons = metadata.get("reasons", [])
 
                 relationship = {
                     "file": related_path,
                     "types": relation_types,
                     "reasons": reasons,
-                    "score": metadata.get(
-                        "score",
-                        0
-                    )
+                    "score": metadata.get("score", 0),
                 }
 
-                if (
-                    relation_types
-                    or
-                    related_path.lower()
-                    in target_serialized
-                ):
+                if relation_types or related_path.lower() in target_serialized:
 
-                    target_relationships.append(
-                        relationship
-                    )
+                    target_relationships.append(relationship)
 
-            relationships[target] = (
-                target_relationships
-            )
+            relationships[target] = target_relationships
 
         return relationships
 
@@ -1185,36 +805,19 @@ class DevelopmentContext:
     # =============================================================
 
     def determine_strategy(
-        self,
-        task,
-        targets,
-        target_files,
-        related_files,
-        relationships,
-        architecture
+        self, task, targets, target_files, related_files, relationships, architecture
     ):
 
         text = task.lower()
 
-        relationship_count = sum(
-            len(value)
-            for value in relationships.values()
-        )
+        relationship_count = sum(len(value) for value in relationships.values())
 
         # ---------------------------------------------------------
         # Explicit analysis requests
         # ---------------------------------------------------------
 
         if self.contains_any(
-            text,
-            (
-                "analiz",
-                "incele",
-                "analyze",
-                "inspect",
-                "araştır",
-                "bak"
-            )
+            text, ("analiz", "incele", "analyze", "inspect", "araştır", "bak")
         ):
 
             strategy_type = "analysis"
@@ -1224,7 +827,7 @@ class DevelopmentContext:
                 "inspect_target",
                 "inspect_architecture",
                 "inspect_dependencies",
-                "produce_analysis"
+                "produce_analysis",
             ]
 
         # ---------------------------------------------------------
@@ -1238,13 +841,11 @@ class DevelopmentContext:
                 "refactoring",
                 "yeniden düzenle",
                 "yeniden yapılandır",
-                "temizle"
-            )
+                "temizle",
+            ),
         ):
 
-            strategy_type = (
-                "architecture_preserving_refactor"
-            )
+            strategy_type = "architecture_preserving_refactor"
 
             phases = [
                 "inspect_memory",
@@ -1253,7 +854,7 @@ class DevelopmentContext:
                 "identify_architecture_constraints",
                 "design_minimal_change",
                 "refactor_minimally",
-                "validate"
+                "validate",
             ]
 
         # ---------------------------------------------------------
@@ -1261,23 +862,12 @@ class DevelopmentContext:
         # ---------------------------------------------------------
 
         elif self.contains_any(
-            text,
-            (
-                "hata",
-                "hataları",
-                "hata düzelt",
-                "bug",
-                "error",
-                "fix",
-                "düzelt"
-            )
+            text, ("hata", "hataları", "hata düzelt", "bug", "error", "fix", "düzelt")
         ):
 
             if related_files:
 
-                strategy_type = (
-                    "architecture_aware_targeted_fix"
-                )
+                strategy_type = "architecture_aware_targeted_fix"
 
                 phases = [
                     "inspect_memory",
@@ -1286,7 +876,7 @@ class DevelopmentContext:
                     "identify_root_cause",
                     "identify_architecture_constraints",
                     "apply_minimal_fix",
-                    "validate"
+                    "validate",
                 ]
 
             else:
@@ -1299,7 +889,7 @@ class DevelopmentContext:
                     "inspect_dependencies",
                     "identify_root_cause",
                     "apply_minimal_fix",
-                    "validate"
+                    "validate",
                 ]
 
         # ---------------------------------------------------------
@@ -1316,15 +906,13 @@ class DevelopmentContext:
                 "özellik",
                 "feature",
                 "add",
-                "yeni"
-            )
+                "yeni",
+            ),
         ):
 
             if related_files:
 
-                strategy_type = (
-                    "architecture_aware_feature_implementation"
-                )
+                strategy_type = "architecture_aware_feature_implementation"
 
                 phases = [
                     "inspect_memory",
@@ -1333,7 +921,7 @@ class DevelopmentContext:
                     "inspect_related_files",
                     "design_minimal_change",
                     "implement",
-                    "validate"
+                    "validate",
                 ]
 
             else:
@@ -1346,7 +934,7 @@ class DevelopmentContext:
                     "identify_integration_points",
                     "design_minimal_change",
                     "implement",
-                    "validate"
+                    "validate",
                 ]
 
         # ---------------------------------------------------------
@@ -1355,9 +943,7 @@ class DevelopmentContext:
 
         else:
 
-            strategy_type = (
-                "architecture_aware_development"
-            )
+            strategy_type = "architecture_aware_development"
 
             phases = [
                 "inspect_memory",
@@ -1367,7 +953,7 @@ class DevelopmentContext:
                 "identify_integration_points",
                 "choose_minimal_change",
                 "implement",
-                "validate"
+                "validate",
             ]
 
         # ---------------------------------------------------------
@@ -1376,26 +962,17 @@ class DevelopmentContext:
 
         memory_available = self._memory_available
 
-        repository_analysis_fallback = (
-            not memory_available
-        )
+        repository_analysis_fallback = not memory_available
 
         # ---------------------------------------------------------
         # Multiple targets require broader planning.
         # ---------------------------------------------------------
 
-        multi_target = (
-            len(targets) > 1
-        )
+        multi_target = len(targets) > 1
 
-        if (
-            multi_target
-            and strategy_type == "targeted_fix"
-        ):
+        if multi_target and strategy_type == "targeted_fix":
 
-            strategy_type = (
-                "multi_target_targeted_fix"
-            )
+            strategy_type = "multi_target_targeted_fix"
 
             phases = [
                 "inspect_memory",
@@ -1404,107 +981,57 @@ class DevelopmentContext:
                 "identify_root_cause",
                 "coordinate_changes",
                 "apply_minimal_fix",
-                "validate"
+                "validate",
             ]
 
         return {
             "type": strategy_type,
-
             "phases": phases,
-
-            "target_count": len(
-                targets
-            ),
-
-            "related_file_count": len(
-                related_files
-            ),
-
+            "target_count": len(targets),
+            "related_file_count": len(related_files),
             "relationship_count": relationship_count,
-
             "memory_first": True,
-
             "memory_available": memory_available,
-
-            "repository_analysis_fallback": (
-                repository_analysis_fallback
-            ),
-
+            "repository_analysis_fallback": (repository_analysis_fallback),
             "architecture_aware": True,
-
             "architecture_preserving": True,
-
             "minimal_change": True,
-
-            "multi_target": multi_target
+            "multi_target": multi_target,
         }
 
     # =============================================================
     # Prompt representation
     # =============================================================
 
-    def to_prompt(
-        self,
-        context
-    ):
+    def to_prompt(self, context):
 
-        if not isinstance(
-            context,
-            dict
-        ):
+        if not isinstance(context, dict):
 
             return "{}"
 
-        safe_context = dict(
-            context
-        )
+        safe_context = dict(context)
 
-        return json.dumps(
-            safe_context,
-            indent=2,
-            ensure_ascii=False,
-            default=str
-        )
+        return json.dumps(safe_context, indent=2, ensure_ascii=False, default=str)
 
     # =============================================================
     # Utilities
     # =============================================================
 
-    def serialize_info(
-        self,
-        info
-    ):
+    def serialize_info(self, info):
 
         try:
 
-            return json.dumps(
-                info,
-                ensure_ascii=False,
-                default=str
-            ).lower()
+            return json.dumps(info, ensure_ascii=False, default=str).lower()
 
         except Exception:
 
-            return str(
-                info
-            ).lower()
+            return str(info).lower()
 
-    def contains_any(
-        self,
-        text,
-        words
-    ):
+    def contains_any(self, text, words):
 
-        return any(
-            word in text
-            for word in words
-        )
+        return any(word in text for word in words)
 
-    def _contains_word(
-        self,
-        text,
-        word
-    ):
+    def _contains_word(self, text, word):
         """
         Check whether a word/token exists as a complete word.
 
@@ -1530,23 +1057,11 @@ class DevelopmentContext:
         # The negative look-arounds prevent matching the word
         # inside larger alphabetic/number/underscore identifiers.
 
-        pattern = (
-            rf"(?<![a-z0-9_])"
-            rf"{re.escape(word)}"
-            rf"(?![a-z0-9_])"
-        )
+        pattern = rf"(?<![a-z0-9_])" rf"{re.escape(word)}" rf"(?![a-z0-9_])"
 
-        return re.search(
-            pattern,
-            text,
-            re.IGNORECASE
-        ) is not None
+        return re.search(pattern, text, re.IGNORECASE) is not None
 
-    def _contains_any_semantic_indicator(
-        self,
-        text,
-        indicators
-    ):
+    def _contains_any_semantic_indicator(self, text, indicators):
         """
         Safely detect semantic relationship indicators.
 
@@ -1565,15 +1080,11 @@ class DevelopmentContext:
         if not text:
             return False
 
-        normalized_text = str(
-            text
-        ).lower()
+        normalized_text = str(text).lower()
 
         for indicator in indicators:
 
-            indicator = str(
-                indicator
-            ).lower().strip()
+            indicator = str(indicator).lower().strip()
 
             if not indicator:
                 continue
@@ -1588,39 +1099,24 @@ class DevelopmentContext:
             if " " in indicator:
 
                 phrase_pattern = (
-                    rf"(?<![a-z0-9_])"
-                    rf"{re.escape(indicator)}"
-                    rf"(?![a-z0-9_])"
+                    rf"(?<![a-z0-9_])" rf"{re.escape(indicator)}" rf"(?![a-z0-9_])"
                 )
 
-                if re.search(
-                    phrase_pattern,
-                    normalized_text,
-                    re.IGNORECASE
-                ):
+                if re.search(phrase_pattern, normalized_text, re.IGNORECASE):
 
                     return True
 
             else:
 
-                if self._contains_word(
-                    normalized_text,
-                    indicator
-                ):
+                if self._contains_word(normalized_text, indicator):
 
                     return True
 
         return False
 
-    def _task_words(
-        self,
-        task
-    ):
+    def _task_words(self, task):
 
-        words = re.findall(
-            r"[A-Za-z0-9_]+",
-            task.lower()
-        )
+        words = re.findall(r"[A-Za-z0-9_]+", task.lower())
 
         ignored = {
             "dosya",
@@ -1690,32 +1186,23 @@ class DevelopmentContext:
             [A-Za-z0-9_.-]+\.py
             """,
             task,
-            re.VERBOSE
+            re.VERBOSE,
         )
 
         for candidate in candidates:
 
-            normalized = candidate.replace(
-                "\\",
-                "/"
-            )
+            normalized = candidate.replace("\\", "/")
 
             path_without_extension = (
-                normalized[:-3]
-                if normalized.lower().endswith(".py")
-                else normalized
+                normalized[:-3] if normalized.lower().endswith(".py") else normalized
             )
 
-            for part in Path(
-                path_without_extension
-            ).parts:
+            for part in Path(path_without_extension).parts:
 
                 part = part.lower().strip()
 
                 if part:
-                    path_words.add(
-                        part
-                    )
+                    path_words.add(part)
 
         result = set()
 
@@ -1737,8 +1224,6 @@ class DevelopmentContext:
             if word in path_words:
                 continue
 
-            result.add(
-                word
-            )
+            result.add(word)
 
         return result
