@@ -22,13 +22,9 @@ def test_repository_analyzer_analyze_returns_path_not_found(
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer.analyze(
-        missing
-    )
+    result = analyzer.analyze(missing)
 
-    assert result == (
-        f"Path not found: {missing}"
-    )
+    assert result == (f"Path not found: {missing}")
 
 
 @pytest.mark.unit
@@ -37,14 +33,9 @@ def test_repository_analyzer_analyze_rejects_non_repository_root(
 ):
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer.analyze(
-        tmp_path
-    )
+    result = analyzer.analyze(tmp_path)
 
-    assert result == (
-        f"Not an AI-Studio-Agent repository root: "
-        f"{tmp_path}"
-    )
+    assert result == (f"Not an AI-Studio-Agent repository root: " f"{tmp_path}")
 
 
 @pytest.mark.unit
@@ -79,16 +70,9 @@ def test_repository_analyzer_iter_python_files_skips_ignored_directories(
 
     analyzer = RepositoryAnalyzerTool()
 
-    files = list(
-        analyzer._iter_python_files(
-            tmp_path
-        )
-    )
+    files = list(analyzer._iter_python_files(tmp_path))
 
-    names = {
-        path.name
-        for path in files
-    }
+    names = {path.name for path in files}
 
     assert names == {
         "main.py",
@@ -110,15 +94,9 @@ def test_repository_analyzer_iter_python_files_skips_init_files(
         encoding="utf-8",
     )
 
-    files = list(
-        RepositoryAnalyzerTool()
-        ._iter_python_files(tmp_path)
-    )
+    files = list(RepositoryAnalyzerTool()._iter_python_files(tmp_path))
 
-    assert all(
-        path.name != "__init__.py"
-        for path in files
-    )
+    assert all(path.name != "__init__.py" for path in files)
 
 
 @pytest.mark.unit
@@ -127,17 +105,11 @@ def test_repository_analyzer_read_uses_utf8_and_replaces_invalid_bytes(
 ):
     source = tmp_path / "broken.py"
 
-    source.write_bytes(
-        b"print('hello')\xff"
-    )
+    source.write_bytes(b"print('hello')\xff")
 
-    result = RepositoryAnalyzerTool._read(
-        source
-    )
+    result = RepositoryAnalyzerTool._read(source)
 
-    assert result.startswith(
-        "print('hello')"
-    )
+    assert result.startswith("print('hello')")
 
     assert "\ufffd" in result
 
@@ -161,10 +133,7 @@ if True:
         pass
 """
 
-    result = (
-        RepositoryAnalyzerTool
-        ._top_level_defs(source)
-    )
+    result = RepositoryAnalyzerTool._top_level_defs(source)
 
     assert result == [
         "def parse(",
@@ -174,12 +143,7 @@ if True:
 
 @pytest.mark.unit
 def test_repository_analyzer_top_level_defs_returns_empty_for_invalid_python():
-    result = (
-        RepositoryAnalyzerTool
-        ._top_level_defs(
-            "def broken(:\n"
-        )
-    )
+    result = RepositoryAnalyzerTool._top_level_defs("def broken(:\n")
 
     assert result == []
 
@@ -195,9 +159,7 @@ def test_repository_analyzer_analyze_accepts_repository_with_main_py(
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer.analyze(
-        tmp_path
-    )
+    result = analyzer.analyze(tmp_path)
 
     assert not isinstance(
         result,
@@ -229,6 +191,10 @@ def test_repository_analyzer_analyze_accepts_repository_with_main_py(
         "issues",
     )
 
+    assert result.repository_root == str(tmp_path.resolve())
+    assert "python" in result.languages
+    assert "main.py" in result.files
+
 
 @pytest.mark.unit
 def test_repository_analyzer_execute_defaults_to_analyze(
@@ -239,9 +205,7 @@ def test_repository_analyzer_execute_defaults_to_analyze(
         encoding="utf-8",
     )
 
-    analyzer = RepositoryAnalyzerTool(
-        root=tmp_path
-    )
+    analyzer = RepositoryAnalyzerTool(root=tmp_path)
 
     result = analyzer.execute({})
 
@@ -250,12 +214,30 @@ def test_repository_analyzer_execute_defaults_to_analyze(
         str,
     )
 
-    assert (
-        "Repository"
-        in result
-        or "repository"
-        in result
+    assert "Repository" in result or "repository" in result
+
+
+@pytest.mark.unit
+def test_repository_analyzer_accepts_non_python_repository_marker(
+    tmp_path,
+):
+    (tmp_path / "README.md").write_text(
+        "A repository",
+        encoding="utf-8",
     )
+    (tmp_path / "index.ts").write_text(
+        "export const value = 1;",
+        encoding="utf-8",
+    )
+
+    result = RepositoryAnalyzerTool().analyze(tmp_path)
+
+    assert not isinstance(result, str)
+    assert result.languages == {
+        "markdown": 1,
+        "typescript": 1,
+    }
+    assert result.test_files == []
 
 
 @pytest.mark.unit
@@ -268,9 +250,8 @@ def test_repository_analyzer_execute_rejects_unsupported_action():
         }
     )
 
-    assert result == (
-        "Unsupported repository action."
-    )
+    assert result == ("Unsupported repository action.")
+
 
 @pytest.mark.unit
 def test_repository_analyzer_collect_definitions_reads_python_files(
@@ -291,9 +272,7 @@ class Application:
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer._collect_definitions(
-        tmp_path
-    )
+    result = analyzer._collect_definitions(tmp_path)
 
     assert isinstance(result, dict)
 
@@ -314,31 +293,20 @@ def test_repository_analyzer_collect_definitions_skips_invalid_python(
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer._collect_definitions(
-        tmp_path
-    )
+    result = analyzer._collect_definitions(tmp_path)
 
     assert isinstance(result, dict)
+
 
 @pytest.mark.unit
 def test_repository_analyzer_collect_module_roles_uses_known_roles(
     tmp_path,
 ):
-    known = (
-        tmp_path
-        / "app"
-        / "core"
-        / "containers"
-    )
+    known = tmp_path / "app" / "core" / "containers"
 
-    known.mkdir(
-        parents=True
-    )
+    known.mkdir(parents=True)
 
-    target = (
-        known
-        / "main_container.py"
-    )
+    target = known / "main_container.py"
 
     target.write_text(
         "class MainContainer:\n    pass\n",
@@ -347,22 +315,14 @@ def test_repository_analyzer_collect_module_roles_uses_known_roles(
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer._collect_module_roles(
-        tmp_path
-    )
+    result = analyzer._collect_module_roles(tmp_path)
 
     assert isinstance(result, dict)
 
-    relative = (
-        "app/core/containers/"
-        "main_container.py"
-    )
+    relative = "app/core/containers/" "main_container.py"
 
     assert relative in result
-    assert result[relative] == (
-        "Application dependency injection "
-        "composition root"
-    )
+    assert result[relative] == ("Application dependency injection " "composition root")
 
 
 @pytest.mark.unit
@@ -371,9 +331,7 @@ def test_repository_analyzer_collect_module_roles_ignores_missing_known_files(
 ):
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer._collect_module_roles(
-        tmp_path
-    )
+    result = analyzer._collect_module_roles(tmp_path)
 
     assert result == {}
 
@@ -394,9 +352,7 @@ def test_repository_analyzer_collect_overview_reports_python_files(
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer._collect_overview(
-        tmp_path
-    )
+    result = analyzer._collect_overview(tmp_path)
 
     assert isinstance(result, dict)
 
@@ -431,11 +387,7 @@ class FileTool:
 
     analyzer = RepositoryAnalyzerTool()
 
-    tools, registry_names = (
-        analyzer._collect_tools(
-            tmp_path
-        )
-    )
+    tools, registry_names = analyzer._collect_tools(tmp_path)
 
     assert isinstance(tools, list)
     assert isinstance(
@@ -443,20 +395,11 @@ class FileTool:
         list,
     )
 
-    tool_files = {
-        item["file"]
-        for item in tools
-    }
+    tool_files = {item["file"] for item in tools}
 
-    assert (
-        "calculator_tool.py"
-        in tool_files
-    )
+    assert "calculator_tool.py" in tool_files
 
-    assert (
-        "file_tool.py"
-        in tool_files
-    )
+    assert "file_tool.py" in tool_files
 
 
 @pytest.mark.unit
@@ -474,16 +417,12 @@ def test_repository_analyzer_collect_tools_excludes_tool_infrastructure_files(
         "repository_report.py",
         "__init__.py",
     ):
-        (
-            tools_dir / filename
-        ).write_text(
+        (tools_dir / filename).write_text(
             "class Dummy:\n    pass\n",
             encoding="utf-8",
         )
 
-    (
-        tools_dir / "calculator_tool.py"
-    ).write_text(
+    (tools_dir / "calculator_tool.py").write_text(
         """\
 class CalculatorTool:
     name = "calculator"
@@ -493,50 +432,29 @@ class CalculatorTool:
 
     analyzer = RepositoryAnalyzerTool()
 
-    tools, _ = analyzer._collect_tools(
-        tmp_path
-    )
+    tools, _ = analyzer._collect_tools(tmp_path)
 
-    tool_files = {
-        item["file"]
-        for item in tools
-    }
+    tool_files = {item["file"] for item in tools}
 
-    assert tool_files == {
-        "calculator_tool.py"
-    }
+    assert tool_files == {"calculator_tool.py"}
 
 
 @pytest.mark.unit
 def test_repository_analyzer_collect_wiring_checks_returns_check_results(
     tmp_path,
 ):
-    main_container = (
-        tmp_path
-        / "app"
-        / "core"
-        / "containers"
-    )
+    main_container = tmp_path / "app" / "core" / "containers"
 
-    main_container.mkdir(
-        parents=True
-    )
+    main_container.mkdir(parents=True)
 
-    (
-        main_container
-        / "main_container.py"
-    ).write_text(
+    (main_container / "main_container.py").write_text(
         "self.core = CoreContainer(\n",
         encoding="utf-8",
     )
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = (
-        analyzer._collect_wiring_checks(
-            tmp_path
-        )
-    )
+    result = analyzer._collect_wiring_checks(tmp_path)
 
     assert isinstance(result, list)
 
@@ -556,11 +474,10 @@ def main():
 
     analyzer = RepositoryAnalyzerTool()
 
-    result = analyzer._collect_issues(
-        tmp_path
-    )
+    result = analyzer._collect_issues(tmp_path)
 
     assert isinstance(result, list)
+
 
 @pytest.mark.unit
 def test_code_analyzer_analysis_status_passes_clean_analysis():
@@ -575,12 +492,7 @@ def test_code_analyzer_analysis_status_passes_clean_analysis():
         "risk_level": "low",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "pass"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "pass"
 
 
 @pytest.mark.unit
@@ -590,29 +502,20 @@ def test_code_analyzer_analysis_status_passes_performance_issue():
         "syntax_errors": [],
         "logical_errors": [],
         "security_issues": [],
-        "performance_issues": [
-            "This loop could be optimized."
-        ],
+        "performance_issues": ["This loop could be optimized."],
         "architecture_issues": [],
         "improvements": [],
         "risk_level": "low",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "pass"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "pass"
 
 
 @pytest.mark.unit
 def test_code_analyzer_analysis_status_fails_syntax_error():
     analysis = {
         "summary": "Syntax problem",
-        "syntax_errors": [
-            "Missing closing parenthesis."
-        ],
+        "syntax_errors": ["Missing closing parenthesis."],
         "logical_errors": [],
         "security_issues": [],
         "performance_issues": [],
@@ -621,12 +524,7 @@ def test_code_analyzer_analysis_status_fails_syntax_error():
         "risk_level": "low",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "fail"
 
 
 @pytest.mark.unit
@@ -634,9 +532,7 @@ def test_code_analyzer_analysis_status_fails_logical_error():
     analysis = {
         "summary": "Logical problem",
         "syntax_errors": [],
-        "logical_errors": [
-            "Function returns the wrong value."
-        ],
+        "logical_errors": ["Function returns the wrong value."],
         "security_issues": [],
         "performance_issues": [],
         "architecture_issues": [],
@@ -644,12 +540,7 @@ def test_code_analyzer_analysis_status_fails_logical_error():
         "risk_level": "low",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "fail"
 
 
 @pytest.mark.unit
@@ -658,21 +549,14 @@ def test_code_analyzer_analysis_status_fails_security_issue():
         "summary": "Security problem",
         "syntax_errors": [],
         "logical_errors": [],
-        "security_issues": [
-            "Unsafe subprocess usage."
-        ],
+        "security_issues": ["Unsafe subprocess usage."],
         "performance_issues": [],
         "architecture_issues": [],
         "improvements": [],
         "risk_level": "low",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "fail"
 
 
 @pytest.mark.unit
@@ -683,19 +567,12 @@ def test_code_analyzer_analysis_status_fails_architecture_issue():
         "logical_errors": [],
         "security_issues": [],
         "performance_issues": [],
-        "architecture_issues": [
-            "Public API was changed."
-        ],
+        "architecture_issues": ["Public API was changed."],
         "improvements": [],
         "risk_level": "low",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "fail"
 
 
 @pytest.mark.unit
@@ -711,12 +588,7 @@ def test_code_analyzer_analysis_status_fails_high_risk_analysis():
         "risk_level": "high",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "fail"
 
 
 @pytest.mark.unit
@@ -732,12 +604,7 @@ def test_code_analyzer_analysis_status_fails_critical_risk_analysis():
         "risk_level": "critical",
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "fail"
 
 
 @pytest.mark.unit
@@ -747,26 +614,11 @@ def test_code_analyzer_analysis_status_fails_parse_error():
         "parse_error": True,
     }
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            analysis
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(analysis) == "fail"
 
 
 @pytest.mark.unit
 def test_code_analyzer_analysis_status_fails_invalid_analysis_type():
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            None
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status(None) == "fail"
 
-    assert (
-        CodeAnalyzerTool.get_analysis_status(
-            "invalid"
-        )
-        == "fail"
-    )
+    assert CodeAnalyzerTool.get_analysis_status("invalid") == "fail"

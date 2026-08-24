@@ -7,6 +7,8 @@ RepositoryReportFormatter (presentation layer).
 """
 
 import ast
+import hashlib
+import json
 import re
 import tokenize
 from datetime import datetime
@@ -15,8 +17,9 @@ from pathlib import Path
 from app.core.logger import AppLogger
 
 from tools.repository_analysis import RepositoryAnalysis
+from tools.repository_indexer import RepositoryIndexer
+from tools.python_analyzer import PythonAnalyzer
 from tools.repository_report import RepositoryReportFormatter
-
 
 SKIP_DIRS = {
     "__pycache__",
@@ -58,158 +61,86 @@ MARKER_PATTERN = re.compile(r"\b(?:TODO|FIXME|XXX)\b")
 
 MODULE_ROLES = {
     # Core
-    "app/core/containers/core_container.py":
-        "Core dependency and workspace configuration",
-
-    "app/core/containers/model_container.py":
-        "Creates and configures LLM providers",
-
-    "app/core/containers/memory_container.py":
-        "Creates persistent memory, conversation memory, chat manager, and project memory",
-
-    "app/core/containers/tool_container.py":
-        "Creates and registers all executable tools",
-
-    "app/core/containers/agent_container.py":
-        "Creates and wires application agents",
-
-    "app/core/containers/chat_container.py":
-        "Creates ChatAgent and ChatOrchestrator",
-
-    "app/core/containers/development_container.py":
-        "Creates development agents, repository analyzer access, watcher, and DevelopmentOrchestrator",
-
-    "app/core/containers/main_container.py":
-        "Application dependency injection composition root",
-
+    "app/core/containers/core_container.py": "Core dependency and workspace configuration",
+    "app/core/containers/model_container.py": "Creates and configures LLM providers",
+    "app/core/containers/memory_container.py": "Creates persistent memory, conversation memory, chat manager, and project memory",
+    "app/core/containers/tool_container.py": "Creates and registers all executable tools",
+    "app/core/containers/agent_container.py": "Creates and wires application agents",
+    "app/core/containers/chat_container.py": "Creates ChatAgent and ChatOrchestrator",
+    "app/core/containers/development_container.py": "Creates development agents, repository analyzer access, watcher, and DevelopmentOrchestrator",
+    "app/core/containers/main_container.py": "Application dependency injection composition root",
     # Orchestration
-    "app/core/orchestrators/main_orchestrator.py":
-        "Routes requests between chat, memory, and development systems",
-
-    "app/core/orchestrators/chat_orchestrator.py":
-        "Routes chat requests to ChatAgent",
-
-    "app/core/orchestrators/memory_orchestrator.py":
-        "Routes memory operations to MemoryAgent",
-
-    "app/core/orchestrators/development_orchestrator.py":
-        "Plans and executes development tasks",
-
+    "app/core/orchestrators/main_orchestrator.py": "Routes requests between chat, memory, and development systems",
+    "app/core/orchestrators/chat_orchestrator.py": "Routes chat requests to ChatAgent",
+    "app/core/orchestrators/memory_orchestrator.py": "Routes memory operations to MemoryAgent",
+    "app/core/orchestrators/development_orchestrator.py": "Plans and executes development tasks",
     # Agents
-    "agents/planner_agent.py":
-        "Creates structured execution plans",
-
-    "agents/chat_agent.py":
-        "Conversational agent building the LLM prompt",
-
-    "agents/tool_agent.py":
-        "Executes single tools and multi-step plans",
-
-    "agents/code_agent.py":
-        "Code-task agent",
-
-    "agents/decision_agent.py":
-        "Routes incoming user requests to the appropriate system",
-
-    "agents/memory_agent.py":
-        "Handles persistent user memory operations",
-
+    "agents/planner_agent.py": "Creates structured execution plans",
+    "agents/chat_agent.py": "Conversational agent building the LLM prompt",
+    "agents/tool_agent.py": "Executes single tools and multi-step plans",
+    "agents/code_agent.py": "Code-task agent",
+    "agents/decision_agent.py": "Routes incoming user requests to the appropriate system",
+    "agents/memory_agent.py": "Handles persistent user memory operations",
     # Models
-    "models/llm_provider.py":
-        "Selects local or API LLM backend",
-
-    "models/llm.py":
-        "Ollama local LLM client",
-
-    "models/api_llm.py":
-        "OpenAI-compatible API LLM client",
-
+    "models/llm_provider.py": "Selects local or API LLM backend",
+    "models/llm.py": "Ollama local LLM client",
+    "models/api_llm.py": "OpenAI-compatible API LLM client",
     # Memory
-    "memory/memory.py":
-        "Persistent key-value user memory",
-
-    "memory/conversation.py":
-        "Per-conversation rolling history",
-
-    "memory/chat_manager.py":
-        "Chat session management",
-
+    "memory/memory.py": "Persistent key-value user memory",
+    "memory/conversation.py": "Per-conversation rolling history",
+    "memory/chat_manager.py": "Chat session management",
     # Tools
-    "tools/tool_registry.py":
-        "Tool name to implementation registry",
-
-    "tools/repository_analyzer.py":
-        "Static repository architecture analyzer",
-
-    "tools/project_memory_tool.py":
-        "Project memory tool",
-
-    "tools/memory_tool.py":
-        "User memory tool",
-
+    "tools/tool_registry.py": "Tool name to implementation registry",
+    "tools/repository_analyzer.py": "Static repository architecture analyzer",
+    "tools/project_memory_tool.py": "Project memory tool",
+    "tools/memory_tool.py": "User memory tool",
     # Configuration / GUI
-    "config/config_manager.py":
-        "JSON configuration and environment settings",
-
-    "app/window/backend.py":
-        "Exposes application services to the GUI",
-
-    "app/window/main_window.py":
-        "Main Qt window and GUI wiring",
-
-    "app/worker.py":
-        "Background worker for AI requests",
+    "config/config_manager.py": "JSON configuration and environment settings",
+    "app/window/backend.py": "Exposes application services to the GUI",
+    "app/window/main_window.py": "Main Qt window and GUI wiring",
+    "app/worker.py": "Background worker for AI requests",
 }
 
 # (label, relative file, ordered substrings) -> wiring check
 CHECKS = [
-
     # --------------------------------------------------------------
     # Main Container
     # --------------------------------------------------------------
-
     (
         "MainContainer wires CoreContainer",
         "app/core/containers/main_container.py",
         ["self.core = CoreContainer("],
     ),
-
     (
         "MainContainer wires ModelContainer",
         "app/core/containers/main_container.py",
         ["self.models = ModelContainer("],
     ),
-
     (
         "MainContainer wires MemoryContainer",
         "app/core/containers/main_container.py",
         ["self.memory = MemoryContainer("],
     ),
-
     (
         "MainContainer wires ToolContainer",
         "app/core/containers/main_container.py",
         ["self.tools = ToolContainer("],
     ),
-
     (
         "MainContainer wires AgentContainer",
         "app/core/containers/main_container.py",
         ["self.agents = AgentContainer("],
     ),
-
     (
         "MainContainer wires ChatContainer",
         "app/core/containers/main_container.py",
         ["self.chat = ChatContainer("],
     ),
-
     (
         "MainContainer wires DevelopmentContainer",
         "app/core/containers/main_container.py",
         ["self.development = DevelopmentContainer("],
     ),
-
     (
         "MainContainer creates MemoryOrchestrator",
         "app/core/containers/main_container.py",
@@ -218,12 +149,9 @@ CHECKS = [
             "self.memory.orchestrator",
         ],
     ),
-
-
     # --------------------------------------------------------------
     # Tool Container
     # --------------------------------------------------------------
-
     (
         "ToolContainer registers repository_analyzer",
         "app/core/containers/tool_container.py",
@@ -232,7 +160,6 @@ CHECKS = [
             "self.repository_analyzer",
         ],
     ),
-
     (
         "ToolContainer registers project_memory",
         "app/core/containers/tool_container.py",
@@ -241,7 +168,6 @@ CHECKS = [
             "self.project_memory",
         ],
     ),
-
     (
         "ToolContainer registers memory",
         "app/core/containers/tool_container.py",
@@ -250,7 +176,6 @@ CHECKS = [
             "self.memory_tool",
         ],
     ),
-
     (
         "ToolContainer registers code_writer",
         "app/core/containers/tool_container.py",
@@ -259,7 +184,6 @@ CHECKS = [
             "self.code_writer",
         ],
     ),
-
     (
         "ToolContainer registers code_analyzer",
         "app/core/containers/tool_container.py",
@@ -268,7 +192,6 @@ CHECKS = [
             "self.code_analyzer",
         ],
     ),
-
     (
         "ToolContainer registers code_repair",
         "app/core/containers/tool_container.py",
@@ -277,12 +200,9 @@ CHECKS = [
             "self.code_repair",
         ],
     ),
-
-
     # --------------------------------------------------------------
     # Agent Container
     # --------------------------------------------------------------
-
     (
         "AgentContainer wires DecisionAgent",
         "app/core/containers/agent_container.py",
@@ -291,7 +211,6 @@ CHECKS = [
             "main.models.decision_llm",
         ],
     ),
-
     (
         "AgentContainer wires ChatAgent",
         "app/core/containers/agent_container.py",
@@ -300,7 +219,6 @@ CHECKS = [
             "main.models.chat_llm",
         ],
     ),
-
     (
         "AgentContainer wires CodeAgent",
         "app/core/containers/agent_container.py",
@@ -309,7 +227,6 @@ CHECKS = [
             "main.models.code_llm",
         ],
     ),
-
     (
         "AgentContainer wires MemoryAgent",
         "app/core/containers/agent_container.py",
@@ -317,12 +234,9 @@ CHECKS = [
             "self.memory = MemoryAgent(",
         ],
     ),
-
-
     # --------------------------------------------------------------
     # Chat Container
     # --------------------------------------------------------------
-
     (
         "ChatContainer wires ChatAgent",
         "app/core/containers/chat_container.py",
@@ -332,7 +246,6 @@ CHECKS = [
             "memory=self.memory",
         ],
     ),
-
     (
         "ChatContainer wires ChatOrchestrator",
         "app/core/containers/chat_container.py",
@@ -340,12 +253,9 @@ CHECKS = [
             "self.orchestrator = ChatOrchestrator(",
         ],
     ),
-
-
     # --------------------------------------------------------------
     # Development Container
     # --------------------------------------------------------------
-
     (
         "DevelopmentContainer wires PlannerAgent",
         "app/core/containers/development_container.py",
@@ -356,7 +266,6 @@ CHECKS = [
             "self.registry",
         ],
     ),
-
     (
         "DevelopmentContainer wires CodeAgent",
         "app/core/containers/development_container.py",
@@ -365,16 +274,14 @@ CHECKS = [
             "self.code_llm",
         ],
     ),
-
     (
         "DevelopmentContainer resolves repository_analyzer",
         "app/core/containers/development_container.py",
         [
-            'self.registry.get(',
+            "self.registry.get(",
             '"repository_analyzer"',
         ],
     ),
-
     (
         "DevelopmentContainer wires DevelopmentOrchestrator",
         "app/core/containers/development_container.py",
@@ -382,12 +289,9 @@ CHECKS = [
             "self.orchestrator = DevelopmentOrchestrator(",
         ],
     ),
-
-
     # --------------------------------------------------------------
     # Main Orchestrator
     # --------------------------------------------------------------
-
     (
         "MainOrchestrator routes chat",
         "app/core/orchestrators/main_orchestrator.py",
@@ -396,7 +300,6 @@ CHECKS = [
             "container.chat.orchestrator",
         ],
     ),
-
     (
         "MainOrchestrator routes memory",
         "app/core/orchestrators/main_orchestrator.py",
@@ -405,7 +308,6 @@ CHECKS = [
             "container.memory.orchestrator",
         ],
     ),
-
     (
         "MainOrchestrator routes development",
         "app/core/orchestrators/main_orchestrator.py",
@@ -414,12 +316,9 @@ CHECKS = [
             "container.development.orchestrator",
         ],
     ),
-
-
     # --------------------------------------------------------------
     # Chat Orchestrator
     # --------------------------------------------------------------
-
     (
         "ChatOrchestrator forwards conversation",
         "app/core/orchestrators/chat_orchestrator.py",
@@ -427,24 +326,19 @@ CHECKS = [
             "self.chat_agent.conversation =",
         ],
     ),
-
-
     # --------------------------------------------------------------
     # Core capabilities
     # --------------------------------------------------------------
-
     (
         "ConversationMemory.get_last exists",
         "memory/conversation.py",
         ["def get_last("],
     ),
-
     (
         "ToolAgent.execute_steps exists",
         "agents/tool_agent.py",
         ["def execute_steps("],
     ),
-
     (
         "LLM Planner supports repository_analyzer",
         "agents/planner/llm_planner.py",
@@ -460,23 +354,17 @@ class RepositoryAnalyzerTool:
 
     name = "repository_analyzer"
 
-    description = (
-        "Analyzes the AI-Studio-Agent codebase"
-    )
+    description = "Analyzes the AI-Studio-Agent codebase"
 
-    purpose = (
-        "Analyze the repository structure, architecture, dependencies, tools, and known issues."
-    )
+    purpose = "Analyze the repository structure, architecture, dependencies, tools, and known issues."
 
     safe = True
 
     modifies_files = False
 
     requires_confirmation = False
-    
+
     version = "1.0"
-
-
 
     """Analyzes the AI-Studio-Agent codebase.
 
@@ -504,35 +392,26 @@ class RepositoryAnalyzerTool:
 
         self.logger = AppLogger()
 
+        self.indexer = RepositoryIndexer()
+
+        self.python_analyzer = PythonAnalyzer()
+
     def execute(self, plan):
         try:
 
-            action = plan.get(
-                "action", 
-                "analyze"
-            )
-
+            action = plan.get("action", "analyze")
 
             if action != "analyze":
 
                 return "Unsupported repository action."
 
-            
-            root = Path(
-                plan.get("path") 
-                or self.root
-            )
+            root = Path(plan.get("path") or self.root)
 
-
-            result = self.analyze(
-                root
-            )
-
+            result = self.analyze(root)
 
             if isinstance(result, str):
                 return result
 
-            
             return RepositoryReportFormatter.render(result)
         except Exception as error:
             self.logger.error(f"Repository analysis error: {error}")
@@ -546,21 +425,127 @@ class RepositoryAnalyzerTool:
         root = Path(root)
         if not root.exists():
             return f"Path not found: {root}"
-        if not (root / "main.py").exists():
+        if not self._is_repository_root(root):
             return f"Not an AI-Studio-Agent repository root: {root}"
 
+        index = self.indexer.index(root)
         tools, registry_names = self._collect_tools(root)
+        symbols = {}
+        dependencies = {}
+        definitions = {}
+
+        for relative, metadata in index["files"].items():
+            if metadata["language"] != "python":
+                continue
+            result = self.python_analyzer.analyze_file(
+                root / relative,
+                root,
+            )
+            if result["symbols"]:
+                symbols[relative] = result["symbols"]
+            if result["dependencies"]:
+                dependencies[relative] = result["dependencies"]
+            if result["definitions"] and relative not in definitions:
+                definitions[relative] = result["definitions"]
+
+        overview = {
+            "root": index["root"],
+            "python_files": index["languages"].get("python", 0),
+            "total_lines": index["total_lines"],
+            "total_files": index["total_files"],
+            "total_bytes": index["total_bytes"],
+            "languages": index["languages"],
+            "extensions": index["extensions"],
+            "configuration_files": index["configuration_files"],
+            "documentation_files": index["documentation_files"],
+            "test_files": index["test_files"],
+            "top_level_modules": sorted(
+                path.name
+                for path in root.iterdir()
+                if path.is_dir() and path.name not in SKIP_DIRS
+            ),
+            "largest_files": sorted(
+                [
+                    {
+                        "file": relative,
+                        "lines": metadata["line_count"] or 0,
+                    }
+                    for relative, metadata in index["files"].items()
+                ],
+                key=lambda item: (-item["lines"], item["file"]),
+            )[:5],
+        }
+
+        repository_fingerprint = self._repository_fingerprint(index)
+        generation_id = hashlib.sha256(
+            f"repository-analysis-v2:{repository_fingerprint}".encode()
+        ).hexdigest()
 
         return RepositoryAnalysis(
             generated_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            overview=self._collect_overview(root),
+            generation_id=generation_id,
+            repository_fingerprint=repository_fingerprint,
+            repository_root=str(root.resolve()),
+            project={"root": str(root.resolve())},
+            overview=overview,
+            files=index["files"],
+            languages=index["languages"],
+            extensions=index["extensions"],
+            metadata={
+                "total_files": index["total_files"],
+                "total_bytes": index["total_bytes"],
+                "total_lines": index["total_lines"],
+            },
+            configuration_files=index["configuration_files"],
+            documentation_files=index["documentation_files"],
+            test_files=index["test_files"],
+            entry_points=self._collect_entry_points(index),
+            source_boundaries={
+                "source": index["source_files"],
+                "tests": index["test_files"],
+            },
+            symbols=symbols,
+            dependencies=dependencies,
             module_roles=self._collect_module_roles(root),
-            definitions=self._collect_definitions(root),
+            definitions=definitions,
             tools=tools,
             registry_names=registry_names,
             wiring_checks=self._collect_wiring_checks(root),
             issues=self._collect_issues(root),
         )
+
+    @staticmethod
+    def _repository_fingerprint(index):
+        files = [
+            (relative, metadata.get("content_hash", ""))
+            for relative, metadata in sorted(index["files"].items())
+        ]
+        payload = json.dumps(files, ensure_ascii=True, separators=(",", ":"))
+        return "sha256:" + hashlib.sha256(payload.encode()).hexdigest()
+
+    @staticmethod
+    def _is_repository_root(root):
+        markers = {
+            "main.py",
+            "README.md",
+            "pyproject.toml",
+            "requirements.txt",
+            "package.json",
+            ".git",
+            "app",
+            "agents",
+            "tools",
+        }
+        return any((root / marker).exists() for marker in markers)
+
+    @staticmethod
+    def _collect_entry_points(index):
+        candidates = []
+        for relative in index["files"]:
+            name = Path(relative).name.lower()
+            if name.startswith(("main.", "index.", "app.")):
+                candidates.append(relative)
+        return sorted(candidates)
 
     # ------------------------------------------------------------------
     # data collection (returns plain structures)
@@ -587,11 +572,7 @@ class RepositoryAnalyzerTool:
         defs = []
         for node in tree.body:
             if isinstance(node, ast.ClassDef):
-                methods = [
-                    n.name
-                    for n in node.body
-                    if isinstance(n, ast.FunctionDef)
-                ]
+                methods = [n.name for n in node.body if isinstance(n, ast.FunctionDef)]
                 suffix = ", ".join(methods[:5])
                 defs.append(f"class {node.name}({suffix})")
             elif isinstance(node, ast.FunctionDef):
@@ -600,10 +581,7 @@ class RepositoryAnalyzerTool:
 
     def _collect_overview(self, root):
         files = list(self._iter_python_files(root))
-        total_lines = sum(
-            len(self._read(path).splitlines())
-            for path in files
-        )
+        total_lines = sum(len(self._read(path).splitlines()) for path in files)
         biggest = sorted(
             files,
             key=lambda path: len(self._read(path).splitlines()),
@@ -629,9 +607,7 @@ class RepositoryAnalyzerTool:
 
     def _collect_module_roles(self, root):
         return {
-            rel: role
-            for rel, role in MODULE_ROLES.items()
-            if (root / rel).exists()
+            rel: role for rel, role in MODULE_ROLES.items() if (root / rel).exists()
         }
 
     def _collect_definitions(self, root):

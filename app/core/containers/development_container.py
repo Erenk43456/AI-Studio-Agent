@@ -75,6 +75,15 @@ class DevelopmentContainer:
             workspace=self.workspace_path,
         )
 
+        initialize = getattr(
+            self.project_memory_sync,
+            "initialize",
+            None,
+        )
+
+        if initialize:
+            initialize()
+
         #
         # Workspace Watcher
         #

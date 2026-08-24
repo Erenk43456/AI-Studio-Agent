@@ -1,4 +1,6 @@
 from datetime import datetime
+import hashlib
+import json
 from pathlib import Path
 
 from app.core.logger import AppLogger
@@ -7,51 +9,41 @@ from app.core.storage.json_store import JsonStore
 
 class ProjectMemory:
 
-    def __init__(
-        self,
-        workspace
-    ):
+    def __init__(self, workspace):
 
-        self.workspace = Path(
-            workspace
-        )
+        self.workspace = Path(workspace)
 
-        self.memory_path = (
-            self.workspace
-            / ".ai_memory"
-        )
+        self.memory_path = self.workspace / ".ai_memory"
 
-        self.memory_path.mkdir(
-            parents=True,
-            exist_ok=True
-        )
+        self.memory_path.mkdir(parents=True, exist_ok=True)
 
-        self.project_file = (
-            self.memory_path
-            / "project.json"
-        )
+        self.project_file = self.memory_path / "project.json"
 
-        self.files_file = (
-            self.memory_path
-            / "files.json"
-        )
+        self.files_file = self.memory_path / "files.json"
 
-        self.architecture_file = (
-            self.memory_path
-            / "architecture.json"
-        )
+        self.architecture_file = self.memory_path / "architecture.json"
 
-        self.project_store = JsonStore(
-            self.project_file
-        )
+        self.symbols_file = self.memory_path / "symbols.json"
 
-        self.files_store = JsonStore(
-            self.files_file
-        )
+        self.dependencies_file = self.memory_path / "dependencies.json"
 
-        self.architecture_store = JsonStore(
-            self.architecture_file
-        )
+        self.relationships_file = self.memory_path / "relationships.json"
+
+        self.analysis_state_file = self.memory_path / "analysis_state.json"
+
+        self.project_store = JsonStore(self.project_file)
+
+        self.files_store = JsonStore(self.files_file)
+
+        self.architecture_store = JsonStore(self.architecture_file)
+
+        self.symbols_store = JsonStore(self.symbols_file)
+
+        self.dependencies_store = JsonStore(self.dependencies_file)
+
+        self.relationships_store = JsonStore(self.relationships_file)
+
+        self.analysis_state_store = JsonStore(self.analysis_state_file)
 
         self.logger = AppLogger()
 
@@ -61,18 +53,14 @@ class ProjectMemory:
     # Initialization
     # =========================================================
 
-    def initialize(
-        self
-    ):
+    def initialize(self):
 
         defaults = (
             (
                 self.project_store,
                 {
                     "name": self.workspace.name,
-                    "created": str(
-                        datetime.now()
-                    ),
+                    "created": str(datetime.now()),
                     "last_scan": None,
                 },
             ),
@@ -84,79 +72,91 @@ class ProjectMemory:
                 self.architecture_store,
                 {},
             ),
+            (
+                self.symbols_store,
+                {},
+            ),
+            (
+                self.dependencies_store,
+                {},
+            ),
+            (
+                self.relationships_store,
+                {"edges": []},
+            ),
+            (
+                self.analysis_state_store,
+                {
+                    "schema_version": 2,
+                    "status": "uninitialized",
+                    "last_full_scan_at": None,
+                    "last_incremental_sync_at": None,
+                },
+            ),
         )
 
         for store, default in defaults:
 
             if not store.path.exists():
 
-                store.save(
-                    default
-                )
+                store.save(default)
 
-        self.logger.info(
-            "Project memory initialized."
+        self.logger.info("Project memory initialized.")
+
+    def has_valid_repository_snapshot(self):
+        state = self.get_analysis_state()
+        store_generations = state.get("store_generations", {})
+        required_stores = {
+            "project",
+            "files",
+            "symbols",
+            "dependencies",
+            "relationships",
+            "architecture",
+        }
+        return (
+            state.get("status") == "ready"
+            and bool(state.get("generation_id"))
+            and bool(state.get("repository_fingerprint"))
+            and state.get("files_indexed") is not None
+            and set(store_generations) == required_stores
+            and all(
+                store_generations[name] == state.get("generation_id")
+                for name in required_stores
+            )
         )
 
     # =========================================================
     # JSON compatibility helpers
     # =========================================================
 
-    def save_json(
-        self,
-        path,
-        data
-    ):
+    def save_json(self, path, data):
 
-        path = Path(
-            path
-        )
+        path = Path(path)
 
-        store = JsonStore(
-            path
-        )
+        store = JsonStore(path)
 
-        store.save(
-            data
-        )
+        store.save(data)
 
-    def load_json(
-        self,
-        path
-    ):
+    def load_json(self, path):
 
-        path = Path(
-            path
-        )
+        path = Path(path)
 
-        store = JsonStore(
-            path
-        )
+        store = JsonStore(path)
 
         try:
 
-            data = store.load(
-                default={}
-            )
+            data = store.load(default={})
 
         except ValueError as error:
 
-            self.logger.error(
-                f"Project memory JSON error "
-                f"for {path}: {error}"
-            )
+            self.logger.error(f"Project memory JSON error " f"for {path}: {error}")
 
             return {}
 
-        if not isinstance(
-            data,
-            dict
-        ):
+        if not isinstance(data, dict):
 
-            self.logger.warning(
-                f"Project memory data is not "
-                f"a dictionary: {path}"
-            )
+            self.logger.warning(f"Project memory data is not " f"a dictionary: {path}")
 
             return {}
 
@@ -166,72 +166,38 @@ class ProjectMemory:
     # Project information
     # =========================================================
 
-    def update_project_info(
-        self,
-        data
-    ):
+    def update_project_info(self, data):
 
-        project = self.project_store.load(
-            default={}
-        )
+        project = self.project_store.load(default={})
 
-        if not isinstance(
-            project,
-            dict
-        ):
+        if not isinstance(project, dict):
 
             project = {}
 
-        if isinstance(
-            data,
-            dict
-        ):
+        if isinstance(data, dict):
 
-            project.update(
-                data
-            )
+            project.update(data)
 
-        project["last_scan"] = str(
-            datetime.now()
-        )
+        project["last_scan"] = str(datetime.now())
 
-        self.project_store.save(
-            project
-        )
+        self.project_store.save(project)
 
-    def sync_repository_analysis(
-        self,
-        analysis
-    ):
+    def sync_repository_analysis(self, analysis):
         """Synchronize a structured repository analysis into memory."""
 
-        analysis = self._coerce_analysis(
-            analysis
-        )
+        analysis = self._coerce_analysis(analysis)
 
-        if not isinstance(
-            analysis,
-            dict
-        ):
-            self.logger.warning(
-                "Repository analysis is not structured data."
-            )
+        if not isinstance(analysis, dict):
+            self.logger.warning("Repository analysis is not structured data.")
             return False
 
-        overview = analysis.get(
-            "overview",
-            {}
-        )
+        generation_id, repository_fingerprint = self._snapshot_identity(analysis)
 
-        definitions = analysis.get(
-            "definitions",
-            {}
-        )
+        overview = analysis.get("overview", {})
 
-        module_roles = analysis.get(
-            "module_roles",
-            {}
-        )
+        definitions = analysis.get("definitions", {})
+
+        module_roles = analysis.get("module_roles", {})
 
         if not isinstance(overview, dict):
             return False
@@ -242,86 +208,170 @@ class ProjectMemory:
         if not isinstance(module_roles, dict):
             return False
 
-        project_info = dict(
-            overview
-        )
+        project_info = dict(overview)
 
         if "generated_at" in analysis:
-            project_info["analysis_generated_at"] = (
-                analysis["generated_at"]
+            project_info["analysis_generated_at"] = analysis["generated_at"]
+
+            project = self.project_store.load(default={})
+            if not isinstance(project, dict):
+                project = {}
+            project.update(
+                {
+                    **project_info,
+                    "generation_id": generation_id,
+                    "repository_fingerprint": repository_fingerprint,
+                    "last_scan": str(datetime.now()),
+                }
             )
 
-        self.update_project_info(
-            project_info
-        )
-
-        file_paths = set(
-            definitions
-        )
-
-        file_paths.update(
-            module_roles
-        )
+        indexed_files = analysis.get("files", {})
+        if not isinstance(indexed_files, dict):
+            indexed_files = {}
 
         files = {}
 
-        for path in sorted(
-            file_paths
-        ):
-            info = {
-                "definitions": definitions.get(
-                    path,
-                    []
-                ),
-            }
+        file_paths = set(indexed_files)
+        if not file_paths:
+            file_paths.update(definitions)
+            file_paths.update(module_roles)
+
+        for path in sorted(file_paths):
+            info = dict(indexed_files.get(path, {}))
+            info["definitions"] = definitions.get(path, info.get("definitions", []))
 
             if path in module_roles:
                 info["role"] = module_roles[path]
 
-            files[
-                str(path).replace(
-                    "\\",
-                    "/"
+            files[str(path).replace("\\", "/")] = info
+
+        try:
+            self.files_store.save(files)
+            self.symbols_store.save(analysis.get("symbols", {}))
+            self.dependencies_store.save(analysis.get("dependencies", {}))
+            self.relationships_store.save({"edges": analysis.get("relationships", [])})
+
+            architecture = self.get_architecture()
+            architecture["repository_analysis"] = analysis
+            architecture["generation_id"] = generation_id
+            self.architecture_store.save(architecture)
+
+            self.project_store.save(project)
+
+            self.analysis_state_store.save(
+                {
+                    "schema_version": analysis.get("schema_version", 2),
+                    "status": "ready",
+                    "generation_id": generation_id,
+                    "repository_root": analysis.get("repository_root", ""),
+                    "repository_fingerprint": repository_fingerprint,
+                    "last_full_scan_at": analysis.get("generated_at"),
+                    "last_incremental_sync_at": None,
+                    "files_indexed": len(indexed_files),
+                    "failed_files": [],
+                    "store_generations": {
+                        name: generation_id
+                        for name in (
+                            "project",
+                            "files",
+                            "symbols",
+                            "dependencies",
+                            "relationships",
+                            "architecture",
+                        )
+                    },
+                }
+            )
+        except Exception as error:
+            self.logger.error(f"Repository memory persistence failed: {error}")
+            try:
+                self.analysis_state_store.save(
+                    {
+                        "schema_version": analysis.get("schema_version", 2),
+                        "status": "failed",
+                        "generation_id": generation_id,
+                        "repository_root": analysis.get("repository_root", ""),
+                        "repository_fingerprint": repository_fingerprint,
+                        "failed_files": [],
+                        "error": str(error),
+                    }
                 )
-            ] = info
+            except Exception:
+                pass
+            return False
 
-        self.files_store.save(
-            files
-        )
-
-        architecture = self.get_architecture()
-
-        architecture[
-            "repository_analysis"
-        ] = analysis
-
-        self.architecture_store.save(
-            architecture
-        )
-
-        self.logger.info(
-            "Project memory synchronized from repository analysis."
-        )
+        self.logger.info("Project memory synchronized from repository analysis.")
 
         return True
 
     @staticmethod
-    def _coerce_analysis(
-        analysis
-    ):
-        if hasattr(
-            analysis,
-            "to_dict"
-        ):
+    def _snapshot_identity(analysis):
+        generation_id = analysis.get("generation_id")
+        repository_fingerprint = analysis.get("repository_fingerprint")
+        if generation_id and repository_fingerprint:
+            return generation_id, repository_fingerprint
+
+        files = analysis.get("files", {})
+        if not isinstance(files, dict):
+            files = {}
+        payload = [
+            (path, files[path].get("content_hash", ""))
+            for path in sorted(files)
+            if isinstance(files[path], dict)
+        ]
+        repository_fingerprint = (
+            "sha256:"
+            + hashlib.sha256(
+                json.dumps(payload, separators=(",", ":"), ensure_ascii=True).encode()
+            ).hexdigest()
+        )
+        generation_id = hashlib.sha256(
+            f"repository-analysis-v2:{repository_fingerprint}".encode()
+        ).hexdigest()
+        return generation_id, repository_fingerprint
+
+    def get_symbols(self):
+        return self._load_store(self.symbols_store, {})
+
+    def get_dependencies(self):
+        return self._load_store(self.dependencies_store, {})
+
+    def get_relationships(self):
+        return self._load_store(
+            self.relationships_store,
+            {"edges": []},
+        )
+
+    def get_analysis_state(self):
+        return self._load_store(
+            self.analysis_state_store,
+            {"status": "uninitialized"},
+        )
+
+    def set_analysis_state(self, state):
+        current = self.get_analysis_state()
+        if isinstance(state, dict):
+            current.update(state)
+        self.analysis_state_store.save(current)
+        return current
+
+    @staticmethod
+    def _load_store(store, default):
+        try:
+            value = store.load(default=default)
+        except ValueError:
+            return default
+        return value if isinstance(value, dict) else default
+
+    @staticmethod
+    def _coerce_analysis(analysis):
+        if hasattr(analysis, "to_dict"):
             try:
                 return analysis.to_dict()
             except Exception:
                 return None
 
-        if isinstance(
-            analysis,
-            dict
-        ):
+        if isinstance(analysis, dict):
             return analysis
 
         return None
@@ -330,88 +380,47 @@ class ProjectMemory:
     # File memory
     # =========================================================
 
-    def add_file(
-        self,
-        path,
-        info
-    ):
+    def add_file(self, path, info):
 
-        path = str(
-            path
-        ).replace(
-            "\\",
-            "/"
-        )
+        path = str(path).replace("\\", "/")
 
         files = self.get_all_files()
 
         files[path] = info
 
-        self.files_store.save(
-            files
-        )
+        self.files_store.save(files)
 
-        self.logger.info(
-            f"Project memory updated: {path}"
-        )
+        self.logger.info(f"Project memory updated: {path}")
 
-    def get_file(
-        self,
-        path
-    ):
+    def get_file(self, path):
 
-        path = str(
-            path
-        ).replace(
-            "\\",
-            "/"
-        )
+        path = str(path).replace("\\", "/")
 
         files = self.get_all_files()
 
-        return files.get(
-            path
-        )
+        return files.get(path)
 
-    def get_all_files(
-        self
-    ):
+    def get_all_files(self):
 
         try:
 
-            files = self.files_store.load(
-                default={}
-            )
+            files = self.files_store.load(default={})
 
         except ValueError as error:
 
-            self.logger.error(
-                f"Failed to load project files: "
-                f"{error}"
-            )
+            self.logger.error(f"Failed to load project files: " f"{error}")
 
             return {}
 
-        if not isinstance(
-            files,
-            dict
-        ):
+        if not isinstance(files, dict):
 
             return {}
 
         return files
 
-    def remove_file(
-        self,
-        path
-    ):
+    def remove_file(self, path):
 
-        path = str(
-            path
-        ).replace(
-            "\\",
-            "/"
-        )
+        path = str(path).replace("\\", "/")
 
         files = self.get_all_files()
 
@@ -421,13 +430,9 @@ class ProjectMemory:
 
         del files[path]
 
-        self.files_store.save(
-            files
-        )
+        self.files_store.save(files)
 
-        self.logger.info(
-            f"Project memory removed: {path}"
-        )
+        self.logger.info(f"Project memory removed: {path}")
 
         return True
 
@@ -435,45 +440,27 @@ class ProjectMemory:
     # Architecture
     # =========================================================
 
-    def update_architecture(
-        self,
-        name,
-        data
-    ):
+    def update_architecture(self, name, data):
 
         architecture = self.get_architecture()
 
         architecture[name] = data
 
-        self.architecture_store.save(
-            architecture
-        )
+        self.architecture_store.save(architecture)
 
-    def get_architecture(
-        self
-    ):
+    def get_architecture(self):
 
         try:
 
-            architecture = (
-                self.architecture_store.load(
-                    default={}
-                )
-            )
+            architecture = self.architecture_store.load(default={})
 
         except ValueError as error:
 
-            self.logger.error(
-                f"Failed to load project architecture: "
-                f"{error}"
-            )
+            self.logger.error(f"Failed to load project architecture: " f"{error}")
 
             return {}
 
-        if not isinstance(
-            architecture,
-            dict
-        ):
+        if not isinstance(architecture, dict):
 
             return {}
 
@@ -483,15 +470,9 @@ class ProjectMemory:
     # Search
     # =========================================================
 
-    def search(
-        self,
-        query
-    ):
+    def search(self, query):
 
-        if not isinstance(
-            query,
-            str
-        ):
+        if not isinstance(query, str):
 
             return {}
 
@@ -507,34 +488,21 @@ class ProjectMemory:
 
         for path, info in files.items():
 
-            content = self._serialize(
-                info
-            )
+            content = self._serialize(info)
 
-            if (
-                query in path.lower()
-                or query in content
-            ):
+            if query in path.lower() or query in content:
 
                 results[path] = info
 
         return results
 
-    def get_context(
-        self,
-        query,
-        limit=5
-    ):
+    def get_context(self, query, limit=5):
 
-        results = self.search(
-            query
-        )
+        results = self.search(query)
 
         context = []
 
-        for path, info in list(
-            results.items()
-        )[:limit]:
+        for path, info in list(results.items())[:limit]:
 
             context.append(
                 {
@@ -549,23 +517,14 @@ class ProjectMemory:
     # Utilities
     # =========================================================
 
-    def _serialize(
-        self,
-        value
-    ):
+    def _serialize(self, value):
 
         try:
 
             import json
 
-            return json.dumps(
-                value,
-                ensure_ascii=False,
-                default=str
-            ).lower()
+            return json.dumps(value, ensure_ascii=False, default=str).lower()
 
         except Exception:
 
-            return str(
-                value
-            ).lower()
+            return str(value).lower()

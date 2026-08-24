@@ -5,23 +5,19 @@ from pathlib import Path
 from app.core.project_memory_sync import (
     ProjectMemorySync,
 )
+from memory.project_memory.project_memory import ProjectMemory
 
 
 class FakeRepositoryAnalyzer:
 
-    def __init__(
-        self,
-        analysis=None
-    ):
+    def __init__(self, analysis=None):
         self.calls = []
 
         self.analysis = (
             analysis
             if analysis is not None
             else {
-                "generated_at": (
-                    "2026-08-20 21:00:00"
-                ),
+                "generated_at": ("2026-08-20 21:00:00"),
                 "overview": {
                     "python_files": 10,
                     "total_lines": 100,
@@ -35,15 +31,16 @@ class FakeRepositoryAnalyzer:
             }
         )
 
-    def analyze(
-        self,
-        root
-    ):
-        self.calls.append(
-            str(root)
-        )
+    def analyze(self, root):
+        self.calls.append(str(root))
 
         return self.analysis
+
+
+class FailingRepositoryAnalyzer:
+
+    def analyze(self, root):
+        raise RuntimeError("initial analysis failed")
 
 
 class FakeProjectMemory:
@@ -51,53 +48,19 @@ class FakeProjectMemory:
     def __init__(self):
         self.calls = []
 
-    def update_project_info(
-        self,
-        data
-    ):
-        self.calls.append(
-            (
-                "project_info",
-                data
-            )
-        )
+    def update_project_info(self, data):
+        self.calls.append(("project_info", data))
 
-    def update_architecture(
-        self,
-        name,
-        data
-    ):
-        self.calls.append(
-            (
-                "architecture",
-                name,
-                data
-            )
-        )
+    def update_architecture(self, name, data):
+        self.calls.append(("architecture", name, data))
 
-    def sync_repository_analysis(
-        self,
-        analysis
-    ):
-        self.calls.append(
-            (
-                "repository_analysis",
-                analysis
-            )
-        )
+    def sync_repository_analysis(self, analysis):
+        self.calls.append(("repository_analysis", analysis))
 
         return True
 
-    def remove_file(
-        self,
-        path
-    ):
-        self.calls.append(
-            (
-                "remove_file",
-                path
-            )
-        )
+    def remove_file(self, path):
+        self.calls.append(("remove_file", path))
 
 
 @pytest.mark.unit
@@ -112,11 +75,10 @@ def test_project_memory_sync_accepts_changed_files():
         workspace="C:/AI-Studio",
     )
 
-    assert sync.workspace == Path(
-        "C:/AI-Studio"
-    )
+    assert sync.workspace == Path("C:/AI-Studio")
     assert sync.repository_analyzer is analyzer
     assert sync.project_memory is project_memory
+
 
 @pytest.mark.unit
 def test_project_memory_sync_runs_repository_analysis():
@@ -134,13 +96,15 @@ def test_project_memory_sync_runs_repository_analysis():
         "agents/chat_agent.py",
     ]
 
-    sync.sync(
-        changed_files
-    )
+    sync.sync(changed_files)
 
     assert analyzer.calls == [
         str(Path("C:/AI-Studio")),
     ]
+
+    assert sync.last_changed_files == changed_files
+    assert sync.last_sync_mode == "full_rescan_fallback"
+
 
 @pytest.mark.unit
 def test_project_memory_sync_does_not_analyze_without_changes():
@@ -159,15 +123,11 @@ def test_project_memory_sync_does_not_analyze_without_changes():
     assert result is None
     assert analyzer.calls == []
 
+
 class FailingRepositoryAnalyzer:
 
-    def analyze(
-        self,
-        root
-    ):
-        raise RuntimeError(
-            "repository analysis failed"
-        )
+    def analyze(self, root):
+        raise RuntimeError("repository analysis failed")
 
 
 @pytest.mark.unit
@@ -182,11 +142,91 @@ def test_project_memory_sync_handles_analysis_failure():
         workspace="C:/AI-Studio",
     )
 
-    result = sync.sync(
-        ["agents/chat_agent.py"]
-    )
+    result = sync.sync(["agents/chat_agent.py"])
 
     assert result is None
+
+
+@pytest.mark.unit
+def test_project_memory_sync_initializes_empty_repository_memory(tmp_path):
+    analyzer = FakeRepositoryAnalyzer(
+        analysis={
+            "schema_version": 2,
+            "repository_root": str(tmp_path.resolve()),
+            "repository_fingerprint": "sha256:fingerprint",
+            "generation_id": "generation-1",
+            "generated_at": "2026-08-24 12:00:00",
+            "overview": {},
+            "files": {
+                "app.py": {
+                    "language": "python",
+                    "content_hash": "sha256:file",
+                },
+            },
+            "symbols": {"app.py": []},
+            "dependencies": {"app.py": []},
+            "relationships": [],
+            "definitions": {},
+            "module_roles": {},
+        }
+    )
+    memory = ProjectMemory(tmp_path)
+    sync = ProjectMemorySync(analyzer, memory, tmp_path)
+
+    result = sync.initialize()
+
+    assert result is not None
+    assert memory.has_valid_repository_snapshot() is True
+    assert memory.get_analysis_state()["generation_id"] == "generation-1"
+    assert memory.get_all_files()["app.py"]["language"] == "python"
+    assert sync.last_sync_mode == "initial_full_scan"
+
+
+@pytest.mark.unit
+def test_project_memory_sync_does_not_reinitialize_valid_snapshot(tmp_path):
+    memory = ProjectMemory(tmp_path)
+    memory.set_analysis_state(
+        {
+            "status": "ready",
+            "generation_id": "generation-1",
+            "repository_fingerprint": "sha256:fingerprint",
+            "files_indexed": 1,
+            "store_generations": {
+                name: "generation-1"
+                for name in (
+                    "project",
+                    "files",
+                    "symbols",
+                    "dependencies",
+                    "relationships",
+                    "architecture",
+                )
+            },
+        }
+    )
+    analyzer = FakeRepositoryAnalyzer()
+    sync = ProjectMemorySync(analyzer, memory, tmp_path)
+
+    result = sync.initialize()
+
+    assert result["generation_id"] == "generation-1"
+    assert analyzer.calls == []
+
+
+@pytest.mark.unit
+def test_project_memory_sync_initialization_failure_is_not_ready(tmp_path):
+    memory = ProjectMemory(tmp_path)
+    sync = ProjectMemorySync(
+        FailingRepositoryAnalyzer(),
+        memory,
+        tmp_path,
+    )
+
+    result = sync.initialize()
+
+    assert result is None
+    assert memory.get_analysis_state()["status"] == "failed"
+
 
 @pytest.mark.unit
 def test_project_memory_sync_uses_workspace_for_repository_analysis():
@@ -212,26 +252,21 @@ def test_project_memory_sync_uses_workspace_for_repository_analysis():
         str(Path("C:/AI-Studio")),
     ]
 
+
 @pytest.mark.unit
 def test_project_memory_sync_stores_repository_analysis():
 
     analysis = {
-        "generated_at": (
-            "2026-08-20 21:00:00"
-        ),
+        "generated_at": ("2026-08-20 21:00:00"),
         "overview": {
             "python_files": 10,
             "total_lines": 100,
         },
         "module_roles": {
-            "agents/chat_agent.py": (
-                "Conversational agent"
-            ),
+            "agents/chat_agent.py": ("Conversational agent"),
         },
         "definitions": {
-            "agents/chat_agent.py": [
-                "class ChatAgent"
-            ],
+            "agents/chat_agent.py": ["class ChatAgent"],
         },
         "tools": [],
         "registry_names": [],
@@ -239,9 +274,7 @@ def test_project_memory_sync_stores_repository_analysis():
         "issues": [],
     }
 
-    analyzer = FakeRepositoryAnalyzer(
-        analysis
-    )
+    analyzer = FakeRepositoryAnalyzer(analysis)
 
     project_memory = FakeProjectMemory()
 
@@ -251,17 +284,8 @@ def test_project_memory_sync_stores_repository_analysis():
         workspace="C:/AI-Studio",
     )
 
-    result = sync.sync(
-        [
-            "agents/chat_agent.py"
-        ]
-    )
+    result = sync.sync(["agents/chat_agent.py"])
 
     assert result == analysis
 
-    assert project_memory.calls == [
-        (
-            "repository_analysis",
-            analysis
-        )
-    ]
+    assert project_memory.calls == [("repository_analysis", analysis)]
