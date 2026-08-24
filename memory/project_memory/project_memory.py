@@ -258,6 +258,9 @@ class ProjectMemory:
 
             self.project_store.save(project)
 
+            previous_state = self.get_analysis_state()
+            sync_mode = analysis.get("sync_mode", "full")
+
             self.analysis_state_store.save(
                 {
                     "schema_version": analysis.get("schema_version", 2),
@@ -265,8 +268,17 @@ class ProjectMemory:
                     "generation_id": generation_id,
                     "repository_root": analysis.get("repository_root", ""),
                     "repository_fingerprint": repository_fingerprint,
-                    "last_full_scan_at": analysis.get("generated_at"),
-                    "last_incremental_sync_at": None,
+                    "sync_mode": sync_mode,
+                    "last_full_scan_at": (
+                        previous_state.get("last_full_scan_at")
+                        if sync_mode == "incremental"
+                        else analysis.get("generated_at")
+                    ),
+                    "last_incremental_sync_at": (
+                        analysis.get("generated_at")
+                        if sync_mode == "incremental"
+                        else previous_state.get("last_incremental_sync_at")
+                    ),
                     "files_indexed": len(indexed_files),
                     "failed_files": [],
                     "store_generations": {
