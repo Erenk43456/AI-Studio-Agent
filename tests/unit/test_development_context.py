@@ -104,6 +104,67 @@ def test_development_context_forwards_targets_symbols_and_max_files():
 
 
 @pytest.mark.unit
+def test_build_uses_targeted_context_when_targets_are_explicit():
+    resolver = SpyResolver(
+        {
+            "targets": ["app/parser.py"],
+            "related_files": [],
+            "metadata": {"selected_files": 1},
+        }
+    )
+    context = DevelopmentContext(
+        FakeProjectMemory(),
+        "C:/AI-Studio",
+        repository_context_resolver=resolver,
+    )
+
+    result = context.build(
+        "Fix parser",
+        target_files=["app/parser.py"],
+        target_symbols=["Parser"],
+        max_files=2,
+    )
+
+    assert result["task"] == "Fix parser"
+    assert result["targets"] == ["app/parser.py"]
+    assert resolver.calls == [(["app/parser.py"], ["Parser"], 2)]
+
+
+@pytest.mark.unit
+def test_build_without_explicit_targets_keeps_existing_context_flow():
+    resolver = SpyResolver({"targets": ["should-not-be-used"]})
+    context = DevelopmentContext(
+        FakeProjectMemory(),
+        "C:/AI-Studio",
+        repository_context_resolver=resolver,
+    )
+
+    result = context.build("Fix parser")
+
+    assert "strategy" in result
+    assert resolver.calls == []
+
+
+@pytest.mark.unit
+def test_build_falls_back_when_targeted_resolver_fails():
+    context = DevelopmentContext(
+        FakeProjectMemory(),
+        "C:/AI-Studio",
+        repository_context_resolver=SpyResolver(
+            error=RuntimeError("resolver unavailable")
+        ),
+    )
+
+    result = context.build(
+        "Fix parser",
+        target_files=["app/parser.py"],
+    )
+
+    assert result["task"] == "Fix parser"
+    assert "strategy" in result
+
+
+@pytest.mark.unit
 def test_development_context_minimal_memory_constructor_remains_compatible():
     context = DevelopmentContext(
         FakeProjectMemory(),

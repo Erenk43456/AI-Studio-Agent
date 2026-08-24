@@ -52,9 +52,26 @@ class DevelopmentContext:
     # Public API
     # =============================================================
 
-    def build(self, task):
+    def build(
+        self,
+        task,
+        target_files=None,
+        target_symbols=None,
+        max_files=12,
+    ):
 
         task = str(task or "").strip()
+
+        if target_files:
+            targeted = self.get_targeted_context(
+                target_files,
+                target_symbols=target_symbols,
+                max_files=max_files,
+            )
+
+            if targeted:
+                targeted["task"] = task
+                return targeted
 
         # Reset memory state for every build.
         self._memory_available = False
