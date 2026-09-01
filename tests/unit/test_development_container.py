@@ -4,6 +4,12 @@ import app.core.containers.development_container as module
 
 from app.core.containers.development_container import DevelopmentContainer
 from app.core.orchestrators.development_orchestrator import DevelopmentOrchestrator
+from tests.fakes.fake_code_agent import FakeCodeAgent
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_memory import FakeMemory
+from tests.fakes.fake_project_memory import FakeProjectMemory
+from tests.fakes.fake_registry import FakeRegistry
+from tests.fakes.fake_repository_analyzer import FakeRepositoryAnalyzer
 
 
 class FakeWatcher:
@@ -17,49 +23,19 @@ class FakeWatcher:
         self.started = True
 
 
-class FakeLLM:
-    pass
-
-
 class FakeModels:
     code_llm = FakeLLM()
     planner_llm = FakeLLM()
 
 
-class FakeProjectMemory:
-
-    def __init__(self):
-        self.calls = []
-
-    def update_project_info(self, data):
-        self.calls.append(data)
-
-
-class FakeRegistry:
-
-    def get(self, name):
-        return object()
-
-
 class FakeTools:
-    registry = FakeRegistry()
+    registry = FakeRegistry(
+        tools={"repository_analyzer": FakeRepositoryAnalyzer()}
+    )
 
 
 class FakeCore:
     workspace_path = "C:/AI-Studio"
-
-
-class FakeMemory:
-
-    def __init__(self):
-        self.memory = object()
-        self.project_memory = FakeProjectMemory()
-
-
-class FakeCodeAgent:
-
-    def __init__(self):
-        self.development_context = None
 
 
 class FakeAgents:
@@ -68,11 +44,22 @@ class FakeAgents:
         self.code = FakeCodeAgent()
 
 
+class FakeMemoryContainer:
+    """
+    Container-shaped double: DevelopmentContainer expects a memory
+    *container* here (with .memory and .project_memory attributes),
+    not a Memory implementation itself.
+    """
+
+    memory = FakeMemory()
+    project_memory = FakeProjectMemory()
+
+
 class FakeMain:
     core = FakeCore()
     models = FakeModels()
     tools = FakeTools()
-    memory = FakeMemory()
+    memory = FakeMemoryContainer()
     agents = FakeAgents()
 
 

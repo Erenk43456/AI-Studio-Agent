@@ -2,28 +2,10 @@ import pytest
 
 from agents.code_agent import CodeAgent
 
+from tests.fakes.fake_development_context import FakeDevelopmentContext
 from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_registry import FakeRegistry
 from tests.fakes.fake_tool import FakeTool
-
-
-class FakeRegistry:
-    def __init__(self, tools=None):
-        self.tools = tools or {}
-        self.calls = []
-
-    def get(self, name):
-        self.calls.append(name)
-        return self.tools.get(name)
-
-
-class FakeDevelopmentContext:
-    def __init__(self, context):
-        self.context = context
-        self.calls = []
-
-    def build(self, task):
-        self.calls.append(task)
-        return self.context
 
 
 @pytest.mark.unit

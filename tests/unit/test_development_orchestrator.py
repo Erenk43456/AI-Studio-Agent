@@ -5,17 +5,12 @@ from agents.tool_agent import ToolAgent
 from app.core.orchestrators.development_orchestrator import (
     DevelopmentOrchestrator,
 )
-
-
-class FakeLLM:
-    def __init__(
-        self,
-        model="fake-model",
-    ):
-        self.model = model
-
-    def get_current_model(self):
-        return self.model
+from tests.fakes.fake_code_agent import FakeCodeAgent
+from tests.fakes.fake_development_context import FakeDevelopmentContext
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_registry import FakeRegistry
+from tests.fakes.fake_repository_analyzer import FakeRepositoryAnalyzer
+from tests.fakes.fake_tool import FakeTool
 
 
 class FakePlanner:
@@ -29,36 +24,6 @@ class FakePlanner:
         return self.plan
 
 
-class FakeCodeAgent:
-    def __init__(self, result):
-        self.result = result
-        self.calls = []
-
-    def run(self, message, context):
-        self.calls.append((message, context))
-        return self.result
-
-
-class FakeTool:
-    def __init__(self, result):
-        self.result = result
-        self.calls = []
-
-    def execute(self, step):
-        self.calls.append(step)
-        return self.result
-
-
-class FakeRepositoryAnalyzer:
-    def __init__(self, result):
-        self.result = result
-        self.calls = []
-
-    def execute(self, step):
-        self.calls.append(step)
-        return self.result
-
-
 class FakeImprovementAgent:
     def __init__(self, result):
         self.result = result
@@ -67,30 +32,6 @@ class FakeImprovementAgent:
     def execute(self, message):
         self.calls.append(message)
         return self.result
-
-
-class FakeContext:
-    def __init__(self):
-        self.calls = []
-
-    def build(self, message):
-        self.calls.append(message)
-
-        return {
-            "task": message,
-            "strategy": {
-                "type": "development",
-                "repository_analysis_fallback": False,
-            },
-        }
-
-
-class FakeRegistry:
-    def __init__(self, tools=None):
-        self.tools = tools or {}
-
-    def get(self, name):
-        return self.tools.get(name)
 
 
 class FakeContainer:
@@ -107,7 +48,7 @@ class FakeContainer:
         self.code_llm = FakeLLM()
         self.repository_analyzer = FakeRepositoryAnalyzer(repository_result)
         self.improvement_agent = FakeImprovementAgent(improvement_result)
-        self.development_context = FakeContext()
+        self.development_context = FakeDevelopmentContext()
         self.registry = FakeRegistry({"fake_tool": tool} if tool else {})
         self.project_memory_sync = FakeProjectMemorySync()
         self.tool_agent = ToolAgent(
@@ -249,7 +190,7 @@ def test_development_unknown_tool():
 def test_development_tool_execution():
 
     tool = FakeTool(
-        {
+        result={
             "success": True,
             "message": "Tool executed",
         }
@@ -275,8 +216,13 @@ def test_development_tool_execution():
 
     assert tool.calls == [
         {
-            "tool": "fake_tool",
-            "action": "execute",
+            "args": (
+                {
+                    "tool": "fake_tool",
+                    "action": "execute",
+                },
+            ),
+            "kwargs": {},
         }
     ]
 

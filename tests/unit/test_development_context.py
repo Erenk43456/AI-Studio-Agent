@@ -3,24 +3,7 @@ import json
 import pytest
 
 from app.core.development_context import DevelopmentContext
-
-
-class FakeProjectMemory:
-
-    def __init__(self, files=None, architecture=None):
-        self.files = files or {}
-        self.architecture = architecture or {}
-        self.get_file_calls = []
-
-    def get_all_files(self):
-        return self.files
-
-    def get_file(self, path):
-        self.get_file_calls.append(path)
-        return self.files.get(path)
-
-    def get_architecture(self):
-        return self.architecture
+from tests.fakes.fake_project_memory import FakeProjectMemory
 
 
 class FailingProjectMemory:

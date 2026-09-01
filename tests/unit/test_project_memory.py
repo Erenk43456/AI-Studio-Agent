@@ -1,67 +1,7 @@
 import pytest
 
+from tests.fakes.fake_project_memory import FakeProjectMemory
 from tools.project_memory_tool import ProjectMemoryTool
-
-
-class FakeProjectMemory:
-    def __init__(self):
-        self.calls = []
-        self.project_file = "project.json"
-
-    def get_file(self, path):
-        self.calls.append(
-            ("get_file", path)
-        )
-        return {
-            "path": path,
-            "summary": "Parser file",
-        }
-
-    def get_all_files(self):
-        self.calls.append(
-            ("get_all_files",)
-        )
-        return [
-            "app/parser.py",
-            "app/main.py",
-        ]
-
-    def get_architecture(self):
-        self.calls.append(
-            ("get_architecture",)
-        )
-        return {
-            "style": "layered",
-        }
-
-    def search(self, query):
-        self.calls.append(
-            ("search", query)
-        )
-        return [
-            {
-                "path": "app/parser.py",
-                "match": query,
-            }
-        ]
-
-    def get_context(self, query, limit):
-        self.calls.append(
-            ("get_context", query, limit)
-        )
-        return {
-            "query": query,
-            "limit": limit,
-        }
-
-    def load_json(self, path):
-        self.calls.append(
-            ("load_json", path)
-        )
-        return {
-            "project": "AI-Studio",
-            "version": 1,
-        }
 
 
 @pytest.mark.unit
@@ -106,7 +46,9 @@ def test_project_memory_tool_rejects_non_dict_plan():
 
 @pytest.mark.unit
 def test_project_memory_tool_defaults_to_overview():
-    memory = FakeProjectMemory()
+    memory = FakeProjectMemory(
+        overview={"project": "AI-Studio", "version": 1}
+    )
 
     tool = ProjectMemoryTool(
         memory
@@ -132,7 +74,14 @@ def test_project_memory_tool_defaults_to_overview():
 
 @pytest.mark.unit
 def test_project_memory_tool_file_action():
-    memory = FakeProjectMemory()
+    memory = FakeProjectMemory(
+        files={
+            "app/parser.py": {
+                "path": "app/parser.py",
+                "summary": "Parser file",
+            }
+        }
+    )
 
     tool = ProjectMemoryTool(
         memory
@@ -163,7 +112,9 @@ def test_project_memory_tool_file_action():
 
 @pytest.mark.unit
 def test_project_memory_tool_files_action():
-    memory = FakeProjectMemory()
+    memory = FakeProjectMemory(
+        files=["app/parser.py", "app/main.py"]
+    )
 
     tool = ProjectMemoryTool(
         memory
@@ -192,7 +143,9 @@ def test_project_memory_tool_files_action():
 
 @pytest.mark.unit
 def test_project_memory_tool_architecture_action():
-    memory = FakeProjectMemory()
+    memory = FakeProjectMemory(
+        architecture={"style": "layered"}
+    )
 
     tool = ProjectMemoryTool(
         memory
@@ -350,7 +303,9 @@ def test_project_memory_tool_context_defaults_limit_to_five():
 
 @pytest.mark.unit
 def test_project_memory_tool_overview_explicit_action():
-    memory = FakeProjectMemory()
+    memory = FakeProjectMemory(
+        overview={"project": "AI-Studio", "version": 1}
+    )
 
     tool = ProjectMemoryTool(
         memory

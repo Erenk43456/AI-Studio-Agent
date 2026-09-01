@@ -3,42 +3,9 @@ import pytest
 import agents.planner_agent as module
 
 from agents.planner_agent import PlannerAgent
-
-
-class FakeLLM:
-    def __init__(self, response=None, error=None):
-        self.response = response
-        self.error = error
-        self.calls = []
-
-    def generate(self, *args, **kwargs):
-        self.calls.append((args, kwargs))
-
-        if self.error:
-            raise self.error
-
-        return self.response
-
-
-class FakeMemory:
-    def __init__(self):
-        self.calls = []
-
-    def save(self, *args):
-        self.calls.append(args)
-
-
-class FakeRegistry:
-    def __init__(self, tools=None):
-        self.tools = tools or {}
-        self.calls = []
-
-    def get(self, name):
-        self.calls.append(name)
-        return self.tools.get(name)
-
-    def get_tool_descriptions(self):
-        return []
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_memory import FakeMemory
+from tests.fakes.fake_registry import FakeRegistry
 
 
 @pytest.mark.unit

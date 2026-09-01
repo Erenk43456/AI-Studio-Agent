@@ -3,7 +3,15 @@ import pytest
 from tools.tool_registry import ToolRegistry
 
 
-class FakeTool:
+class FakeRegistryTool:
+    """
+    Tool double for ToolRegistry tests specifically: carries
+    metadata class attributes (so registry auto-extraction can
+    be exercised) and echoes its input back from execute(),
+    which is a different concern than the shared call-tracking
+    FakeTool in tests/fakes/ -- kept local intentionally.
+    """
+
     description = "Fake tool description"
     purpose = "Testing"
     safe = True
@@ -30,7 +38,7 @@ def test_registry_starts_empty():
 @pytest.mark.unit
 def test_register_adds_tool():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -59,7 +67,7 @@ def test_exists_returns_false_for_unknown_tool():
 @pytest.mark.unit
 def test_register_creates_default_metadata_from_tool():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -79,7 +87,7 @@ def test_register_creates_default_metadata_from_tool():
 @pytest.mark.unit
 def test_register_accepts_custom_metadata():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -113,7 +121,7 @@ def test_get_metadata_returns_empty_dict_for_unknown_tool():
 @pytest.mark.unit
 def test_unregister_existing_tool():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -140,7 +148,7 @@ def test_unregister_unknown_tool_returns_false():
 @pytest.mark.unit
 def test_can_execute_returns_true_for_executable_tool():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -213,7 +221,7 @@ def test_execute_returns_error_when_tool_has_no_execute():
 @pytest.mark.unit
 def test_execute_calls_tool_and_wraps_result():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -242,7 +250,7 @@ def test_execute_calls_tool_and_wraps_result():
 @pytest.mark.unit
 def test_execute_passes_exact_data_to_tool():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -298,8 +306,8 @@ def test_execute_handles_tool_exception():
 def test_get_tool_descriptions_returns_registered_tools():
     registry = ToolRegistry()
 
-    first = FakeTool()
-    second = FakeTool()
+    first = FakeRegistryTool()
+    second = FakeRegistryTool()
 
     registry.register(
         "first",
@@ -363,7 +371,7 @@ def test_get_tool_descriptions_uses_metadata_defaults():
 @pytest.mark.unit
 def test_inspect_tool_returns_tool_information():
     registry = ToolRegistry()
-    tool = FakeTool()
+    tool = FakeRegistryTool()
 
     registry.register(
         "fake",
@@ -375,7 +383,7 @@ def test_inspect_tool_returns_tool_information():
     )
 
     assert inspection["name"] == "fake"
-    assert inspection["class"] == "FakeTool"
+    assert inspection["class"] == "FakeRegistryTool"
     assert inspection["has_execute"] is True
 
     assert "execute" in inspection["methods"]

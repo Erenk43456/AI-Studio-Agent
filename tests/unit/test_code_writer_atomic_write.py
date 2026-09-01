@@ -2,16 +2,8 @@ import pytest
 
 import tools.code_writer_tool as module
 
+from tests.fakes.fake_llm import FakeLLM
 from tools.code_writer_tool import CodeWriterTool
-
-
-class FakeLLM:
-
-    def generate(self, prompt):
-        return (
-            "class Example:\n"
-            "    value = 42\n"
-        )
 
 
 class FakeAtomicWriter:
@@ -68,7 +60,7 @@ def test_code_writer_uses_atomic_writer(
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(),
+        llm=FakeLLM(response="class Example:\n    value = 42\n"),
         workspace=tmp_path
     )
 
@@ -126,7 +118,7 @@ def test_code_writer_does_not_directly_write_file(
     )
 
     writer = CodeWriterTool(
-        llm=FakeLLM(),
+        llm=FakeLLM(response="class Example:\n    value = 42\n"),
         workspace=tmp_path
     )
 

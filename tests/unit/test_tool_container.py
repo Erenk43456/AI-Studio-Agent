@@ -1,11 +1,9 @@
 import pytest
 
 from app.core.containers.tool_container import ToolContainer
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_project_memory import FakeProjectMemory
 from tools.tool_registry import ToolRegistry
-
-
-class FakeLLM:
-    pass
 
 
 class FakeModels:
@@ -16,18 +14,19 @@ class FakeMemoryStore:
     pass
 
 
-class FakeProjectMemory:
-    pass
+class FakeCore:
+    workspace_path = "C:/AI-Studio"
 
 
-class FakeMemory:
+class FakeMemoryContainer:
+    """
+    Container-shaped double: ToolContainer expects a memory
+    *container* here (with .memory / .project_memory attributes),
+    not a Memory implementation itself.
+    """
 
     memory = FakeMemoryStore()
     project_memory = FakeProjectMemory()
-
-
-class FakeCore:
-    workspace_path = "C:/AI-Studio"
 
 
 @pytest.mark.unit
@@ -36,7 +35,7 @@ def test_tool_container_creates_registry():
     container = ToolContainer(
         FakeCore(),
         FakeModels(),
-        FakeMemory(),
+        FakeMemoryContainer(),
     )
 
     assert isinstance(
@@ -51,7 +50,7 @@ def test_tool_container_registers_tools():
     container = ToolContainer(
         FakeCore(),
         FakeModels(),
-        FakeMemory(),
+        FakeMemoryContainer(),
     )
 
     expected_tools = {
@@ -76,7 +75,7 @@ def test_tool_container_exposes_tools():
     container = ToolContainer(
         FakeCore(),
         FakeModels(),
-        FakeMemory(),
+        FakeMemoryContainer(),
     )
 
     assert container.calculator is not None

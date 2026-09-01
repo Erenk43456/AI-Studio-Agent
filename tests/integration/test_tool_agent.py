@@ -1,8 +1,9 @@
 import pytest
 
 from agents.tool_agent import ToolAgent
-from tests.fakes.fake_tool import FakeTool
+from tests.fakes.fake_code_agent import FakeCodeAgent
 from tests.fakes.fake_memory import FakeMemory
+from tests.fakes.fake_tool import FakeTool
 
 
 class FakeToolRegistry:
@@ -14,16 +15,6 @@ class FakeToolRegistry:
 
     def get(self, name):
         return self.tools.get(name)
-
-
-class FakeCodeAgent:
-    def __init__(self, result):
-        self.result = result
-        self.calls = []
-
-    def run(self, task, development_context=None):
-        self.calls.append((task, development_context))
-        return self.result
 
 
 @pytest.mark.integration

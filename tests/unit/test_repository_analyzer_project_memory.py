@@ -5,100 +5,11 @@ from pathlib import Path
 from app.core.project_memory_sync import (
     ProjectMemorySync,
 )
+from tests.fakes.fake_project_memory import FakeProjectMemory
+from tests.fakes.fake_repository_analyzer import FakeRepositoryAnalyzer
 from tools.repository_analyzer import (
     RepositoryAnalyzerTool,
 )
-
-
-class FakeRepositoryAnalyzer:
-
-    def __init__(
-        self,
-        analysis=None
-    ):
-        self.calls = []
-
-        self.analysis = (
-            analysis
-            if analysis is not None
-            else {
-                "overview": {
-                    "python_files": 10,
-                },
-                "modules": {},
-                "definitions": {},
-                "tools": [],
-                "registry_names": [],
-                "wiring_checks": [],
-                "issues": [],
-            }
-        )
-
-    def analyze(
-        self,
-        root
-    ):
-        self.calls.append(
-            str(root)
-        )
-
-        return self.analysis
-
-
-class FakeProjectMemory:
-
-    def __init__(self):
-        self.calls = []
-
-    def update_project_info(
-        self,
-        data
-    ):
-        self.calls.append(
-            (
-                "project_info",
-                data,
-            )
-        )
-
-    def update_architecture(
-        self,
-        name,
-        data
-    ):
-        self.calls.append(
-            (
-                "architecture",
-                name,
-                data,
-            )
-        )
-
-    def add_file(
-        self,
-        path,
-        data
-    ):
-        self.calls.append(
-            (
-                "file",
-                path,
-                data,
-            )
-        )
-
-    def sync_repository_analysis(
-        self,
-        analysis
-    ):
-        self.calls.append(
-            (
-                "repository_analysis",
-                analysis,
-            )
-        )
-
-        return True
 
 
 @pytest.mark.unit

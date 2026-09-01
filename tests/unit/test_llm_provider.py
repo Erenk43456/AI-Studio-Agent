@@ -15,7 +15,15 @@ class DummyConfig:
     timeout = 10
 
 
-class FakeLLM:
+class FakeRawLLMClient:
+    """
+    Stands in for the low-level `models.llm.LLM` client that
+    LLMProvider wraps (constructed as LLM(config)). This is a
+    different layer than the shared agent-facing FakeLLM in
+    tests/fakes/ (which is constructed as FakeLLM(response=...)
+    and used directly by agents) -- kept local and intentionally
+    not merged into the shared fake.
+    """
 
     def __init__(self, config):
 
@@ -62,7 +70,7 @@ def test_provider_initializes_local(monkeypatch):
 
     monkeypatch.setattr(
         "models.llm_provider.LLM",
-        FakeLLM,
+        FakeRawLLMClient,
     )
 
     provider = LLMProvider(
@@ -71,7 +79,7 @@ def test_provider_initializes_local(monkeypatch):
 
     assert isinstance(
         provider.llm,
-        FakeLLM,
+        FakeRawLLMClient,
     )
 
     assert provider.model_slot == "chat"
@@ -83,7 +91,7 @@ def test_provider_generate(monkeypatch):
 
     monkeypatch.setattr(
         "models.llm_provider.LLM",
-        FakeLLM,
+        FakeRawLLMClient,
     )
 
     provider = LLMProvider(
@@ -114,7 +122,7 @@ def test_provider_get_models(monkeypatch):
 
     monkeypatch.setattr(
         "models.llm_provider.LLM",
-        FakeLLM,
+        FakeRawLLMClient,
     )
 
     provider = LLMProvider(
@@ -132,7 +140,7 @@ def test_provider_has_model(monkeypatch):
 
     monkeypatch.setattr(
         "models.llm_provider.LLM",
-        FakeLLM,
+        FakeRawLLMClient,
     )
 
     provider = LLMProvider(
@@ -147,7 +155,7 @@ def test_provider_current_model(monkeypatch):
 
     monkeypatch.setattr(
         "models.llm_provider.LLM",
-        FakeLLM,
+        FakeRawLLMClient,
     )
 
     provider = LLMProvider(
@@ -164,7 +172,7 @@ def test_provider_connection(monkeypatch):
 
     monkeypatch.setattr(
         "models.llm_provider.LLM",
-        FakeLLM,
+        FakeRawLLMClient,
     )
 
     provider = LLMProvider(

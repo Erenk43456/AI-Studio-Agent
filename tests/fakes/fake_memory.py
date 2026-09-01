@@ -7,6 +7,7 @@ class FakeMemory:
 
     def __init__(self):
         self.data = {}
+        self.calls = []
 
     def save(
         self,
@@ -14,6 +15,10 @@ class FakeMemory:
         value,
         category="general",
     ):
+        self.calls.append(
+            (key, value, category)
+        )
+
         self.data[key] = {
             "value": value,
             "category": category,

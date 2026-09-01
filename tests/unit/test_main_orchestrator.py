@@ -1,16 +1,7 @@
 import pytest
 
 from app.core.orchestrators.main_orchestrator import MainOrchestrator
-
-class FakeLLM:
-    def __init__(
-        self,
-        model="fake-model",
-    ):
-        self.model = model
-
-    def get_current_model(self):
-        return self.model
+from tests.fakes.fake_llm import FakeLLM
 
 class FakeOrchestrator:
 

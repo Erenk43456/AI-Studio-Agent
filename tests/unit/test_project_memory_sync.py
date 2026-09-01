@@ -6,61 +6,8 @@ from app.core.project_memory_sync import (
     ProjectMemorySync,
 )
 from memory.project_memory.project_memory import ProjectMemory
-
-
-class FakeRepositoryAnalyzer:
-
-    def __init__(self, analysis=None):
-        self.calls = []
-
-        self.analysis = (
-            analysis
-            if analysis is not None
-            else {
-                "generated_at": ("2026-08-20 21:00:00"),
-                "overview": {
-                    "python_files": 10,
-                    "total_lines": 100,
-                },
-                "module_roles": {},
-                "definitions": {},
-                "tools": [],
-                "registry_names": [],
-                "wiring_checks": [],
-                "issues": [],
-            }
-        )
-
-    def analyze(self, root):
-        self.calls.append(str(root))
-
-        return self.analysis
-
-
-class FailingRepositoryAnalyzer:
-
-    def analyze(self, root):
-        raise RuntimeError("initial analysis failed")
-
-
-class FakeProjectMemory:
-
-    def __init__(self):
-        self.calls = []
-
-    def update_project_info(self, data):
-        self.calls.append(("project_info", data))
-
-    def update_architecture(self, name, data):
-        self.calls.append(("architecture", name, data))
-
-    def sync_repository_analysis(self, analysis):
-        self.calls.append(("repository_analysis", analysis))
-
-        return True
-
-    def remove_file(self, path):
-        self.calls.append(("remove_file", path))
+from tests.fakes.fake_project_memory import FakeProjectMemory
+from tests.fakes.fake_repository_analyzer import FakeRepositoryAnalyzer
 
 
 @pytest.mark.unit
@@ -311,12 +258,6 @@ def test_project_memory_sync_persistence_failure_falls_back(tmp_path):
     assert analyzer.calls == [str(tmp_path)]
 
 
-class FailingRepositoryAnalyzer:
-
-    def analyze(self, root):
-        raise RuntimeError("repository analysis failed")
-
-
 class IncrementalMemory:
     def __init__(self, workspace, sync_result=True):
         self.workspace = Path(workspace)
@@ -426,7 +367,7 @@ class FallbackAnalyzer:
 @pytest.mark.unit
 def test_project_memory_sync_handles_analysis_failure():
 
-    analyzer = FailingRepositoryAnalyzer()
+    analyzer = FakeRepositoryAnalyzer(error=RuntimeError("repository analysis failed"))
     project_memory = FakeProjectMemory()
 
     sync = ProjectMemorySync(
@@ -510,7 +451,7 @@ def test_project_memory_sync_does_not_reinitialize_valid_snapshot(tmp_path):
 def test_project_memory_sync_initialization_failure_is_not_ready(tmp_path):
     memory = ProjectMemory(tmp_path)
     sync = ProjectMemorySync(
-        FailingRepositoryAnalyzer(),
+        FakeRepositoryAnalyzer(error=RuntimeError("repository analysis failed")),
         memory,
         tmp_path,
     )

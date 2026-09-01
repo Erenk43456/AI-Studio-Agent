@@ -2,14 +2,8 @@ import pytest
 
 from agents.decision_agent import DecisionAgent
 from tests.fakes.fake_llm import FakeLLM
-
-
-class FakeMemory:
-    pass
-
-
-class FakeRegistry:
-    pass
+from tests.fakes.fake_memory import FakeMemory
+from tests.fakes.fake_registry import FakeRegistry
 
 
 @pytest.mark.unit

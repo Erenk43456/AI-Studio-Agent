@@ -6,99 +6,12 @@ from app.core.orchestrators.development_orchestrator import (
     DevelopmentOrchestrator,
 )
 from app.core.development_context import DevelopmentContext
-
-
-class FakeLLM:
-    def __init__(
-        self,
-        response,
-        model="fake-model",
-    ):
-        self.response = response
-        self.model = model
-        self.calls = []
-
-    def generate(self, prompt, **kwargs):
-        self.calls.append(
-            {
-                "prompt": prompt,
-                "kwargs": kwargs,
-            }
-        )
-
-        return self.response
-
-    def get_current_model(self):
-        return self.model
-
-    def get_models(self):
-        return [self.model]
-
-    def has_model(self, model):
-        return model == self.model
-
-    def check_connection(self):
-        return True
-
-
-class FakeDevelopmentContext:
-    def __init__(
-        self,
-        fallback=False,
-    ):
-        self.calls = []
-        self.fallback = fallback
-
-    def build(self, task):
-        self.calls.append(task)
-
-        result = {
-            "task": task,
-            "strategy": {
-                "type": "development",
-                "repository_analysis_fallback": (self.fallback),
-            },
-        }
-
-        if self.fallback:
-            result["targets"] = ["app/core/parser.py"]
-
-        return result
-
-
-class FakeCodeAgent:
-    def __init__(self):
-        self.calls = []
-
-    def run(
-        self,
-        task,
-        development_context=None,
-    ):
-        self.calls.append(
-            {
-                "task": task,
-                "development_context": development_context,
-            }
-        )
-
-        return {
-            "success": True,
-            "write_result": {
-                "success": True,
-                "files_written": [
-                    "app/parser.py",
-                ],
-            },
-        }
-
-
-class FakeRepositoryAnalyzer:
-    def execute(self, step):
-        return {
-            "success": True,
-            "action": "analyze",
-        }
+from tests.fakes.fake_code_agent import FakeCodeAgent
+from tests.fakes.fake_development_context import FakeDevelopmentContext
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_project_memory import FakeProjectMemory
+from tests.fakes.fake_registry import FakeRegistry
+from tests.fakes.fake_repository_analyzer import FakeRepositoryAnalyzer
 
 
 class FakeProjectMemorySync:
@@ -111,34 +24,6 @@ class FakeProjectMemorySync:
         return {
             "success": True,
         }
-
-
-class FakeRegistry:
-    def __init__(self):
-        self.tools = {
-            "code": object(),
-            "repository_analyzer": (FakeRepositoryAnalyzer()),
-        }
-
-        self.calls = []
-
-    def get(self, name):
-        self.calls.append(name)
-        return self.tools.get(name)
-
-    def get_tool_descriptions(self):
-        return [
-            {
-                "name": "code",
-                "description": "Implement code changes.",
-                "purpose": "Modify software.",
-            },
-            {
-                "name": "repository_analyzer",
-                "description": "Analyze repository.",
-                "purpose": "Analyze the repository.",
-            },
-        ]
 
 
 class FakeContainer:
@@ -184,7 +69,14 @@ def test_development_pipeline_executes_code_task():
         }
         """)
 
-    registry = FakeRegistry()
+    registry = FakeRegistry(
+        tools={
+            "code": object(),
+            "repository_analyzer": FakeRepositoryAnalyzer(
+                analysis={"success": True, "action": "analyze"}
+            ),
+        }
+    )
 
     planner = PlannerAgent(
         llm,
@@ -215,16 +107,16 @@ def test_development_pipeline_executes_code_task():
     assert len(llm.calls) == 1
 
     assert code_agent.calls == [
-        {
-            "task": "Fix parser",
-            "development_context": {
+        (
+            "Fix parser",
+            {
                 "task": "Fix parser",
                 "strategy": {
                     "type": "development",
                     "repository_analysis_fallback": False,
                 },
             },
-        }
+        )
     ]
 
 
@@ -242,7 +134,14 @@ def test_development_pipeline_executes_repository_analysis():
         }
         """)
 
-    registry = FakeRegistry()
+    registry = FakeRegistry(
+        tools={
+            "code": object(),
+            "repository_analyzer": FakeRepositoryAnalyzer(
+                analysis={"success": True, "action": "analyze"}
+            ),
+        }
+    )
 
     planner = PlannerAgent(
         llm,
@@ -298,7 +197,14 @@ def test_development_pipeline_executes_multiple_steps_in_order():
         }
         """)
 
-    registry = FakeRegistry()
+    registry = FakeRegistry(
+        tools={
+            "code": object(),
+            "repository_analyzer": FakeRepositoryAnalyzer(
+                analysis={"success": True, "action": "analyze"}
+            ),
+        }
+    )
 
     planner = PlannerAgent(
         llm,
@@ -329,16 +235,16 @@ def test_development_pipeline_executes_multiple_steps_in_order():
     ]
 
     assert code_agent.calls == [
-        {
-            "task": "Fix parser",
-            "development_context": {
+        (
+            "Fix parser",
+            {
                 "task": "Analyze repository and fix parser",
                 "strategy": {
                     "type": "development",
                     "repository_analysis_fallback": False,
                 },
             },
-        }
+        )
     ]
 
     assert registry.calls == [
@@ -397,7 +303,14 @@ def test_development_pipeline_passes_architecture_aware_context_to_code_agent():
 
     planner = PlannerAgent(
         llm,
-        registry=FakeRegistry(),
+        registry=FakeRegistry(
+            tools={
+                "code": object(),
+                "repository_analyzer": FakeRepositoryAnalyzer(
+                analysis={"success": True, "action": "analyze"}
+            ),
+            }
+        ),
     )
 
     code_agent = FakeCodeAgent()
@@ -411,7 +324,14 @@ def test_development_pipeline_passes_architecture_aware_context_to_code_agent():
         planner=planner,
         code_agent=code_agent,
         development_context=development_context,
-        registry=FakeRegistry(),
+        registry=FakeRegistry(
+            tools={
+                "code": object(),
+                "repository_analyzer": FakeRepositoryAnalyzer(
+                analysis={"success": True, "action": "analyze"}
+            ),
+            }
+        ),
     )
 
     orchestrator = DevelopmentOrchestrator(container)
@@ -422,7 +342,7 @@ def test_development_pipeline_passes_architecture_aware_context_to_code_agent():
 
     assert len(code_agent.calls) == 1
 
-    passed_context = code_agent.calls[0]["development_context"]
+    passed_context = code_agent.calls[0][1]
 
     assert passed_context["task"] == ("Fix app/core/parser.py")
 
@@ -458,7 +378,14 @@ def test_development_pipeline_runs_repository_analysis_fallback_when_memory_is_u
         }
         """)
 
-    registry = FakeRegistry()
+    registry = FakeRegistry(
+        tools={
+            "code": object(),
+            "repository_analyzer": FakeRepositoryAnalyzer(
+                analysis={"success": True, "action": "analyze"}
+            ),
+        }
+    )
 
     planner = PlannerAgent(
         llm,

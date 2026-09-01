@@ -1,41 +1,8 @@
 import pytest
 
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_registry import FakeRegistry
 from tools.code_writer_tool import CodeWriterTool
-
-
-class FakeLLM:
-    def __init__(self, response=None, error=None):
-        self.response = response
-        self.error = error
-        self.calls = []
-
-    def generate(self, prompt):
-        self.calls.append(prompt)
-
-        if self.error:
-            raise self.error
-
-        return self.response
-
-
-class FakeRegistry:
-    def __init__(self, tools=None):
-        self.tools = tools or {}
-        self.calls = []
-
-    def get(self, name):
-        self.calls.append(name)
-        return self.tools.get(name)
-
-
-class SequentialFakeLLM:
-    def __init__(self, responses):
-        self.responses = list(responses)
-        self.calls = []
-
-    def generate(self, prompt):
-        self.calls.append(prompt)
-        return self.responses.pop(0)
 
 
 @pytest.fixture
@@ -439,8 +406,8 @@ class B:
         encoding="utf-8",
     )
 
-    llm = SequentialFakeLLM(
-        [
+    llm = FakeLLM(
+        responses=[
             """\
 class A:
     def run(self):

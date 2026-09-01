@@ -5,18 +5,10 @@ from agents.decision_agent import DecisionAgent
 from agents.chat_agent import ChatAgent
 from agents.code_agent import CodeAgent
 from agents.memory_agent import MemoryAgent
-
-
-class FakeLLM:
-    pass
-
-
-class FakeMemory:
-    pass
-
-
-class FakeRegistry:
-    pass
+from tests.fakes.fake_llm import FakeLLM
+from tests.fakes.fake_memory import FakeMemory
+from tests.fakes.fake_project_memory import FakeProjectMemory
+from tests.fakes.fake_registry import FakeRegistry
 
 
 class FakeCore:
@@ -27,10 +19,6 @@ class FakeModels:
     decision_llm = FakeLLM()
     chat_llm = FakeLLM()
     code_llm = FakeLLM()
-
-
-class FakeProjectMemory:
-    pass
 
 
 class FakeMemoryContainer:
