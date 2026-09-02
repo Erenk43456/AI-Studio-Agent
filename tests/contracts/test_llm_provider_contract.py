@@ -1,10 +1,18 @@
 import pytest
 
 from tests.fakes.fake_model_provider import FakeModelProvider
+from contracts.llm_contract import LLMContract
+
+
+@pytest.mark.contract
+def test_model_provider_satisfies_llm_contract():
+    provider = FakeModelProvider()
+    assert isinstance(provider, LLMContract)
 
 
 @pytest.mark.contract
 def test_model_provider_has_generate():
+
 
     provider = FakeModelProvider()
 

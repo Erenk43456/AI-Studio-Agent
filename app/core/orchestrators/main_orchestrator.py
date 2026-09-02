@@ -93,10 +93,13 @@ class MainOrchestrator:
             decision
         )
 
-        system = decision.get(
-            "system",
-            "chat"
-        )
+        if hasattr(decision, "system"):
+            system = decision.system or "chat"
+        elif isinstance(decision, dict):
+            system = decision.get("system", "chat")
+        else:
+            system = "chat"
+
 
         orchestrator = self.systems.get(
             system

@@ -2,6 +2,8 @@ import json
 import re
 
 from agents.base_agent import BaseAgent
+from agents.contract_agent import ContractAgent
+from agents.contracts.decision import DecisionContract
 from app.core.logger import AppLogger
 
 
@@ -11,7 +13,8 @@ class DecisionAgent(BaseAgent):
         self,
         llm,
         memory,
-        registry
+        registry,
+        contract_agent=None,
     ):
 
         super().__init__(
@@ -21,12 +24,13 @@ class DecisionAgent(BaseAgent):
         self.llm = llm
         self.memory = memory
         self.registry = registry
+        self.contract_agent = contract_agent or ContractAgent()
         self.logger = AppLogger()
 
     def process(
         self,
         request
-    ):
+    ) -> DecisionContract:
 
         self.logger.info(
             f"Decision request: {request}"
@@ -47,17 +51,18 @@ class DecisionAgent(BaseAgent):
             ]
         ):
 
-            return {
+            return self.contract_agent.to_decision_contract({
                 "system": "memory",
                 "action": "get"
-            }
+            })
 
         if "benim adım" in request_lower:
 
-            return {
+            return self.contract_agent.to_decision_contract({
                 "system": "memory",
                 "action": "save"
-            }
+            })
+
 
         #
         # Calculator / Tool Requests
@@ -89,13 +94,13 @@ class DecisionAgent(BaseAgent):
             )
         ):
 
-            return {
+            return self.contract_agent.to_decision_contract({
                 "system": "development",
                 "reason": (
                     "Calculation request should be handled "
                     "by the development tool layer."
                 )
-            }
+            })
 
         #
         # Development
@@ -138,9 +143,10 @@ class DecisionAgent(BaseAgent):
             for word in code_keywords
         ):
 
-            return {
+            return self.contract_agent.to_decision_contract({
                 "system": "development"
-            }
+            })
+
 
         #
         # LLM Decision
@@ -299,9 +305,10 @@ Kullanıcı:
                 "development"
             }
 
-            system = decision.get(
-                "system"
-            )
+            if isinstance(decision, dict):
+                system = decision.get("system")
+            else:
+                system = getattr(decision, "system", None)
 
             if system not in allowed_systems:
 
@@ -310,15 +317,15 @@ Kullanıcı:
                     f"DecisionAgent: {system}"
                 )
 
-                return {
+                return self.contract_agent.to_decision_contract({
                     "system": "development",
                     "reason": (
                         "Invalid system returned by "
                         "decision model."
                     )
-                }
+                })
 
-            return decision
+            return self.contract_agent.to_decision_contract(decision)
 
         except Exception as error:
 
@@ -326,7 +333,7 @@ Kullanıcı:
                 f"Decision error: {error}"
             )
 
-            return {
+            return self.contract_agent.to_decision_contract({
                 "system": "chat",
                 "reason": "fallback"
-            }
+            })

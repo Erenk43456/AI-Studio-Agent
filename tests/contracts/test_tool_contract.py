@@ -1,10 +1,18 @@
 import pytest
 
 from tests.fakes.fake_tool import FakeTool
+from contracts.tool_contract import ToolContract
+
+
+@pytest.mark.contract
+def test_tool_satisfies_tool_contract():
+    tool = FakeTool(name="contract_tool")
+    assert isinstance(tool, ToolContract)
 
 
 @pytest.mark.contract
 def test_tool_has_name():
+
 
     tool = FakeTool(
         name="contract_tool"

@@ -254,9 +254,10 @@ class DevelopmentOrchestrator:
 
             return result
 
-        if not isinstance(result, dict):
+        if not isinstance(result, dict) and not hasattr(result, "get"):
 
             return str(result)
+
 
         success = result.get("success", False)
 

@@ -1,49 +1,60 @@
-from agents.base_agent import BaseAgent
-
-from app.core.logger import AppLogger
-
 import re
+from typing import Any, List, Union
+
+from agents.base_agent import BaseAgent
+from agents.contract_agent import ContractAgent
+from agents.contracts.planner import PlannerContract, PlannerStep
+from agents.contracts.tool import ToolStepContract
+from agents.contracts.result import ToolResultContract
+from app.core.logger import AppLogger
 
 
 class ToolAgent(BaseAgent):
 
-    def __init__(self, registry, memory=None, llm=None, code_agent=None):
-
+    def __init__(
+        self,
+        registry,
+        memory=None,
+        llm=None,
+        code_agent=None,
+        contract_agent=None,
+    ):
         super().__init__("Tool Agent", memory)
 
         self.registry = registry
-
         self.llm = llm
-
         self.code_agent = code_agent
-
+        self.contract_agent = contract_agent or ContractAgent()
         self.logger = AppLogger()
 
-    def execute_steps(self, plan, development_context=None):
-
+    def execute_steps(
+        self,
+        plan: Union[PlannerContract, dict, Any],
+        development_context=None,
+    ) -> List[dict]:
         if not plan:
-
             return "Invalid plan."
 
-        steps = plan.get("steps", [])
+        plan_contract = self.contract_agent.to_planner_contract(plan)
+        steps = plan_contract.steps
 
         if not steps:
-
             return self.execute(plan)
 
         results = []
-
         context = ""
 
         for index, step in enumerate(steps):
+            step_contract: ToolStepContract = self.contract_agent.to_tool_step_contract(step)
 
-            if not isinstance(step, dict):
+            tool_name = step_contract.tool
+            action = step_contract.action
 
-                result = {
+            if not tool_name or not action:
+                result = self.contract_agent.to_tool_result_contract({
                     "success": False,
                     "error": "Invalid planner step.",
-                }
-
+                })
                 results.append(
                     {
                         "step": index + 1,
@@ -54,73 +65,49 @@ class ToolAgent(BaseAgent):
                         "result": result,
                     }
                 )
-
                 context = str(result)
-
                 continue
-
-            tool_name = step.get("tool")
-
-            action = step.get("action")
 
             self.logger.info(f"Executing step {index + 1}/{len(steps)}: {tool_name}")
 
-            #
-            # Context
-            #
-
+            # Context propagation
             if context:
-
-                step["context"] = context
-
+                step_contract.context["previous_context"] = context
                 if action == "write":
-
-                    content = step.get("content")
-
+                    content = step_contract.parameters.get("content")
                     if not content:
-
-                        if self.should_generate_code(step):
-
-                            step["content"] = self.generate_code_change(step, context)
-
+                        if self.should_generate_code(step_contract):
+                            step_contract.parameters["content"] = self.generate_code_change(
+                                step_contract, context
+                            )
                         else:
-
-                            step["content"] = self.prepare_write_content(
-                                step.get("input", ""), context
+                            step_contract.parameters["content"] = self.prepare_write_content(
+                                step_contract.input, context
                             )
 
-            #
             # Tool execution
-            #
-
             if tool_name == "code" and self.code_agent:
-
                 try:
-
-                    result = self.code_agent.run(
-                        step.get("input", ""), development_context
+                    raw_result = self.code_agent.run(
+                        step_contract.input, development_context
                     )
-
+                    result = self.contract_agent.to_tool_result_contract(raw_result)
                 except Exception as error:
-
                     self.logger.error(f"Code execution error: {error}")
-
-                    result = {
+                    result = self.contract_agent.to_tool_result_contract({
                         "success": False,
                         "tool": "code",
                         "error": str(error),
-                    }
-
+                    })
             else:
-
-                result = self.execute(step)
+                raw_result = self.execute(step_contract)
+                result = self.contract_agent.to_tool_result_contract(raw_result)
 
             if isinstance(result, str):
-
                 context = result
-
+            elif hasattr(result, "message") and result.message:
+                context = str(result.message)
             else:
-
                 context = str(result)
 
             results.append(
@@ -128,104 +115,97 @@ class ToolAgent(BaseAgent):
                     "step": index + 1,
                     "tool": tool_name,
                     "action": action,
-                    "filename": step.get("filename"),
-                    "input": step.get("input"),
+                    "filename": step_contract.parameters.get("filename"),
+                    "input": step_contract.input,
                     "result": result,
                 }
             )
 
         return results
 
-    def normalize_tool_input(self, plan):
+    def normalize_tool_input(self, plan: Any) -> Any:
+        tool_name = (
+            getattr(plan, "tool", None)
+            or (plan.get("tool") if hasattr(plan, "get") else None)
+        )
 
-        if not isinstance(plan, dict):
-
+        if not tool_name:
             return plan
 
-        tool_name = plan.get("tool")
-
-        #
         # FILE TOOL
-        #
-
         if tool_name == "file":
-
-            action = plan.get("action")
-
-            #
-            # Planner "input" kullanıyorsa
-            # FileTool "content" bekliyor.
-            #
-
+            action = (
+                getattr(plan, "action", None)
+                or (plan.get("action") if hasattr(plan, "get") else None)
+            )
             if action in ("write", "create"):
+                content = (
+                    plan.get("content")
+                    if hasattr(plan, "get")
+                    else getattr(plan, "content", None)
+                )
+                inp = (
+                    plan.get("input")
+                    if hasattr(plan, "get")
+                    else getattr(plan, "input", None)
+                )
+                if not content and inp:
+                    plan["content"] = inp
 
-                if "content" not in plan and "input" in plan:
-
-                    plan["content"] = plan.get("input")
-
-            #
-            # Filename güvenliği burada
-            # çözülmüyor.
-            #
-            # Gerçek güvenlik kontrolü
-            # FileTool.get_path() içinde.
-            #
-
-        #
         # CALCULATOR
-        #
-
         if tool_name != "calculator":
-
             return plan
 
-        if "numbers" in plan and "operation" in plan:
-
+        has_numbers = (
+            plan.get("numbers")
+            if hasattr(plan, "get")
+            else getattr(plan, "numbers", None)
+        )
+        has_operation = (
+            plan.get("operation")
+            if hasattr(plan, "get")
+            else getattr(plan, "operation", None)
+        )
+        if has_numbers and has_operation:
             return plan
 
-        text = plan.get("input", "")
-
+        text = (
+            plan.get("input", "")
+            if hasattr(plan, "get")
+            else getattr(plan, "input", "")
+        )
         if not text:
+            text = (
+                plan.get("user_message", "")
+                if hasattr(plan, "get")
+                else getattr(plan, "user_message", "")
+            )
 
-            text = plan.get("user_message", "")
-
-        numbers = re.findall(r"-?\d+(?:\.\d+)?", text)
-
+        numbers = re.findall(r"-?\d+(?:\.\d+)?", str(text))
         if len(numbers) < 2:
-
             return plan
 
         operation = None
-
-        lower = text.lower()
+        lower = str(text).lower()
 
         if any(word in lower for word in ["+", "topla", "toplam", "artı", "kaç eder"]):
-
             operation = "add"
-
         elif any(word in lower for word in ["-", "çıkar", "eksi"]):
-
             operation = "subtract"
-
         elif any(word in lower for word in ["*", "çarp", "çarpı"]):
-
             operation = "multiply"
-
         elif any(word in lower for word in ["/", "böl", "bölü"]):
-
             operation = "divide"
 
         if operation:
-
             plan["operation"] = operation
-
             plan["numbers"] = numbers[:2]
 
         return plan
 
-    def should_generate_code(self, step):
-
-        text = step.get("input", "").lower()
+    def should_generate_code(self, step: Any) -> bool:
+        inp = step.get("input", "") if hasattr(step, "get") else getattr(step, "input", "")
+        text = str(inp).lower()
 
         keywords = [
             "ekle",
@@ -244,11 +224,11 @@ class ToolAgent(BaseAgent):
 
         return any(word in text for word in keywords)
 
-    def generate_code_change(self, step, existing_content):
-
+    def generate_code_change(self, step: Any, existing_content: str) -> str:
         if not self.llm:
-
             return existing_content
+
+        inp = step.get("input", "") if hasattr(step, "get") else getattr(step, "input", "")
 
         prompt = f"""
 You are a senior Python software engineer.
@@ -261,7 +241,7 @@ Existing file:
 
 Requested change:
 
-{step.get("input")}
+{inp}
 
 Rules:
 
@@ -275,100 +255,61 @@ Rules:
 
 New file:
 """
-
         try:
-
             result = self.llm.generate(prompt)
-
             return result
-
         except Exception as error:
-
             self.logger.error(f"Code generation error: {error}")
-
             return existing_content
 
-    def prepare_write_content(self, instruction, existing_content):
-
+    def prepare_write_content(self, instruction: str, existing_content: str) -> str:
         if not existing_content:
-
             return ""
 
         lower_instruction = instruction.lower()
-
         if any(word in lower_instruction for word in ["en üstüne", "başına", "top"]):
-
             if "#" in instruction:
-
                 comment = instruction.split("#", 1)[1]
-
                 comment = re.sub(
                     r"\b(ekle|yaz|koy|getir|başına|en üstüne)\b",
                     "",
                     comment,
                     flags=re.IGNORECASE,
                 )
-
                 comment = comment.strip()
-
                 return "# " + comment + "\n\n" + existing_content
 
         return existing_content
 
-    def execute(self, plan):
-
+    def execute(self, plan: Any) -> Any:
         if not plan:
-
             return "Invalid plan."
-
-        #
-        # Tool input normalize
-        #
 
         plan = self.normalize_tool_input(plan)
 
-        tool_name = plan.get("tool")
+        tool_name = (
+            getattr(plan, "tool", None)
+            or (plan.get("tool") if hasattr(plan, "get") else None)
+        )
 
         self.logger.info(f"Executing tool: {tool_name}")
 
         if not tool_name:
-
             return "Tool name missing."
-
-        #
-        # Tool Registry
-        #
 
         tool = self.registry.get(tool_name)
 
-        #
-        # Memory aliases
-        #
-
         if tool is None and tool_name in ["memory_save", "memory_get"]:
-
             tool = self.registry.get("memory")
 
         if tool is None:
-
             self.logger.warning(f"Tool not found: {tool_name}")
-
             return f"Tool not found: {tool_name}"
 
-        #
-        # Execute
-        #
-
         try:
-
             if hasattr(tool, "execute"):
-
                 return tool.execute(plan)
-
-            return f"Tool {tool_name} " "does not support execute method."
-
+            return f"Tool {tool_name} does not support execute method."
         except Exception as error:
-
             self.logger.error(f"Tool execution error: {error}")
-
             return f"Tool error: {error}"

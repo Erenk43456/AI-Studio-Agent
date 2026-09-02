@@ -1,6 +1,7 @@
 import pytest
 
 from agents.decision_agent import DecisionAgent
+from agents.contracts.decision import DecisionContract
 from tests.fakes.fake_llm import FakeLLM
 from tests.fakes.fake_memory import FakeMemory
 from tests.fakes.fake_registry import FakeRegistry
@@ -16,10 +17,9 @@ def test_decision_memory_get():
 
     result = agent.process("Ben kimim?")
 
-    assert result == {
-        "system": "memory",
-        "action": "get",
-    }
+    assert isinstance(result, DecisionContract)
+    assert result.system == "memory"
+    assert result.action == "get"
 
 
 @pytest.mark.unit
@@ -34,10 +34,9 @@ def test_decision_memory_save():
         "Benim adım Eren"
     )
 
-    assert result == {
-        "system": "memory",
-        "action": "save",
-    }
+    assert isinstance(result, DecisionContract)
+    assert result.system == "memory"
+    assert result.action == "save"
 
 
 @pytest.mark.unit
@@ -52,7 +51,8 @@ def test_decision_calculation():
         "15 + 20 kaç eder?"
     )
 
-    assert result["system"] == "development"
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
 
 
 @pytest.mark.unit
@@ -67,7 +67,8 @@ def test_decision_calculation_turkish():
         "15 ile 20'yi topla"
     )
 
-    assert result["system"] == "development"
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
 
 
 @pytest.mark.unit
@@ -82,7 +83,8 @@ def test_decision_python_file():
         "agents/chat_agent.py dosyasını incele"
     )
 
-    assert result["system"] == "development"
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
 
 
 @pytest.mark.unit
@@ -97,7 +99,8 @@ def test_decision_bug_fix():
         "Bu bugı düzelt"
     )
 
-    assert result["system"] == "development"
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
 
 
 @pytest.mark.unit
@@ -112,7 +115,8 @@ def test_decision_file_operation():
         "agents/test.py dosyasını oluştur"
     )
 
-    assert result["system"] == "development"
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
 
 
 @pytest.mark.unit
@@ -134,11 +138,9 @@ def test_decision_uses_llm_for_chat():
         "Bugün nasılsın?"
     )
 
-    assert result == {
-        "system": "chat",
-        "reason": "general conversation",
-    }
-
+    assert isinstance(result, DecisionContract)
+    assert result.system == "chat"
+    assert result.reason == "general conversation"
     assert llm.call_count == 1
 
 
@@ -158,7 +160,8 @@ def test_decision_parses_json_response():
         "Python nedir?"
     )
 
-    assert result["system"] == "chat"
+    assert isinstance(result, DecisionContract)
+    assert result.system == "chat"
 
 
 @pytest.mark.unit
@@ -177,7 +180,8 @@ def test_decision_invalid_system_falls_back_to_development():
         "Normal bir istek"
     )
 
-    assert result["system"] == "development"
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
 
 
 @pytest.mark.unit
@@ -199,7 +203,6 @@ def test_decision_llm_error_falls_back_to_chat():
         "Merhaba"
     )
 
-    assert result == {
-        "system": "chat",
-        "reason": "fallback",
-    }
+    assert isinstance(result, DecisionContract)
+    assert result.system == "chat"
+    assert result.reason == "fallback"

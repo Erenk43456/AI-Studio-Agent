@@ -1,6 +1,7 @@
 import pytest
 
 from agents.base_agent import BaseAgent
+from contracts.agent_contract import AgentContract
 
 
 class AgentDouble(BaseAgent):
@@ -8,6 +9,13 @@ class AgentDouble(BaseAgent):
     def run(self, task):
 
         return f"completed: {task}"
+
+
+@pytest.mark.contract
+def test_agent_satisfies_agent_contract():
+    agent = AgentDouble("contract-agent")
+    assert isinstance(agent, AgentContract)
+
 
 
 class MemoryDouble:

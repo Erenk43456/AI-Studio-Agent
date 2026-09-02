@@ -1,4 +1,7 @@
-class FakeTool:
+from tools.base_tool import BaseTool
+
+
+class FakeTool(BaseTool):
     """
     Minimal deterministic tool implementation.
     """
@@ -8,6 +11,7 @@ class FakeTool:
         name="fake_tool",
         result=None,
     ):
+
         self.name = name
         self.result = result
         self.calls = []

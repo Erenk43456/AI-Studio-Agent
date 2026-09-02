@@ -1,7 +1,11 @@
-class FakeModelProvider:
+from contracts.llm_contract import LLMContract
+
+
+class FakeModelProvider(LLMContract):
     """
     Deterministic model provider used by unit and integration tests.
     """
+
 
     def __init__(
         self,

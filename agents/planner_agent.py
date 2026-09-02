@@ -1,16 +1,20 @@
 from agents.base_agent import BaseAgent
+from contracts.planner_contract import PlannerContract as LegacyPlannerContract
+from agents.contracts.planner import PlannerContract
+from agents.contract_agent import ContractAgent
 
 from app.core.logger import AppLogger
 from agents.planner.llm_planner import create_llm_plan
 
 
-class PlannerAgent(BaseAgent):
+class PlannerAgent(BaseAgent, LegacyPlannerContract):
 
     def __init__(
         self,
         llm,
         memory=None,
-        registry=None
+        registry=None,
+        contract_agent=None,
     ):
 
         super().__init__(
@@ -20,6 +24,7 @@ class PlannerAgent(BaseAgent):
 
         self.llm = llm
         self.registry = registry
+        self.contract_agent = contract_agent or ContractAgent()
 
         self.logger = AppLogger()
 
@@ -30,7 +35,7 @@ class PlannerAgent(BaseAgent):
     def create_plan(
         self,
         task
-    ):
+    ) -> PlannerContract:
 
         if task is None:
             original_task = ""
@@ -44,7 +49,7 @@ class PlannerAgent(BaseAgent):
 
         if not original_task:
 
-            return {
+            return self.contract_agent.to_planner_contract({
                 "steps": [
                     {
                         "tool": "code",
@@ -52,7 +57,8 @@ class PlannerAgent(BaseAgent):
                         "input": ""
                     }
                 ]
-            }
+            }, user_message="")
+
 
         # =========================================================
         # Save last task
@@ -119,7 +125,10 @@ class PlannerAgent(BaseAgent):
 
                 plan["user_message"] = original_task
 
-                return plan
+                return self.contract_agent.to_planner_contract(
+                    plan,
+                    user_message=original_task
+                )
 
             # -----------------------------------------------------
             # Invalid / unavailable planner result
@@ -130,8 +139,9 @@ class PlannerAgent(BaseAgent):
                 "Using deterministic fallback."
             )
 
-            return self._fallback_plan(
-                original_task
+            return self.contract_agent.to_planner_contract(
+                self._fallback_plan(original_task),
+                user_message=original_task
             )
 
         except Exception as error:
@@ -140,9 +150,11 @@ class PlannerAgent(BaseAgent):
                 f"Planner error: {error}"
             )
 
-            return self._fallback_plan(
-                original_task
+            return self.contract_agent.to_planner_contract(
+                self._fallback_plan(original_task),
+                user_message=original_task
             )
+
 
     # =============================================================
     # Plan validation
