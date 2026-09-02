@@ -55,6 +55,9 @@ release/
 # User chat data
 data/chats/
 
+# Local project memory
+memory/project_memory/data/
+
 # Local databases
 data/*.json
 
