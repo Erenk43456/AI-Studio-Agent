@@ -119,12 +119,28 @@ class LLMRouter:
         model_name: str
     ) -> bool:
 
-        return (
-            self.planner_llm.has_model(model_name)
-            or
-            self.chat_llm.has_model(model_name)
+        if not model_name:
+            return False
+
+        planner_has_model = getattr(
+            self.planner_llm,
+            "has_model",
+            None
         )
 
+        if callable(planner_has_model) and planner_has_model(model_name):
+            return True
+
+        chat_has_model = getattr(
+            self.chat_llm,
+            "has_model",
+            None
+        )
+
+        if callable(chat_has_model) and chat_has_model(model_name):
+            return True
+
+        return False
 
     def check_connection(
         self
