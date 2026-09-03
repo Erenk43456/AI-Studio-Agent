@@ -1,5 +1,7 @@
 import time
 
+import threading
+
 import requests
 
 from app.core.logger import AppLogger
@@ -87,7 +89,8 @@ class APILLM(LLMContract):
         prompt,
         max_tokens=None,
         temperature=None,
-        timeout=None
+        timeout=None,
+        cancel_event=None
     ):
 
         request_timeout = (
@@ -97,6 +100,15 @@ class APILLM(LLMContract):
         )
 
         try:
+
+            if (
+                cancel_event is not None
+                and cancel_event.is_set()
+            ):
+
+                return {
+                    "error": "API request cancelled."
+                }
 
             if not self.url:
 
@@ -159,6 +171,15 @@ class APILLM(LLMContract):
                 self.max_retries + 1
             ):
 
+                if (
+                    cancel_event is not None
+                    and cancel_event.is_set()
+                ):
+
+                    return {
+                        "error": "API request cancelled."
+                    }
+
                 try:
 
                     self.logger.info(
@@ -178,6 +199,15 @@ class APILLM(LLMContract):
                     )
 
                     if (
+                        cancel_event is not None
+                        and cancel_event.is_set()
+                    ):
+
+                        return {
+                            "error": "API request cancelled."
+                        }
+
+                    if (
                         response.status_code
                         in self.retryable_status_codes
                     ):
@@ -195,9 +225,14 @@ class APILLM(LLMContract):
                                 f"Retrying in {delay}s..."
                             )
 
-                            time.sleep(
-                                delay
-                            )
+                            if (
+                                cancel_event is not None
+                                and cancel_event.wait(delay)
+                            ):
+
+                                return {
+                                    "error": "API request cancelled."
+                                }
 
                             continue
 
@@ -225,9 +260,14 @@ class APILLM(LLMContract):
                             f"Retrying in {delay}s..."
                         )
 
-                        time.sleep(
-                            delay
-                        )
+                        if (
+                            cancel_event is not None
+                            and cancel_event.wait(delay)
+                        ):
+
+                            return {
+                                "error": "API request cancelled."
+                            }
 
                         continue
 
@@ -249,9 +289,14 @@ class APILLM(LLMContract):
                             f"Retrying in {delay}s..."
                         )
 
-                        time.sleep(
-                            delay
-                        )
+                        if (
+                            cancel_event is not None
+                            and cancel_event.wait(delay)
+                        ):
+
+                            return {
+                                "error": "API request cancelled."
+                            }
 
                         continue
 

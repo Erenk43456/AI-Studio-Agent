@@ -71,7 +71,8 @@ class LLM(LLMContract):
         prompt,
         max_tokens=None,
         temperature=None,
-        timeout=None
+        timeout=None,
+        cancel_event=None
     ):
 
         try:
