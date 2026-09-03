@@ -198,22 +198,11 @@ class ProjectMemorySync:
         analysis["dependencies"] = self._sorted_mapping(dependencies)
         analysis["definitions"] = self._sorted_mapping(definitions)
         analysis["module_roles"] = self._sorted_mapping(module_roles)
-        analysis["relationships"] = deepcopy(analysis["relationships"])
-
-        if deleted_files:
-            normalized_deleted_files = {
-                self._normalize_relative(path) 
-                for path in deleted_files
-            }
-
-            analysis["relationships"] = [
-                edge
-                for edge in analysis["relationships"]
-                if self._normalize_relative(edge.get("source")) 
-                not in normalized_deleted_files
-                and self._normalize_relative(edge.get("target"))
-                not in normalized_deleted_files
-            ]
+        analysis["relationships"] = self._recompute_relationships(
+            dependencies,
+            changed_files,
+            deleted_files,
+        )
 
         self._recompute_snapshot_fields(analysis)
         analysis["sync_mode"] = "incremental"
@@ -256,6 +245,84 @@ class ProjectMemorySync:
         snapshot["definitions"] = definitions
         snapshot["module_roles"] = module_roles
         return snapshot
+
+    def _recompute_relationships(
+        self,
+        dependencies,
+        changed_files,
+        deleted_files,
+    ):
+        changed = {
+            self._normalize_relative(path)
+            for path in changed_files
+        }
+        deleted = {
+            self._normalize_relative(path)
+            for path in deleted_files
+        }
+
+        existing = []
+
+        for edge in self._read_relationships():
+            if not isinstance(edge, dict):
+                continue
+
+            source = self._normalize_relative(edge.get("source"))
+            target = self._normalize_relative(edge.get("target"))
+
+            if not source or not target:
+                continue
+
+            if source in changed or target in changed:
+                continue
+
+            if source in deleted or target in deleted:
+                continue
+
+            existing.append(deepcopy(edge))
+
+        for source, source_dependencies in dependencies.items():
+            source = self._normalize_relative(source)
+
+            if not source or not isinstance(source_dependencies, list):
+                continue
+
+            for dependency in source_dependencies:
+                if not isinstance(dependency, dict):
+                    continue
+
+                target = self._normalize_relative(
+                    dependency.get("target") or dependency.get("file")
+                )
+
+                if not target or target in deleted:
+                    continue
+
+                existing.append(
+                    {
+                        "source": source,
+                        "target": target,
+                        "kind": dependency.get(
+                            "kind",
+                            "dependency",
+                        ),
+                    }
+                )
+
+        unique = {}
+
+        for edge in existing:
+            key = (
+                edge.get("source"),
+                edge.get("target"),
+                edge.get("kind"),
+            )
+            unique[key] = edge
+
+        return [
+            unique[key]
+            for key in sorted(unique)
+        ]
 
     def _recompute_snapshot_fields(self, analysis):
         files = analysis["files"]

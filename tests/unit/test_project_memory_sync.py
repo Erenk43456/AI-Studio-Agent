@@ -524,3 +524,33 @@ def test_project_memory_sync_stores_repository_analysis():
     assert result == analysis
 
     assert project_memory.calls == [("repository_analysis", analysis)]
+
+@pytest.mark.unit
+def test_project_memory_sync_recomputes_relationships_for_changed_file(
+    tmp_path,
+):
+    path = tmp_path / "keep.py"
+    path.write_text(
+        "def keep():\n"
+        "    return True\n",
+        encoding="utf-8",
+    )
+
+    memory = IncrementalMemory(tmp_path)
+    sync = ProjectMemorySync(
+        FallbackAnalyzer(None),
+        memory,
+        tmp_path,
+    )
+    sync.indexer = FakeIncrementalIndexer()
+    sync.python_analyzer = FakeIncrementalPythonAnalyzer()
+
+    result = sync.sync(["keep.py"])
+
+    assert result["relationships"] == [
+        {
+            "source": "keep.py",
+            "target": "keep.py",
+            "kind": "dependency",
+        },
+    ]
