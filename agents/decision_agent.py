@@ -131,8 +131,6 @@ class DecisionAgent(BaseAgent):
             "yaz",
             "yazma",
             "sil",
-            "oluştur",
-            "olustur"
         ]
 
         if any(
@@ -142,9 +140,72 @@ class DecisionAgent(BaseAgent):
             )
             for word in code_keywords
         ):
+            #
+            # Explicit code-changing requests have priority
+            # over generic analysis/improvement wording.
+            #
+
+            code_action_keywords = [
+                "düzelt",
+                "duzelt",
+                "fix",
+                "değiştir",
+                "degistir",
+                "yaz",
+                "oluştur",
+                "olustur",
+                "ekle",
+                "sil",
+                "implement",
+                "uygula",
+            ]
+
+            improve_keywords = [
+                "iyileştir",
+                "iyilestir",
+                "improve",
+                "optimize",
+                "geliştir",
+                "gelistir",
+                "refactor",
+            ]
+
+            analyze_keywords = [
+                "analiz",
+                "incele",
+                "inceleme",
+                "değerlendir",
+                "degerlendir",
+                "kontrol et",
+                "gözden geçir",
+                "gozden gecir",
+                "tespit et",
+            ]
+
+            if any(
+                word in request_lower
+                for word in code_action_keywords
+            ):
+                action = "code"
+
+            elif any(
+                word in request_lower
+                for word in improve_keywords
+            ):
+                action = "improve"
+
+            elif any(
+                word in request_lower
+                for word in analyze_keywords
+            ):
+                action = "analyze"
+
+            else:
+                action = "code"
 
             return self.contract_agent.to_decision_contract({
-                "system": "development"
+                "system": "development",
+                "action": action,
             })
 
 
@@ -336,4 +397,4 @@ Kullanıcı:
             return self.contract_agent.to_decision_contract({
                 "system": "chat",
                 "reason": "fallback"
-            })
+            })

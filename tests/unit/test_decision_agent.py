@@ -206,3 +206,70 @@ def test_decision_llm_error_falls_back_to_chat():
     assert isinstance(result, DecisionContract)
     assert result.system == "chat"
     assert result.reason == "fallback"
+
+@pytest.mark.unit
+def test_decision_repository_analysis():
+    agent = DecisionAgent(
+        FakeLLM(),
+        FakeMemory(),
+        FakeRegistry(),
+    )
+
+    result = agent.process(
+        "Bu repository'yi analiz et"
+    )
+
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
+    assert result.action == "analyze"
+
+
+@pytest.mark.unit
+def test_decision_file_inspection():
+    agent = DecisionAgent(
+        FakeLLM(),
+        FakeMemory(),
+        FakeRegistry(),
+    )
+
+    result = agent.process(
+        "agents/chat_agent.py dosyasını incele"
+    )
+
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
+    assert result.action == "analyze"
+
+
+@pytest.mark.unit
+def test_decision_bug_fix_routes_to_code():
+    agent = DecisionAgent(
+        FakeLLM(),
+        FakeMemory(),
+        FakeRegistry(),
+    )
+
+    result = agent.process(
+        "Bu bugı düzelt"
+    )
+
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
+    assert result.action == "code"
+
+
+@pytest.mark.unit
+def test_decision_refactor_routes_to_improve():
+    agent = DecisionAgent(
+        FakeLLM(),
+        FakeMemory(),
+        FakeRegistry(),
+    )
+
+    result = agent.process(
+        "Bu kodu refactor et"
+    )
+
+    assert isinstance(result, DecisionContract)
+    assert result.system == "development"
+    assert result.action == "improve"
