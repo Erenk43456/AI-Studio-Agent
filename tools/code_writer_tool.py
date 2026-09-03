@@ -112,24 +112,35 @@ class CodeWriterTool:
 
                 continue
 
+            workspace_path = Path(
+                self.workspace
+            ).resolve()
+
             path_obj = (
-                Path(self.workspace)
+                workspace_path
                 / path
             ).resolve()
 
-            if path_obj.exists():
-
-                result = self.modify_file(
-                    path,
-                    changes
+            try:
+                path_obj.relative_to(
+                    workspace_path
                 )
-
+            except ValueError:
+                result = {
+                    "file": path,
+                    "error": "Path is outside the workspace."
+                }
             else:
-
-                result = self.create_file_from_changes(
-                    path,
-                    changes
-                )
+                if path_obj.exists():
+                    result = self.modify_file(
+                        path,
+                        changes
+                    )
+                else:
+                    result = self.create_file_from_changes(
+                        path,
+                        changes
+                    )
 
             results.append(
                 result

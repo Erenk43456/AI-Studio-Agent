@@ -1519,3 +1519,37 @@ def test_code_writer_verification_supports_not_in():
     )
 
     assert result is None
+
+@pytest.mark.unit
+def test_code_writer_execute_rejects_file_outside_workspace(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    outside_file = tmp_path / "outside.py"
+    outside_file.write_text(
+        "print('outside')",
+        encoding="utf-8",
+    )
+
+    writer = CodeWriterTool(
+        llm=FakeLLM(),
+        workspace=workspace,
+    )
+
+    result = writer.execute(
+        {
+            "files": [
+                {
+                    "path": "../outside.py",
+                    "changes": [
+                        "modify outside file",
+                    ],
+                }
+            ]
+        }
+    )
+
+    assert result["success"] is False
+    assert result["results"][0]["error"] == (
+        "Path is outside the workspace."
+    )
