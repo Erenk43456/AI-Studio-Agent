@@ -169,6 +169,7 @@ def test_development_pipeline_executes_repository_analysis():
         "repository_analyzer",
         "repository_analyzer",
         "repository_analyzer",
+        "repository_analyzer",
     ]
 
     assert development_context.calls == [
@@ -250,6 +251,8 @@ def test_development_pipeline_executes_multiple_steps_in_order():
     assert registry.calls == [
         "repository_analyzer",
         "repository_analyzer",
+        "repository_analyzer",
+        "code",
         "code",
         "repository_analyzer",
     ]

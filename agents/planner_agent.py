@@ -224,6 +224,22 @@ class PlannerAgent(BaseAgent, LegacyPlannerContract):
 
                 continue
 
+            tool_instance = self.registry.get(tool) if self.registry else None
+
+            if tool_instance is not None:
+                supported_actions = getattr(
+                    tool_instance,
+                    "supported_actions",
+                    None
+                )
+
+                if supported_actions is not None and action not in supported_actions:
+                    self.logger.warning(
+                        f"Planner selected unsupported action '{action}' "
+                        f"for tool '{tool}'"
+                    )
+                    continue
+
             valid_steps.append(
                 step
             )

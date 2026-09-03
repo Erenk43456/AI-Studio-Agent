@@ -306,3 +306,37 @@ def test_planner_calculation_fallback_uses_calculator():
             "input": "15 + 20 kaç eder?",
         }
     ]
+
+@pytest.mark.unit
+def test_validate_plan_rejects_unsupported_tool_action():
+    class FakeTool:
+        supported_actions = {"calculate"}
+
+    class FakeRegistry:
+        def get(self, name):
+            if name == "calculator":
+                return FakeTool()
+            return None
+
+    agent = PlannerAgent(
+        llm=None,
+        registry=FakeRegistry(),
+    )
+
+    plan = {
+        "steps": [
+            {
+                "tool": "calculator",
+                "action": "write",
+                "input": "10 + 20",
+            }
+        ]
+    }
+
+    result = agent._validate_plan(
+        plan,
+        "10 + 20",
+    )
+
+    assert result["steps"][0]["tool"] == "calculator"
+    assert result["steps"][0]["action"] == "calculate"
