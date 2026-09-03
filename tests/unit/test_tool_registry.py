@@ -396,3 +396,31 @@ def test_inspect_tool_returns_none_for_unknown_tool():
     assert registry.inspect_tool(
         "unknown"
     ) is None
+
+@pytest.mark.unit
+def test_execute_preserves_tool_failure_status():
+    registry = ToolRegistry()
+
+    class FailingResultTool:
+        def execute(self, data):
+            return {
+                "success": False,
+                "error": "operation failed",
+            }
+
+    registry.register(
+        "failing_result",
+        FailingResultTool(),
+    )
+
+    result = registry.execute(
+        "failing_result",
+        {"value": 42},
+    )
+
+    assert result["success"] is False
+    assert result["tool"] == "failing_result"
+    assert result["result"] == {
+        "success": False,
+        "error": "operation failed",
+    }

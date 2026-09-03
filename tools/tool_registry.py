@@ -268,22 +268,17 @@ class ToolRegistry:
 
         try:
 
+            result = tool.execute(data)
 
-            result = tool.execute(
-                data
-            )
-
+            if isinstance(result, dict) and "success" in result:
+                success = bool(result["success"])
+            else:
+                success = True
 
             return {
-
-                "success":True,
-
-                "tool":
-                name,
-
-                "result":
-                result
-
+                "success": success,
+                "tool": name,
+                "result": result
             }
 
 
