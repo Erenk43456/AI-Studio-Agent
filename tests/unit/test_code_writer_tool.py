@@ -1383,3 +1383,30 @@ class Parser:
     assert source.read_text(
         encoding="utf-8"
     ) == original_code
+
+@pytest.mark.unit
+def test_execute_rejects_missing_workspace():
+
+    writer = CodeWriterTool(
+        llm=None,
+        workspace=None,
+    )
+
+    result = writer.execute(
+        {
+            "files": [
+                {
+                    "path": "example.py",
+                    "changes": [
+                        "Add a function."
+                    ]
+                }
+            ]
+        }
+    )
+
+    assert result == {
+        "success": False,
+        "message": "Workspace is not configured.",
+        "results": []
+    }

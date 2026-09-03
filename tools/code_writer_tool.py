@@ -77,6 +77,14 @@ class CodeWriterTool:
 
         results = []
 
+        if not self.workspace:
+        
+            return {
+                "success": False,
+                "message": "Workspace is not configured.",
+                "results": []
+            }
+
         for file in files:
 
             if not isinstance(file, dict):
