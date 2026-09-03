@@ -35,17 +35,13 @@ class FileTool:
 
         self.logger = AppLogger()
 
-        if workspace:
+        if not workspace:
+            self.base_path = None
 
+        else:
             self.base_path = Path(
                 workspace
             ).resolve()
-
-        else:
-
-            self.base_path = Path.cwd().resolve()
-
-
 
         self.logger.info(
             f"FileTool workspace: {self.base_path}"
@@ -126,7 +122,10 @@ class FileTool:
 
             return None
 
-
+        if self.base_path is None:
+            raise PermissionError(
+                "Workspace is not configured."
+            )
 
         try:
 

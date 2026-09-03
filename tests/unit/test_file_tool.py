@@ -473,3 +473,16 @@ def test_file_tool_create_rejects_workspace_escape(
         result["error"]
         == "Access outside workspace denied."
     )
+
+@pytest.mark.unit
+def test_file_tool_rejects_missing_workspace():
+
+    tool = FileTool()
+
+    assert tool.base_path is None
+
+    with pytest.raises(
+        PermissionError,
+        match="Workspace is not configured.",
+    ):
+        tool.get_path("test.txt")
