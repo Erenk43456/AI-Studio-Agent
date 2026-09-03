@@ -406,21 +406,15 @@ Python code:
         # JSON bloğunu bul
         #
 
-        match = re.search(
+        decoder = json.JSONDecoder()
 
-            r"\{.*\}",
-
-            text,
-
-            re.DOTALL
-
-        )
-
-
-
-        if match:
-
-            text = match.group()
+        for match in re.finditer(r"\{", text):
+            try:
+                _, end = decoder.raw_decode(text[match.start():])
+                text = text[match.start():match.start() + end]
+                break
+            except json.JSONDecodeError:
+                continue
 
 
 

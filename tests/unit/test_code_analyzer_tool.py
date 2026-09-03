@@ -789,3 +789,25 @@ def test_analyze_code_reports_truncation():
     assert result["truncated"] is True
     assert result["original_code_length"] == len(code)
     assert result["analyzed_code_length"] == analyzer.max_code_length
+
+@pytest.mark.unit
+def test_code_analyzer_clean_json_uses_first_valid_json_object():
+    analyzer = CodeAnalyzerTool(
+        llm=FakeLLM()
+    )
+
+    result = analyzer.clean_json(
+        """
+        Here is the analysis:
+
+        {"summary": "First", "risk_level": "low"}
+
+        Another JSON object:
+        {"summary": "Second", "risk_level": "high"}
+        """
+    )
+
+    assert result == {
+        "summary": "First",
+        "risk_level": "low",
+    }
