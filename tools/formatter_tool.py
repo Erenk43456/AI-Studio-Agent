@@ -272,14 +272,24 @@ class FormatterTool:
 
 
         if result["success"] and write:
-
+            if self.workspace is not None:
+                try:
+                    workspace = Path(self.workspace).resolve()
+                    path.resolve().relative_to(workspace)
+                except ValueError:
+                    return {
+                        "success": False,
+                        "message": "Access outside workspace denied."
+                    }
+                except Exception as error:
+                    return {
+                        "success": False,
+                        "message": f"Invalid file path: {error}"
+                    }
 
             path.write_text(
-
                 f"{result['code']}\n",
-
                 encoding="utf-8"
-
             )
 
 
