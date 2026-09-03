@@ -127,3 +127,28 @@ def test_memory_loads_existing_data(tmp_path):
     reloaded = Memory(data_dir=tmp_path)
 
     assert reloaded.get("name") == "Eren"
+
+@pytest.mark.unit
+def test_memory_save_propagates_persistence_error(
+    tmp_path,
+    monkeypatch,
+):
+    memory = Memory(data_dir=tmp_path)
+
+    def fail_save(data):
+        raise OSError("disk write failed")
+
+    monkeypatch.setattr(
+        memory.store,
+        "save",
+        fail_save,
+    )
+
+    with pytest.raises(
+        OSError,
+        match="disk write failed",
+    ):
+        memory.save(
+            "name",
+            "Eren",
+        )

@@ -216,3 +216,5 @@ class Memory:
             self.logger.error(
                 f"Memory write error: {error}"
             )
+
+            raise
