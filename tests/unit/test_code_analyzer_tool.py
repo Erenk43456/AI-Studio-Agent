@@ -773,3 +773,19 @@ def test_code_analyzer_rejects_file_outside_workspace(tmp_path):
     assert result["success"] is False
     assert result["error"] == "File is outside workspace"
     assert result["file"] == "../outside.py"
+
+def test_analyze_code_reports_truncation():
+    class FakeLLM:
+        def generate(self, prompt, **kwargs):
+            return '{"summary": "ok"}'
+
+    analyzer = CodeAnalyzerTool(FakeLLM())
+
+    code = "x = 1\n" * 3000
+
+    result = analyzer.analyze_code(code)
+
+    assert result["success"] is True
+    assert result["truncated"] is True
+    assert result["original_code_length"] == len(code)
+    assert result["analyzed_code_length"] == analyzer.max_code_length

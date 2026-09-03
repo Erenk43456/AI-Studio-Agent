@@ -197,16 +197,16 @@ class CodeAnalyzerTool:
         # Büyük dosya koruması
         #
 
+        truncated = False
+        original_code_length = len(code)
+
         if len(code) > self.max_code_length:
 
-
             code = code[:self.max_code_length]
-
+            truncated = True
 
             self.logger.warning(
-
                 "Code truncated because it was too large."
-
             )
 
 
@@ -302,13 +302,19 @@ Python code:
             )
 
 
-            return {
-
+            result = {
                 "success": True,
-
-                "analysis": analysis
-
+                "analysis": analysis,
             }
+
+            if truncated:
+                result.update({
+                    "truncated": True,
+                    "original_code_length": original_code_length,
+                    "analyzed_code_length": len(code),
+                })
+
+            return result
 
 
 
