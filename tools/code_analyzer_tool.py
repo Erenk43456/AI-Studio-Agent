@@ -83,12 +83,17 @@ class CodeAnalyzerTool:
                 if filename and self.workspace:
 
 
-                    file_path = (
-                        Path(self.workspace)
-                        /
-                        filename
-                    )
+                    workspace_path = Path(self.workspace).resolve()
+                    file_path = (workspace_path / filename).resolve()
 
+                    try:
+                        file_path.relative_to(workspace_path)
+                    except ValueError:
+                        return {
+                            "success": False,
+                            "error": "File is outside workspace",
+                            "file": filename,
+                        }
 
                     if not file_path.exists():
 

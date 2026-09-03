@@ -751,3 +751,27 @@ def test_code_analyzer_over_max_code_length_is_truncated():
         "x" * analyzer.max_code_length
         in llm.prompt
     )
+
+@pytest.mark.unit
+def test_code_analyzer_rejects_file_outside_workspace(tmp_path):
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+
+    outside_file = tmp_path / "outside.py"
+    outside_file.write_text(
+        "print('outside')",
+        encoding="utf-8",
+    )
+
+    analyzer = CodeAnalyzerTool(
+        llm=FakeLLM(),
+        workspace=workspace,
+    )
+
+    result = analyzer.execute(
+        {"filename": "../outside.py"}
+    )
+
+    assert result["success"] is False
+    assert result["error"] == "File is outside workspace"
+    assert result["file"] == "../outside.py"
