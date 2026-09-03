@@ -135,6 +135,8 @@ class ConversationMemory:
                 f"Conversation save error: {error}"
             )
 
+            raise
+
 
 
 
