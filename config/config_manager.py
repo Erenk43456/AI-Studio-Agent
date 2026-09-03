@@ -1,4 +1,6 @@
+import os
 import json
+
 from pathlib import Path
 
 
@@ -124,6 +126,8 @@ class ConfigManager:
             )
 
             file.write("\n")
+            file.flush()
+            os.fsync(file.fileno())
 
         temp_path.replace(
             self.file
