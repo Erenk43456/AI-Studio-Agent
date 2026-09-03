@@ -121,22 +121,39 @@ class ChatManager:
 
         try:
 
-            with open(self.file, "r", encoding="utf-8") as f:
+            with open(
+                self.file,
+                "r",
+                encoding="utf-8"
+            ) as f:
 
                 data = json.load(f)
 
+            loaded_chats = {}
+            next_id = self.next_id
+
             for item in data:
 
-                chat = Chat(item["id"], item["title"])
+                chat = Chat(
+                    item["id"],
+                    item["title"]
+                )
 
-                self.chats[chat.id] = chat
+                loaded_chats[chat.id] = chat
+                next_id = max(
+                    next_id,
+                    chat.id + 1
+                )
 
-                self.next_id = max(self.next_id, chat.id + 1)
+            self.chats = loaded_chats
+            self.next_id = next_id
 
             if self.chats:
 
                 self.current_chat = self.list_chats()[0]
 
-        except Exception:
+        except Exception as error:
 
-            self.chats = {}
+            print(
+                f"Failed to load chats: {error}"
+            )
