@@ -41,106 +41,89 @@ class Calculator(BaseTool):
         plan
     ):
 
-
         operation = plan.get(
             "operation"
         )
-
 
         numbers = plan.get(
             "numbers",
             []
         )
 
-
-
         if len(numbers) < 2:
 
-
-            return "Two numbers required."
-
-
-
-
+            return {
+                "success": False,
+                "error": "At least two numbers are required for the operation."
+            }
 
         try:
-
 
             a = float(
                 numbers[0]
             )
 
-
             b = float(
                 numbers[1]
             )
 
-
-
-
-
             if operation == "add":
 
-                return self.add(
+                result = self.add(
                     a,
                     b
                 )
 
+            elif operation == "subtract":
 
-
-            if operation == "subtract":
-
-                return self.subtract(
+                result = self.subtract(
                     a,
                     b
                 )
 
+            elif operation == "multiply":
 
-
-            if operation == "multiply":
-
-                return self.multiply(
+                result = self.multiply(
                     a,
                     b
                 )
 
+            elif operation == "divide":
 
-
-            if operation == "divide":
-
-                return self.divide(
+                result = self.divide(
                     a,
                     b
                 )
 
+            else:
 
+                return {
+                    "success": False,
+                    "error": "Unsupported operation"
+                }
 
+            if isinstance(result, str):
 
+                return {
+                    "success": False,
+                    "error": result
+                }
 
-            return "Unsupported operation."
-
-
-
-
+            return {
+                "success": True,
+                "data": result
+            }
 
         except Exception as error:
 
-
             self.logger.error(
-
                 f"Calculator error: {error}"
-
             )
 
-
-            return f"Calculator error: {error}"
-
-
-
-
-
-
-
+            return {
+                "success": False,
+                "error": f"Calculator error: {error}"
+            }
 
 
     def add(

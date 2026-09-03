@@ -17,7 +17,10 @@ def test_calculator_add(calculator):
         }
     )
 
-    assert result == 5.0
+    assert result == {
+        "success": True,
+        "data": 5.0,
+    }
 
 
 @pytest.mark.unit
@@ -29,7 +32,10 @@ def test_calculator_subtract(calculator):
         }
     )
 
-    assert result == 6.0
+    assert result == {
+        "success": True,
+        "data": 6.0,
+    }
 
 
 @pytest.mark.unit
@@ -41,7 +47,10 @@ def test_calculator_multiply(calculator):
         }
     )
 
-    assert result == 42.0
+    assert result == {
+        "success": True,
+        "data": 42.0,
+    }
 
 
 @pytest.mark.unit
@@ -53,7 +62,10 @@ def test_calculator_divide(calculator):
         }
     )
 
-    assert result == 5.0
+    assert result == {
+        "success": True,
+        "data": 5.0,
+    }
 
 
 @pytest.mark.unit
@@ -65,7 +77,10 @@ def test_calculator_divide_by_zero(calculator):
         }
     )
 
-    assert result == "Cannot divide by zero."
+    assert result == {
+        "success": False,
+        "error": "Cannot divide by zero.",
+    }
 
 
 @pytest.mark.unit
@@ -77,7 +92,10 @@ def test_calculator_requires_two_numbers(calculator):
         }
     )
 
-    assert result == "Two numbers required."
+    assert result == {
+        "success": False,
+        "error": "At least two numbers are required for the operation.",
+    }
 
 
 @pytest.mark.unit
@@ -88,7 +106,10 @@ def test_calculator_requires_numbers(calculator):
         }
     )
 
-    assert result == "Two numbers required."
+    assert result == {
+        "success": False,
+        "error": "At least two numbers are required for the operation.",
+    }
 
 
 @pytest.mark.unit
@@ -100,7 +121,10 @@ def test_calculator_unsupported_operation(calculator):
         }
     )
 
-    assert result == "Unsupported operation."
+    assert result == {
+        "success": False,
+        "error": "Unsupported operation",
+    }
 
 
 @pytest.mark.unit
@@ -112,7 +136,10 @@ def test_calculator_converts_numbers_to_float(calculator):
         }
     )
 
-    assert result == 5.5
+    assert result == {
+        "success": True,
+        "data": 5.5,
+    }
 
 
 @pytest.mark.unit
@@ -124,9 +151,11 @@ def test_calculator_handles_invalid_number(calculator):
         }
     )
 
-    assert result.startswith(
+    assert result["success"] is False
+    assert result["error"].startswith(
         "Calculator error:"
     )
+
 
 @pytest.mark.unit
 def test_calculator_add_method(calculator):
