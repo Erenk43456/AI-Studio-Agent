@@ -246,17 +246,49 @@ class ProjectMemory:
             files[str(path).replace("\\", "/")] = info
 
         try:
-            self.files_store.save(files)
-            self.symbols_store.save(analysis.get("symbols", {}))
-            self.dependencies_store.save(analysis.get("dependencies", {}))
-            self.relationships_store.save({"edges": analysis.get("relationships", [])})
-
             architecture = self.get_architecture()
             architecture["repository_analysis"] = analysis
             architecture["generation_id"] = generation_id
-            self.architecture_store.save(architecture)
 
-            self.project_store.save(project)
+            JsonStore.save_transaction(
+                [
+                    (
+                        self.files_store,
+                        files,
+                    ),
+                    (
+                        self.symbols_store,
+                        analysis.get(
+                            "symbols",
+                            {},
+                        ),
+                    ),
+                    (
+                        self.dependencies_store,
+                        analysis.get(
+                            "dependencies",
+                            {},
+                        ),
+                    ),
+                    (
+                        self.relationships_store,
+                        {
+                            "edges": analysis.get(
+                                "relationships",
+                                [],
+                            )
+                        },
+                    ),
+                    (
+                        self.architecture_store,
+                        architecture,
+                    ),
+                    (
+                        self.project_store,
+                        project,
+                    ),
+                ]
+            )
 
             previous_state = self.get_analysis_state()
             sync_mode = analysis.get("sync_mode", "full")
