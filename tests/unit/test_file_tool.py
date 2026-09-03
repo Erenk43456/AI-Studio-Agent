@@ -354,7 +354,7 @@ def test_file_tool_create_defaults_to_empty_content(
 
 
 @pytest.mark.unit
-def test_file_tool_create_replaces_existing_file(
+def test_file_tool_create_rejects_existing_file(
     file_tool,
     tmp_path,
 ):
@@ -370,10 +370,14 @@ def test_file_tool_create_replaces_existing_file(
         "new",
     )
 
-    assert result["success"] is True
+    assert result == {
+        "success": False,
+        "error": "File already exists.",
+    }
+
     assert path.read_text(
         encoding="utf-8"
-    ) == "new"
+    ) == "old"
 
 
 @pytest.mark.unit

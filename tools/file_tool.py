@@ -181,7 +181,13 @@ class FileTool:
 
                 }
 
+            if path.exists():
 
+                return {
+                    "success": False,
+                    "error": "File already exists."
+                }
+            
 
             path.parent.mkdir(
                 parents=True,
