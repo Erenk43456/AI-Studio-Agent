@@ -36,6 +36,8 @@ class ModelContainer:
         cancel_event
     ):
 
+        self._cancel_event = cancel_event
+
         for provider in (
             self.chat_llm,
             self.code_llm,
@@ -70,6 +72,15 @@ class ModelContainer:
             config,
             agent_name=slot
         )
+
+        if hasattr(
+            self,
+            "_cancel_event"
+        ):
+
+            provider.set_cancel_event(
+                self._cancel_event
+            )
 
         if slot == "chat":
 
