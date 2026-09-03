@@ -31,6 +31,18 @@ class DevelopmentOrchestrator:
 
         action = decision.get("action", "code")
 
+        allowed_actions = {
+            "analyze",
+            "improve",
+            "code",
+        }
+
+        if action not in allowed_actions:
+            self.logger.warning(
+                f"Unknown development action: {action}"
+            )
+            return "❌ Geçersiz development işlemi."
+
         #
         # Execution
         #

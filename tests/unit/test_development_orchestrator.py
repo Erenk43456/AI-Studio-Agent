@@ -337,3 +337,18 @@ def test_development_success_string_does_not_mark_overall_failure():
 
     assert result == "captured"
     assert captured["overall_success"] is True
+
+@pytest.mark.unit
+def test_development_rejects_unknown_action():
+
+    container = FakeContainer()
+
+    orchestrator = DevelopmentOrchestrator(container)
+
+    result = orchestrator.run(
+        "do something",
+        {"action": "unknown"},
+    )
+
+    assert result == "❌ Geçersiz development işlemi."
+    assert container.planner.calls == []
