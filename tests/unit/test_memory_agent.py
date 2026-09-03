@@ -37,3 +37,19 @@ def test_memory_agent_extract_name_returns_only_first_name_word():
         )
         == "Eren"
     )
+
+@pytest.mark.unit
+def test_memory_agent_save_handles_memory_exception():
+
+    class FailingMemory:
+
+        def save(self, key, value, category):
+            raise RuntimeError("storage unavailable")
+
+    agent = MemoryAgent(
+        memory=FailingMemory(),
+    )
+
+    result = agent.save("Benim adım Eren")
+
+    assert result == "Memory save error: storage unavailable"

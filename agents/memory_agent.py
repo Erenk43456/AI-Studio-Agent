@@ -30,11 +30,16 @@ class MemoryAgent(BaseAgent):
             f"Saving memory contract: key={contract.key}, category={contract.category}"
         )
 
-        self.memory.save(
-            contract.key,
-            contract.value,
-            contract.category
-        )
+        try:
+            self.memory.save(
+                contract.key,
+                contract.value,
+                contract.category
+            )
+
+        except Exception as error:
+            self.logger.error(f"Memory save error: {error}")
+            return f"Memory save error: {error}"
 
         if contract.key == "user_name" and contract.value:
             return f"Tamam, adını {contract.value} olarak hatırlayacağım."
