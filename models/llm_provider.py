@@ -22,6 +22,8 @@ class LLMProvider(LLMContract):
             model_config.model
         )
 
+        self.cancel_event = None
+
         provider = (
             model_config.provider
             or "local"
@@ -49,15 +51,27 @@ class LLMProvider(LLMContract):
         prompt,
         max_tokens=None,
         temperature=None,
-        timeout=None
+        timeout=None,
+        cancel_event=None
     ):
 
         return self.llm.generate(
             prompt,
             max_tokens=max_tokens,
             temperature=temperature,
-            timeout=timeout
+            timeout=timeout,
+            cancel_event=(
+                cancel_event
+                if cancel_event is not None
+                else self.cancel_event
+            )
         )
+
+    def set_cancel_event(
+        self,
+        cancel_event
+    ):
+        self.cancel_event = cancel_event
 
     # =========================================================
     # MODELS

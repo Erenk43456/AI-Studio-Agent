@@ -1,5 +1,6 @@
-from PySide6.QtCore import QThread, Signal
+import threading
 
+from PySide6.QtCore import QThread, Signal
 
 
 class AIWorker(QThread):
@@ -25,8 +26,27 @@ class AIWorker(QThread):
 
         self.message = message
 
+        self.cancel_event = threading.Event()
 
+        container = getattr(
+            orchestrator,
+            "container",
+            None
+        )
 
+        if container is not None:
+
+            models = getattr(
+                container,
+                "models",
+                None
+            )
+
+            if models is not None:
+
+                models.set_cancel_event(
+                    self.cancel_event
+                )
 
 
     def run(self):
@@ -68,10 +88,4 @@ class AIWorker(QThread):
 
     def stop(self):
 
-
-        if self.isRunning():
-
-
-            self.quit()
-
-            self.wait()
+        self.cancel_event.set()

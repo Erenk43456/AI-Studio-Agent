@@ -31,6 +31,22 @@ class ModelContainer:
             agent_name="decision"
         )
 
+    def set_cancel_event(
+        self,
+        cancel_event
+    ):
+
+        for provider in (
+            self.chat_llm,
+            self.code_llm,
+            self.planner_llm,
+            self.decision_llm,
+        ):
+
+            provider.set_cancel_event(
+                cancel_event
+            )
+
     # =========================================================
     # RELOAD MODEL
     # =========================================================

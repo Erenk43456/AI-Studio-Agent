@@ -36,6 +36,7 @@ class FakeRawLLMClient:
         max_tokens=None,
         temperature=None,
         timeout=None,
+        cancel_event=None
     ):
 
         self.generate_calls.append(
