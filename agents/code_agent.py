@@ -443,6 +443,10 @@ A response that is not valid JSON will be rejected.
                     "available in ProjectMemory."
                 )
 
+        else:
+
+            architecture = {}
+
         analysis = self._analyze_repository()
 
         if not analysis:
@@ -457,6 +461,10 @@ A response that is not valid JSON will be rejected.
             architecture[
                 "repository_analysis"
             ] = analysis
+
+            context[
+                "architecture"
+            ] = architecture
 
             return str(
                 analysis

@@ -1138,3 +1138,36 @@ def test_code_agent_stores_repository_analysis_in_development_context():
         ],
         "architecture": "layered",
     }
+
+@pytest.mark.unit
+def test_code_agent_repository_context_handles_missing_architecture():
+
+    agent = CodeAgent(
+        llm=FakeLLM(),
+        registry=FakeRegistry(),
+    )
+
+    agent._analyze_repository = lambda: {
+        "files": ["app/main.py"],
+    }
+
+    context = {
+        "strategy": {
+            "repository_analysis_fallback": True,
+        },
+        "architecture": None,
+    }
+
+    result = agent._get_repository_context(context)
+
+    assert result == str(
+        {
+            "files": ["app/main.py"],
+        }
+    )
+
+    assert context["architecture"] == {
+        "repository_analysis": {
+            "files": ["app/main.py"],
+        }
+    }
