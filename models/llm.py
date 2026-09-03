@@ -76,13 +76,6 @@ class LLM(LLMContract):
 
         try:
 
-            if not self.check_connection():
-
-                return (
-                    "LLM_ERROR: "
-                    "Local LLM is not reachable."
-                )
-
             response = requests.post(
 
                 self.generate_url,

@@ -1,4 +1,5 @@
 import pytest
+import requests
 
 from models.llm import LLM
 
@@ -100,6 +101,7 @@ def test_llm_missing_model(monkeypatch):
     )
 
     assert llm.has_model("non-existent-model") is False
+
 
 @pytest.mark.unit
 def test_llm_connection_success(monkeypatch):
@@ -212,12 +214,6 @@ def test_llm_generate_success(monkeypatch):
 
     llm = LLM(DummyConfig())
 
-    monkeypatch.setattr(
-        llm,
-        "check_connection",
-        lambda: True,
-    )
-
     class Response:
 
         def raise_for_status(self):
@@ -245,12 +241,6 @@ def test_llm_generate_success(monkeypatch):
 def test_llm_generate_empty_response(monkeypatch):
 
     llm = LLM(DummyConfig())
-
-    monkeypatch.setattr(
-        llm,
-        "check_connection",
-        lambda: True,
-    )
 
     class Response:
 
@@ -282,10 +272,15 @@ def test_llm_generate_connection_failure(monkeypatch):
 
     llm = LLM(DummyConfig())
 
+    def failing_post(*args, **kwargs):
+
+        raise requests.exceptions.ConnectionError(
+            "connection failed"
+        )
+
     monkeypatch.setattr(
-        llm,
-        "check_connection",
-        lambda: False,
+        "models.llm.requests.post",
+        failing_post,
     )
 
     result = llm.generate(
@@ -294,5 +289,47 @@ def test_llm_generate_connection_failure(monkeypatch):
 
     assert result == (
         "LLM_ERROR: "
-        "Local LLM is not reachable."
+        "Connection failed."
     )
+
+
+@pytest.mark.unit
+def test_llm_generate_does_not_run_separate_connection_check(
+    monkeypatch,
+):
+
+    llm = LLM(DummyConfig())
+
+    def fail_check_connection():
+
+        raise AssertionError(
+            "generate() must not call check_connection()"
+        )
+
+    monkeypatch.setattr(
+        llm,
+        "check_connection",
+        fail_check_connection,
+    )
+
+    class FakeResponse:
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+
+            return {
+                "response": "generated"
+            }
+
+    monkeypatch.setattr(
+        "models.llm.requests.post",
+        lambda *args, **kwargs: FakeResponse(),
+    )
+
+    result = llm.generate(
+        "hello"
+    )
+
+    assert result == "generated"
