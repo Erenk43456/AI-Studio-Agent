@@ -109,16 +109,41 @@ class MemoryAgent(BaseAgent):
         message
     ):
         text = message.strip()
+
         patterns = [
             "benim adım",
             "adım",
-            "ismim"
+            "ismim",
         ]
+
         lower = text.lower()
+
         for pattern in patterns:
-            if pattern in lower:
-                index = lower.find(pattern)
-                name = text[index + len(pattern):].strip()
-                if name:
-                    return name.capitalize()
+            index = lower.find(pattern)
+
+            if index == -1:
+                continue
+
+            name = text[index + len(pattern):].strip()
+
+            if not name:
+                continue
+
+            name = name.split()[0].strip(".,!?;:")
+
+            if not name:
+                continue
+
+            if name.lower() in {
+                "ne",
+                "nedir",
+                "neydi",
+                "neymiş",
+                "kim",
+                "kimdir",
+            }:
+                continue
+
+            return name.capitalize()
+
         return None
