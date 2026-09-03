@@ -121,9 +121,7 @@ class CodeAnalyzerTool:
                     )
 
 
-                    result["file"] = str(
-                        file_path
-                    )
+                    result["file"] = filename
 
 
                     return result

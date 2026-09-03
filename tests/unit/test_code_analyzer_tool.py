@@ -169,9 +169,7 @@ def test_code_analyzer_reads_file_from_workspace(
         "summary": "Parser analyzed",
     }
 
-    assert result["file"] == str(
-        source
-    )
+    assert result["file"] == "parser.py"
 
 
 @pytest.mark.unit
