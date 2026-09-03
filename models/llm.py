@@ -2,8 +2,9 @@ import requests
 
 from app.core.logger import AppLogger
 
+from contracts.llm_contract import LLMContract
 
-class LLM:
+class LLM(LLMContract):
 
     def __init__(
         self,
@@ -218,11 +219,12 @@ class LLM:
 
 
     def has_model(
-        self
-    ):
+        self,
+        model_name: str
+    ) -> bool:
 
         return (
-            self.model
+            model_name
             in self.get_models()
         )
 

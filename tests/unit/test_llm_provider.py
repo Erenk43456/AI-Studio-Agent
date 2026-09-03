@@ -56,7 +56,10 @@ class FakeRawLLMClient:
             "other-model",
         ]
 
-    def has_model(self):
+    def has_model(
+        self,
+        model_name: str
+    ) -> bool:
 
         return True
 
@@ -147,7 +150,7 @@ def test_provider_has_model(monkeypatch):
         DummyConfig()
     )
 
-    assert provider.has_model() is True
+    assert provider.has_model("fake-model") is True
 
 
 @pytest.mark.unit

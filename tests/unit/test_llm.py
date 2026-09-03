@@ -83,7 +83,7 @@ def test_llm_has_model(monkeypatch):
         ],
     )
 
-    assert llm.has_model() is True
+    assert llm.has_model("fake-model") is True
 
 
 @pytest.mark.unit
@@ -99,7 +99,7 @@ def test_llm_missing_model(monkeypatch):
         ],
     )
 
-    assert llm.has_model() is False
+    assert llm.has_model("non-existent-model") is False
 
 @pytest.mark.unit
 def test_llm_connection_success(monkeypatch):

@@ -1,8 +1,10 @@
 from models.llm import LLM
 from models.api_llm import APILLM
 
+from contracts.llm_contract import LLMContract
 
-class LLMProvider:
+
+class LLMProvider(LLMContract):
 
     def __init__(
         self,
@@ -78,17 +80,20 @@ class LLMProvider:
     # MODEL
     # =========================================================
 
-    def has_model(self):
+    def has_model(
+        self,
+        model_name: str
+    ) -> bool:
 
         if hasattr(
             self.llm,
             "has_model"
         ):
 
-            return self.llm.has_model()
+            return self.llm.has_model(model_name)
 
         return bool(
-            self.current_model
+            model_name
         )
 
     def get_current_model(self):

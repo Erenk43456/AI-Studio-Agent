@@ -4,8 +4,10 @@ import requests
 
 from app.core.logger import AppLogger
 
+from contracts.llm_contract import LLMContract
 
-class APILLM:
+
+class APILLM(LLMContract):
 
     def __init__(
         self,
@@ -386,11 +388,12 @@ class APILLM:
 
 
     def has_model(
-        self
-    ):
+        self,
+        model_name: str
+    ) -> bool:
 
         return bool(
-            self.model
+            model_name
         )
 
 

@@ -115,13 +115,14 @@ class LLMRouter:
 
 
     def has_model(
-        self
-    ):
+        self,
+        model_name: str
+    ) -> bool:
 
         return (
-            self.planner_llm.has_model()
+            self.planner_llm.has_model(model_name)
             or
-            self.chat_llm.has_model()
+            self.chat_llm.has_model(model_name)
         )
 
 
