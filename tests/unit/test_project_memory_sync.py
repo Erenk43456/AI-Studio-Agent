@@ -122,7 +122,7 @@ def test_project_memory_sync_adds_non_python_without_python_analysis(tmp_path):
 
 
 @pytest.mark.unit
-def test_project_memory_sync_removes_deleted_file_records_but_preserves_relationships(
+def test_project_memory_sync_removes_deleted_file_records_and_stale_relationships(
     tmp_path,
 ):
     memory = IncrementalMemory(tmp_path)
@@ -136,7 +136,8 @@ def test_project_memory_sync_removes_deleted_file_records_but_preserves_relation
     assert "old.py" not in result["symbols"]
     assert "old.py" not in result["dependencies"]
     assert "old.py" not in result["definitions"]
-    assert result["relationships"] == memory.relationships["edges"]
+
+    assert result["relationships"] == []
 
 
 @pytest.mark.unit

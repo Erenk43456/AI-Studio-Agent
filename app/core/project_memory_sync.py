@@ -155,6 +155,8 @@ class ProjectMemorySync:
         definitions = analysis["definitions"]
         module_roles = analysis["module_roles"]
 
+        deleted_files = set()
+
         for relative in changed_files:
             path = self.workspace / relative
 
@@ -164,6 +166,7 @@ class ProjectMemorySync:
                 dependencies.pop(relative, None)
                 definitions.pop(relative, None)
                 module_roles.pop(relative, None)
+                deleted_files.add(relative)
                 continue
 
             metadata = self.indexer.file_metadata(path, relative)
@@ -196,6 +199,22 @@ class ProjectMemorySync:
         analysis["definitions"] = self._sorted_mapping(definitions)
         analysis["module_roles"] = self._sorted_mapping(module_roles)
         analysis["relationships"] = deepcopy(analysis["relationships"])
+
+        if deleted_files:
+            normalized_deleted_files = {
+                self._normalize_relative(path) 
+                for path in deleted_files
+            }
+
+            analysis["relationships"] = [
+                edge
+                for edge in analysis["relationships"]
+                if self._normalize_relative(edge.get("source")) 
+                not in normalized_deleted_files
+                and self._normalize_relative(edge.get("target"))
+                not in normalized_deleted_files
+            ]
+
         self._recompute_snapshot_fields(analysis)
         analysis["sync_mode"] = "incremental"
         return analysis
