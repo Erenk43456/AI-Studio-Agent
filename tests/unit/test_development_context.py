@@ -129,7 +129,7 @@ def test_build_without_explicit_targets_keeps_existing_context_flow():
 
 
 @pytest.mark.unit
-def test_build_falls_back_when_targeted_resolver_fails():
+def test_build_returns_targeted_context_error_when_resolver_fails():
     context = DevelopmentContext(
         FakeProjectMemory(),
         "C:/AI-Studio",
@@ -143,8 +143,10 @@ def test_build_falls_back_when_targeted_resolver_fails():
         target_files=["app/parser.py"],
     )
 
-    assert result["task"] == "Fix parser"
-    assert "strategy" in result
+    assert result == {
+        "error": "Targeted repository context failed.",
+        "details": "resolver unavailable",
+    }
 
 
 @pytest.mark.unit
@@ -170,7 +172,10 @@ def test_development_context_handles_resolver_failure_safely():
         ),
     )
 
-    assert context.get_targeted_context(["app/parser.py"]) == {}
+    assert context.get_targeted_context(["app/parser.py"]) == {
+        "error": "Targeted repository context failed.",
+        "details": "resolver unavailable",
+    }
 
 
 @pytest.mark.unit

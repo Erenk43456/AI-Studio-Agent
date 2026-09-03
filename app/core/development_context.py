@@ -46,7 +46,10 @@ class DevelopmentContext:
             )
         except Exception as error:
             self.logger.error(f"Targeted repository context failed: {error}")
-            return {}
+            return {
+                "error": "Targeted repository context failed.",
+                "details": str(error),
+            }
 
     # =============================================================
     # Public API
@@ -68,6 +71,9 @@ class DevelopmentContext:
                 target_symbols=target_symbols,
                 max_files=max_files,
             )
+
+            if targeted.get("error"):
+                return targeted
 
             if targeted:
                 targeted["task"] = task
