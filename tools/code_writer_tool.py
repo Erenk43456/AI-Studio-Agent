@@ -1602,6 +1602,11 @@ The resulting code MUST be valid Python.
 
         Legacy string-based changes remain unsupported by this
         validator and continue through the existing pipeline.
+
+        Verification expressions are evaluated through a restricted
+        AST evaluator. Function calls, attribute access, subscripts,
+        assignments, imports, and other executable constructs are
+        rejected.
         """
 
         if not isinstance(changes, list):
@@ -1634,27 +1639,17 @@ The resulting code MUST be valid Python.
             if not verification:
                 continue
 
-            # Explicit verification currently supports simple
-            # source-level assertions expressed as Python snippets.
-            #
-            # The snippet receives:
-            #
-            #   old_code
-            #   new_code
-            #
-            # and must evaluate to True.
-
             try:
 
-                result = eval(
+                tree = ast.parse(
                     verification,
-                    {
-                        "__builtins__": {}
-                    },
-                    {
-                        "old_code": old_code,
-                        "new_code": new_code
-                    }
+                    mode="eval"
+                )
+
+                result = self._evaluate_verification(
+                    tree.body,
+                    old_code,
+                    new_code
                 )
 
             except Exception as error:
@@ -1677,6 +1672,194 @@ The resulting code MUST be valid Python.
                 )
 
         return None
+
+
+    def _evaluate_verification(
+        self,
+        node,
+        old_code,
+        new_code
+    ):
+        """
+        Evaluate the restricted verification expression language.
+
+        Supported:
+        - old_code / new_code
+        - string literals
+        - == / !=
+        - in / not in
+        - and / or
+        - not
+        - parentheses
+
+        Function calls, attribute access, subscripts and all other
+        expression types are rejected.
+        """
+
+        if isinstance(
+            node,
+            ast.Constant
+        ):
+
+            if isinstance(
+                node.value,
+                str
+            ):
+
+                return node.value
+
+            if isinstance(
+                node.value,
+                bool
+            ):
+
+                return node.value
+
+            raise ValueError(
+                "Only string and boolean literals are allowed."
+            )
+
+        if isinstance(
+            node,
+            ast.Name
+        ):
+
+            if node.id == "old_code":
+                return old_code
+
+            if node.id == "new_code":
+                return new_code
+
+            raise ValueError(
+                f"Unsupported verification variable: {node.id}"
+            )
+
+        if isinstance(
+            node,
+            ast.BoolOp
+        ):
+
+            values = [
+                self._evaluate_verification(
+                    value,
+                    old_code,
+                    new_code
+                )
+                for value in node.values
+            ]
+
+            if isinstance(
+                node.op,
+                ast.And
+            ):
+
+                return all(values)
+
+            if isinstance(
+                node.op,
+                ast.Or
+            ):
+
+                return any(values)
+
+            raise ValueError(
+                "Unsupported boolean operator."
+            )
+
+        if isinstance(
+            node,
+            ast.UnaryOp
+        ):
+
+            if not isinstance(
+                node.op,
+                ast.Not
+            ):
+
+                raise ValueError(
+                    "Only 'not' is supported."
+                )
+
+            return not self._evaluate_verification(
+                node.operand,
+                old_code,
+                new_code
+            )
+
+        if isinstance(
+            node,
+            ast.Compare
+        ):
+
+            left = self._evaluate_verification(
+                node.left,
+                old_code,
+                new_code
+            )
+
+            for operator, comparator_node in zip(
+                node.ops,
+                node.comparators
+            ):
+
+                right = self._evaluate_verification(
+                    comparator_node,
+                    old_code,
+                    new_code
+                )
+
+                if isinstance(
+                    operator,
+                    ast.Eq
+                ):
+
+                    comparison = (
+                        left == right
+                    )
+
+                elif isinstance(
+                    operator,
+                    ast.NotEq
+                ):
+
+                    comparison = (
+                        left != right
+                    )
+
+                elif isinstance(
+                    operator,
+                    ast.In
+                ):
+
+                    comparison = (
+                        left in right
+                    )
+
+                elif isinstance(
+                    operator,
+                    ast.NotIn
+                ):
+
+                    comparison = (
+                        left not in right
+                    )
+
+                else:
+
+                    raise ValueError(
+                        "Unsupported comparison operator."
+                    )
+
+                if not comparison:
+                    return False
+
+                left = right
+
+            return True
+
+        raise ValueError(
+            "Unsupported verification expression."
+        )
 
     # =============================================================
     # Syntax validation

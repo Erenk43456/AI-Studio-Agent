@@ -1410,3 +1410,112 @@ def test_execute_rejects_missing_workspace():
         "message": "Workspace is not configured.",
         "results": []
     }
+
+@pytest.mark.unit
+def test_code_writer_verification_accepts_safe_expression():
+
+    tool = CodeWriterTool(
+        llm=None,
+        workspace="."
+    )
+
+    changes = [
+        {
+            "description": "New method added",
+            "verification": (
+                '"def new_method" in new_code '
+                'and old_code != new_code'
+            )
+        }
+    ]
+
+    result = tool.validate_requested_changes(
+        changes,
+        "def old_method():\n    pass\n",
+        "def old_method():\n    pass\n\n"
+        "def new_method():\n    pass\n"
+    )
+
+    assert result is None
+
+
+@pytest.mark.unit
+def test_code_writer_verification_rejects_unsafe_expression():
+
+    tool = CodeWriterTool(
+        llm=None,
+        workspace="."
+    )
+
+    changes = [
+        {
+            "description": "Unsafe verification",
+            "verification": (
+                '__import__("os").system("echo hacked")'
+            )
+        }
+    ]
+
+    result = tool.validate_requested_changes(
+        changes,
+        "old",
+        "new"
+    )
+
+    assert result.startswith(
+        "Requested change verification failed:"
+    )
+
+
+@pytest.mark.unit
+def test_code_writer_verification_rejects_attribute_access():
+
+    tool = CodeWriterTool(
+        llm=None,
+        workspace="."
+    )
+
+    changes = [
+        {
+            "description": "Unsafe verification",
+            "verification": (
+                "new_code.__class__"
+            )
+        }
+    ]
+
+    result = tool.validate_requested_changes(
+        changes,
+        "old",
+        "new"
+    )
+
+    assert result.startswith(
+        "Requested change verification failed:"
+    )
+
+
+@pytest.mark.unit
+def test_code_writer_verification_supports_not_in():
+
+    tool = CodeWriterTool(
+        llm=None,
+        workspace="."
+    )
+
+    changes = [
+        {
+            "description": "Old implementation removed",
+            "verification": (
+                '"old_function" not in new_code'
+            )
+        }
+    ]
+
+    result = tool.validate_requested_changes(
+        changes,
+        "def old_function():\n    pass\n",
+        "def new_function():\n    pass\n"
+    )
+
+    assert result is None
