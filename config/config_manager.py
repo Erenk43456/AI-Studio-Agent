@@ -6,8 +6,9 @@ class ConfigManager:
 
     def __init__(self):
 
-        self.file = Path(
-            "config/user.json"
+        self.file = (
+            Path(__file__).resolve().parent
+            / "user.json"
         )
 
         self.file.parent.mkdir(
