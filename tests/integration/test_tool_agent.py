@@ -221,3 +221,53 @@ def test_tool_agent_execute_steps_returns_list_for_empty_plan():
 
     assert tool_result.get("success") is False
     assert tool_result.get("error") == "Invalid plan."
+
+@pytest.mark.integration
+def test_tool_agent_code_generation_fails_when_llm_is_missing():
+
+    registry = FakeToolRegistry()
+
+    agent = ToolAgent(
+        registry=registry,
+        memory=FakeMemory(),
+        llm=None,
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Code generation failed: LLM is not configured.",
+    ):
+        agent.generate_code_change(
+            {
+                "input": "Add a function.",
+            },
+            "existing content",
+        )
+
+
+@pytest.mark.integration
+def test_tool_agent_code_generation_does_not_return_existing_content_on_llm_error():
+
+    class FailingLLM:
+
+        def generate(self, prompt):
+            raise RuntimeError("LLM unavailable")
+
+    registry = FakeToolRegistry()
+
+    agent = ToolAgent(
+        registry=registry,
+        memory=FakeMemory(),
+        llm=FailingLLM(),
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Code generation failed: LLM unavailable",
+    ):
+        agent.generate_code_change(
+            {
+                "input": "Add a function.",
+            },
+            "existing content",
+        )

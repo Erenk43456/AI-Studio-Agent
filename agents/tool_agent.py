@@ -237,8 +237,10 @@ class ToolAgent(BaseAgent):
         return any(word in text for word in keywords)
 
     def generate_code_change(self, step: Any, existing_content: str) -> str:
+
         if not self.llm:
-            return existing_content
+            self.logger.error("Code generation failed: LLM is not configured.")
+            raise RuntimeError("Code generation failed: LLM is not configured.")
 
         inp = step.get("input", "") if hasattr(step, "get") else getattr(step, "input", "")
 
@@ -270,9 +272,10 @@ New file:
         try:
             result = self.llm.generate(prompt)
             return result
+        
         except Exception as error:
             self.logger.error(f"Code generation error: {error}")
-            return existing_content
+            raise RuntimeError(f"Code generation failed: {error}") from error
 
     def prepare_write_content(self, instruction: str, existing_content: str) -> str:
         if not existing_content:
