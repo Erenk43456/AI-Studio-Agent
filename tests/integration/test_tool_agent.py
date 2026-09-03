@@ -198,3 +198,26 @@ def test_tool_agent_normalizes_calculator_input():
 
     assert result["operation"] == "add"
     assert result["numbers"] == ["10", "5"]
+
+@pytest.mark.integration
+def test_tool_agent_execute_steps_returns_list_for_empty_plan():
+
+    registry = FakeToolRegistry()
+
+    agent = ToolAgent(
+        registry=registry,
+        memory=FakeMemory(),
+    )
+
+    result = agent.execute_steps(None)
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+
+    assert result[0]["tool"] is None
+    assert result[0]["action"] is None
+
+    tool_result = result[0]["result"]
+
+    assert tool_result.get("success") is False
+    assert tool_result.get("error") == "Invalid plan."

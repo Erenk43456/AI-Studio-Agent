@@ -32,8 +32,20 @@ class ToolAgent(BaseAgent):
         plan: Union[PlannerContract, dict, Any],
         development_context=None,
     ) -> List[dict]:
+        
         if not plan:
-            return "Invalid plan."
+            return [
+                {
+                    "tool": None,
+                    "action": None,
+                    "result": self.contract_agent.to_tool_result_contract(
+                        {
+                            "success": False,
+                            "error": "Invalid plan.",
+                        }
+                    ),
+                }
+            ]
 
         plan_contract = self.contract_agent.to_planner_contract(plan)
         steps = plan_contract.steps
