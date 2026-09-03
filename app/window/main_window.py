@@ -173,9 +173,9 @@ How can I help you?
     # =========================================================
 
     def show_tools(self):
-
+        
         self.tools_page.update_tools(
-            self.registry.list_tools()
+            self.registry.get_tool_descriptions()
         )
 
         self.pages.setCurrentWidget(
