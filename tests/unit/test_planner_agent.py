@@ -9,7 +9,7 @@ from tests.fakes.fake_registry import FakeRegistry
 
 
 @pytest.mark.unit
-def test_planner_empty_task_returns_code_plan():
+def test_planner_empty_task_returns_empty_plan():
 
     agent = PlannerAgent(
         FakeLLM()
@@ -18,18 +18,12 @@ def test_planner_empty_task_returns_code_plan():
     result = agent.create_plan("")
 
     assert result == {
-        "steps": [
-            {
-                "tool": "code",
-                "action": "implement",
-                "input": ""
-            }
-        ]
+        "steps": []
     }
 
 
 @pytest.mark.unit
-def test_planner_none_task_returns_code_plan():
+def test_planner_none_task_returns_empty_plan():
 
     agent = PlannerAgent(
         FakeLLM()
@@ -38,13 +32,7 @@ def test_planner_none_task_returns_code_plan():
     result = agent.create_plan(None)
 
     assert result == {
-        "steps": [
-            {
-                "tool": "code",
-                "action": "implement",
-                "input": ""
-            }
-        ]
+        "steps": []
     }
 
 

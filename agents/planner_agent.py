@@ -49,16 +49,13 @@ class PlannerAgent(BaseAgent, LegacyPlannerContract):
 
         if not original_task:
 
-            return self.contract_agent.to_planner_contract({
-                "steps": [
-                    {
-                        "tool": "code",
-                        "action": "implement",
-                        "input": ""
-                    }
-                ]
-            }, user_message="")
-
+            return self.contract_agent.to_planner_contract(
+                {
+                    "steps": []
+                },
+                user_message=""
+            )
+        
 
         # =========================================================
         # Save last task
