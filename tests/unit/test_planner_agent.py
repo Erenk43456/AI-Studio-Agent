@@ -284,3 +284,25 @@ def test_planner_preserves_user_message(monkeypatch):
     result = agent.create_plan(task)
 
     assert result["user_message"] == task
+
+@pytest.mark.unit
+def test_planner_calculation_fallback_uses_calculator():
+    agent = PlannerAgent(
+        FakeLLM(),
+        FakeMemory(),
+        FakeRegistry(
+            {
+                "calculator": object(),
+            }
+        ),
+    )
+
+    result = agent._fallback_plan("15 + 20 kaç eder?")
+
+    assert result["steps"] == [
+        {
+            "tool": "calculator",
+            "action": "calculate",
+            "input": "15 + 20 kaç eder?",
+        }
+    ]

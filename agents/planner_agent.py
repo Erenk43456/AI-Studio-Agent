@@ -1,3 +1,5 @@
+import re
+
 from agents.base_agent import BaseAgent
 from contracts.planner_contract import PlannerContract as LegacyPlannerContract
 from agents.contracts.planner import PlannerContract
@@ -281,6 +283,55 @@ class PlannerAgent(BaseAgent, LegacyPlannerContract):
 
         lower = text.lower()
 
+        # ---------------------------------------------------------
+        # Calculator request
+        # ---------------------------------------------------------
+
+        calculation_indicators = (
+            "topla",
+            "toplam",
+            "çıkar",
+            "cikar",
+            "çarp",
+            "carp",
+            "çarpı",
+            "carpi",
+            "böl",
+            "bol",
+            "bölü",
+            "bolu",
+        )
+
+        has_arithmetic_expression = re.search(
+            r"-?\d+(?:\.\d+)?\s*[\+\-\*/]\s*-?\d+(?:\.\d+)?",
+            lower,
+        )
+
+        if (
+            any(
+                indicator in lower
+                for indicator in calculation_indicators
+            )
+            or has_arithmetic_expression
+        ):
+
+            if self._tool_exists("calculator"):
+
+                self.logger.warning(
+                    "Using deterministic CALCULATOR fallback."
+                )
+
+                return {
+                    "steps": [
+                        {
+                            "tool": "calculator",
+                            "action": "calculate",
+                            "input": text,
+                        }
+                    ],
+                    "user_message": text
+                }
+            
         # ---------------------------------------------------------
         # Development / coding request
         # ---------------------------------------------------------
