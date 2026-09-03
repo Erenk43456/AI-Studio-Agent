@@ -194,6 +194,19 @@ class ToolAgent(BaseAgent):
             )
 
         numbers = re.findall(r"-?\d+(?:\.\d+)?", str(text))
+
+        paired_numbers = re.search(
+            r"(-?\d+(?:\.\d+)?)\s+ile\s+(-?\d+(?:\.\d+)?)",
+            str(text),
+            flags=re.IGNORECASE,
+        )
+
+        if paired_numbers:
+            numbers = [
+                paired_numbers.group(1),
+                paired_numbers.group(2),
+            ]
+
         if len(numbers) < 2:
             return plan
 

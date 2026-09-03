@@ -271,3 +271,23 @@ def test_tool_agent_code_generation_does_not_return_existing_content_on_llm_erro
             },
             "existing content",
         )
+
+@pytest.mark.integration
+def test_tool_agent_calculator_ignores_unrelated_number_before_operands():
+
+    registry = FakeToolRegistry()
+
+    agent = ToolAgent(
+        registry=registry,
+        memory=FakeMemory(),
+    )
+
+    plan = {
+        "tool": "calculator",
+        "input": "2026 yılında 10 ile 20'yi topla",
+    }
+
+    result = agent.normalize_tool_input(plan)
+
+    assert result["operation"] == "add"
+    assert result["numbers"] == ["10", "20"]
