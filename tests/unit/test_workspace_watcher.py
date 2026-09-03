@@ -130,7 +130,7 @@ def test_detect_changes_returns_empty_when_unchanged(tmp_path):
 
 
 @pytest.mark.unit
-def test_scan_ignores_non_python_files(tmp_path):
+def test_scan_collects_non_python_files(tmp_path):
     python_file = tmp_path / "app.py"
     text_file = tmp_path / "notes.txt"
 
@@ -152,7 +152,7 @@ def test_scan_ignores_non_python_files(tmp_path):
     result = watcher.scan()
 
     assert str(python_file) in result
-    assert str(text_file) not in result
+    assert str(text_file) in result
 
 
 @pytest.mark.unit
@@ -213,3 +213,29 @@ def test_watcher_forwards_changes_to_callback(tmp_path):
             "new.py",
         ]
     ]
+
+@pytest.mark.unit
+def test_scan_collects_multiple_file_types(tmp_path):
+    files = [
+        tmp_path / "app.py",
+        tmp_path / "script.js",
+        tmp_path / "config.json",
+        tmp_path / "settings.yaml",
+        tmp_path / "README.md",
+    ]
+
+    for file in files:
+        file.write_text(
+            "content",
+            encoding="utf-8",
+        )
+
+    watcher = WorkspaceWatcher(
+        workspace=tmp_path,
+        callback=lambda files: None,
+    )
+
+    result = watcher.scan()
+
+    for file in files:
+        assert str(file) in result

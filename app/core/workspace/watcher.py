@@ -45,8 +45,10 @@ class WorkspaceWatcher:
         current = {}
 
 
-        for file in self.workspace.rglob("*.py"):
+        for file in self.workspace.rglob("*"):
 
+            if not file.is_file():
+                continue
 
             if any(
                 part in SKIP_DIRS
