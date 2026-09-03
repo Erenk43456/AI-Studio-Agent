@@ -1,5 +1,6 @@
 import pytest
 
+from agents.contracts import result
 from agents.tool_agent import ToolAgent
 from tests.fakes.fake_code_agent import FakeCodeAgent
 from tests.fakes.fake_memory import FakeMemory
@@ -69,7 +70,8 @@ def test_tool_agent_returns_error_for_unknown_tool():
         }
     )
 
-    assert result == "Tool not found: missing_tool"
+    assert result.get("success") is False
+    assert result.get("error") == "Tool not found: missing_tool"
 
 
 @pytest.mark.integration
@@ -291,3 +293,23 @@ def test_tool_agent_calculator_ignores_unrelated_number_before_operands():
 
     assert result["operation"] == "add"
     assert result["numbers"] == ["10", "20"]
+
+@pytest.mark.integration
+def test_tool_agent_returns_typed_error_for_missing_tool_name():
+
+    registry = FakeToolRegistry()
+
+    agent = ToolAgent(
+        registry=registry,
+        memory=FakeMemory(),
+    )
+
+    result = agent.execute(
+        {
+            "action": "run",
+            "input": "hello",
+        }
+    )
+
+    assert result.get("success") is False
+    assert result.get("error") == "Tool name missing."
