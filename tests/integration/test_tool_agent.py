@@ -313,3 +313,17 @@ def test_tool_agent_returns_typed_error_for_missing_tool_name():
 
     assert result.get("success") is False
     assert result.get("error") == "Tool name missing."
+
+def test_normalize_calculator_preserves_all_operands():
+    agent = ToolAgent(registry=None)
+
+    plan = {
+        "tool": "calculator",
+        "action": "calculate",
+        "input": "10 + 20 + 30",
+    }
+
+    result = agent.normalize_tool_input(plan)
+
+    assert result["operation"] == "add"
+    assert result["numbers"] == ["10", "20", "30"]

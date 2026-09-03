@@ -305,7 +305,7 @@ class ToolAgent(BaseAgent):
 
         if operation:
             plan["operation"] = operation
-            plan["numbers"] = numbers[:2]
+            plan["numbers"] = numbers
 
         return plan
 
