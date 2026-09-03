@@ -158,3 +158,78 @@ class AtomicWriter:
                 "path": str(target),
                 "error": str(error)
             }
+
+    def restore(self, path, content):
+        target = Path(path).resolve()
+
+        try:
+            try:
+                target.relative_to(self.workspace)
+            except ValueError:
+                return {
+                    "success": False,
+                    "error": "Target path is outside workspace."
+                }
+
+            # File did not exist before the transaction.
+            if content is None:
+                if target.exists():
+                    target.unlink()
+
+                self.logger.info(
+                    f"Atomic restore removed created file: {target}"
+                )
+
+                return {
+                    "success": True,
+                    "path": str(target)
+                }
+
+            target.parent.mkdir(
+                parents=True,
+                exist_ok=True
+            )
+
+            fd, temporary_path = tempfile.mkstemp(
+                dir=target.parent,
+                prefix=f".{target.name}.",
+                suffix=".restore.tmp"
+            )
+
+            try:
+                with os.fdopen(
+                    fd,
+                    "wb"
+                ) as file:
+                    file.write(content)
+                    file.flush()
+                    os.fsync(file.fileno())
+
+                os.replace(
+                    temporary_path,
+                    target
+                )
+
+            finally:
+                if os.path.exists(temporary_path):
+                    os.unlink(temporary_path)
+
+            self.logger.info(
+                f"Atomic restore completed: {target}"
+            )
+
+            return {
+                "success": True,
+                "path": str(target)
+            }
+
+        except Exception as error:
+            self.logger.error(
+                f"Atomic restore failed: {target}: {error}"
+            )
+
+            return {
+                "success": False,
+                "path": str(target),
+                "error": str(error)
+            }

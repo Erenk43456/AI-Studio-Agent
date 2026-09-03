@@ -76,6 +76,7 @@ class CodeWriterTool:
             }
 
         results = []
+        snapshots = {}
 
         if not self.workspace:
         
@@ -131,16 +132,30 @@ class CodeWriterTool:
                     "error": "Path is outside the workspace."
                 }
             else:
-                if path_obj.exists():
-                    result = self.modify_file(
-                        path,
-                        changes
+                try:
+                    snapshots[str(path_obj)] = (
+                        path_obj.read_bytes()
+                        if path_obj.exists()
+                        else None
                     )
+                except Exception as error:
+                    result = {
+                        "file": path,
+                        "error": (
+                            f"Failed to snapshot file before write: {error}"
+                        )
+                    }
                 else:
-                    result = self.create_file_from_changes(
-                        path,
-                        changes
-                    )
+                    if path_obj.exists():
+                        result = self.modify_file(
+                            path,
+                            changes
+                        )
+                    else:
+                        result = self.create_file_from_changes(
+                            path,
+                            changes
+                        )
 
             results.append(
                 result
@@ -163,6 +178,23 @@ class CodeWriterTool:
             and "error" not in result
             for result in results
         )
+
+        if not success:
+            for snapshot_path, original_content in snapshots.items():
+                rollback_result = self.atomic_writer.restore(
+                    snapshot_path,
+                    original_content
+                )
+
+                if not rollback_result.get(
+                    "success",
+                    False
+                ):
+                    self.logger.error(
+                        "Code writer rollback failed for "
+                        f"{snapshot_path}: "
+                        f"{rollback_result.get('error')}"
+                    )
 
         return {
             "success": success,

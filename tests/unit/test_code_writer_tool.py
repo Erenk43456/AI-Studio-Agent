@@ -1553,3 +1553,77 @@ def test_code_writer_execute_rejects_file_outside_workspace(tmp_path):
     assert result["results"][0]["error"] == (
         "Path is outside the workspace."
     )
+
+@pytest.mark.unit
+def test_execute_rolls_back_previous_file_changes_on_failure(
+    tmp_path,
+    monkeypatch,
+):
+    first_file = tmp_path / "first.py"
+    second_file = tmp_path / "second.py"
+
+    first_original = "VALUE = 1\n"
+    second_original = "VALUE = 2\n"
+
+    first_file.write_text(
+        first_original,
+        encoding="utf-8",
+    )
+
+    second_file.write_text(
+        second_original,
+        encoding="utf-8",
+    )
+
+    writer = CodeWriterTool(
+        llm=None,
+        workspace=tmp_path,
+    )
+
+    def fake_modify_file(filename, changes):
+        if filename == "first.py":
+            first_file.write_text(
+                "VALUE = 99\n",
+                encoding="utf-8",
+            )
+
+            return {
+                "file": filename,
+                "status": "updated",
+            }
+
+        return {
+            "file": filename,
+            "error": "Simulated failure.",
+        }
+
+    monkeypatch.setattr(
+        writer,
+        "modify_file",
+        fake_modify_file,
+    )
+
+    result = writer.execute(
+        {
+            "files": [
+                {
+                    "path": "first.py",
+                    "changes": ["Change value."],
+                },
+                {
+                    "path": "second.py",
+                    "changes": ["Change value."],
+                },
+            ]
+        }
+    )
+
+    assert result["success"] is False
+
+    assert first_file.read_text(
+        encoding="utf-8"
+    ) == first_original
+
+    assert second_file.read_text(
+        encoding="utf-8"
+    ) == second_original
