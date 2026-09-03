@@ -187,9 +187,48 @@ class DevelopmentOrchestrator:
 
             results = [execution_steps]
 
+        def _is_error_string(value):
+
+            if not isinstance(value, str):
+
+                return False
+
+            return value.startswith(
+                (
+                    "Tool error:",
+                    "Tool not found:",
+                    "Tool name missing.",
+                    "Invalid plan.",
+                )
+            ) or (
+                value.startswith("Tool ")
+                and value.endswith(" does not support execute method.")
+            )
+
+        def _is_successful_result(result):
+
+            if isinstance(result, dict) or hasattr(result, "get"):
+
+                if not result.get("success", False):
+
+                    return False
+
+                data = result.get("data")
+
+                if isinstance(data, str) and _is_error_string(data):
+
+                    return False
+
+                return True
+
+            if isinstance(result, str):
+
+                return not _is_error_string(result)
+
+            return True
+
         overall_success = all(
-            not (isinstance(result, dict) and not result.get("success", False))
-            and not (isinstance(result, str) and result.startswith("Tool error:"))
+            _is_successful_result(result)
             for result in results
         )
 
@@ -257,7 +296,6 @@ class DevelopmentOrchestrator:
         if not isinstance(result, dict) and not hasattr(result, "get"):
 
             return str(result)
-
 
         success = result.get("success", False)
 

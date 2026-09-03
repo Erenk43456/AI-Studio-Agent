@@ -279,3 +279,61 @@ def test_development_delegates_plan_execution_to_tool_agent():
             },
         )
     ]
+
+@pytest.mark.unit
+def test_development_string_tool_error_marks_overall_failure():
+    container = FakeContainer(
+        plan={
+            "steps": [
+                {
+                    "tool": "missing_tool",
+                    "action": "execute",
+                }
+            ]
+        }
+    )
+
+    orchestrator = DevelopmentOrchestrator(container)
+
+    captured = {}
+
+    def capture_results(results, overall_success):
+        captured["results"] = results
+        captured["overall_success"] = overall_success
+        return "captured"
+
+    orchestrator.format_results = capture_results
+
+    result = orchestrator.run("run missing tool")
+
+    assert result == "captured"
+    assert captured["overall_success"] is False
+
+@pytest.mark.unit
+def test_development_success_string_does_not_mark_overall_failure():
+    container = FakeContainer(
+        plan={
+            "steps": [
+                {
+                    "tool": "fake_tool",
+                    "action": "execute",
+                }
+            ]
+        },
+        tool=FakeTool(result="Tool executed successfully"),
+    )
+
+    orchestrator = DevelopmentOrchestrator(container)
+
+    captured = {}
+
+    def capture_results(results, overall_success):
+        captured["overall_success"] = overall_success
+        return "captured"
+
+    orchestrator.format_results = capture_results
+
+    result = orchestrator.run("run tool")
+
+    assert result == "captured"
+    assert captured["overall_success"] is True
