@@ -49,7 +49,9 @@ class ConversationMemory:
                     encoding="utf-8"
                 ) as f:
 
-                    self.data = json.load(f)
+                    data = json.load(f)
+
+                self.data = data if isinstance(data, list) else []
 
 
                 self.logger.info(
