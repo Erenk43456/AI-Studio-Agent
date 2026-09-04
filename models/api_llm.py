@@ -437,9 +437,7 @@ class APILLM(LLMContract):
         model_name: str
     ) -> bool:
 
-        return bool(
-            model_name
-        )
+        return model_name in self.get_models()
 
 
     def get_current_model(

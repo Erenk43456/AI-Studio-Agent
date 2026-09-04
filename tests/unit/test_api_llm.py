@@ -193,3 +193,18 @@ def test_api_llm_generate_cancellation_after_retryable_error(
     }
 
     assert len(calls) == 1
+
+@pytest.mark.unit
+def test_api_llm_has_model_checks_configured_model():
+
+    llm = APILLM(
+        DummyConfig()
+    )
+
+    assert llm.has_model(
+        "fake-model"
+    ) is True
+
+    assert llm.has_model(
+        "nonexistent-model"
+    ) is False
