@@ -327,3 +327,53 @@ def test_normalize_calculator_preserves_all_operands():
 
     assert result["operation"] == "add"
     assert result["numbers"] == ["10", "20", "30"]
+
+@pytest.mark.integration
+def test_tool_agent_normalize_does_not_mutate_original_plan():
+
+    registry = FakeToolRegistry()
+
+    agent = ToolAgent(
+        registry=registry,
+        memory=FakeMemory(),
+    )
+
+    plan = {
+        "tool": "file",
+        "action": "write",
+        "filename": "test.py",
+        "input": "print('hello')",
+    }
+
+    original_plan = plan.copy()
+
+    result = agent.normalize_tool_input(plan)
+
+    assert result["content"] == "print('hello')"
+    assert "content" not in original_plan
+    assert plan == original_plan
+
+@pytest.mark.integration
+def test_tool_agent_normalize_calculator_does_not_mutate_original_plan():
+
+    registry = FakeToolRegistry()
+
+    agent = ToolAgent(
+        registry=registry,
+        memory=FakeMemory(),
+    )
+
+    plan = {
+        "tool": "calculator",
+        "input": "10 + 20",
+    }
+
+    original_plan = plan.copy()
+
+    result = agent.normalize_tool_input(plan)
+
+    assert result["operation"] == "add"
+    assert result["numbers"] == ["10", "20"]
+    assert "operation" not in original_plan
+    assert "numbers" not in original_plan
+    assert plan == original_plan

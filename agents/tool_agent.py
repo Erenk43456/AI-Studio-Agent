@@ -175,6 +175,10 @@ class ToolAgent(BaseAgent):
         return results
 
     def normalize_tool_input(self, plan: Any) -> Any:
+
+        if isinstance(plan, dict):
+            plan = plan.copy()
+            
         tool_name = (
             getattr(plan, "tool", None)
             or (plan.get("tool") if hasattr(plan, "get") else None)
