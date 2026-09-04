@@ -75,6 +75,9 @@ class LLM(LLMContract):
         cancel_event=None
     ):
 
+        if cancel_event is not None and cancel_event.is_set():
+            return "LLM_ERROR: Generation cancelled."
+
         try:
 
             response = requests.post(

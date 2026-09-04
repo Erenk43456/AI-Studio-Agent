@@ -333,3 +333,44 @@ def test_llm_generate_does_not_run_separate_connection_check(
     )
 
     assert result == "generated"
+
+@pytest.mark.unit
+def test_llm_generate_respects_cancel_event(tmp_path, monkeypatch):
+    from threading import Event
+
+    from models.llm import LLM
+
+    class Config:
+        model = "qwen2.5:3b"
+        endpoint = "http://localhost:11434"
+        temperature = 0.3
+        max_tokens = 100
+        timeout = 120
+
+    cancel_event = Event()
+    cancel_event.set()
+
+    request_called = False
+
+    def fake_post(*args, **kwargs):
+        nonlocal request_called
+        request_called = True
+
+        raise AssertionError(
+            "Cancelled generation must not start an HTTP request."
+        )
+
+    monkeypatch.setattr(
+        "models.llm.requests.post",
+        fake_post,
+    )
+
+    llm = LLM(Config())
+
+    result = llm.generate(
+        "Generate some code.",
+        cancel_event=cancel_event,
+    )
+
+    assert result == "LLM_ERROR: Generation cancelled."
+    assert request_called is False
