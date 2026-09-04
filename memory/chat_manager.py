@@ -1,5 +1,6 @@
 import json
 import shutil
+from datetime import datetime
 from pathlib import Path
 
 from memory.chat import Chat
@@ -138,6 +139,14 @@ class ChatManager:
                     item["id"],
                     item["title"]
                 )
+
+                created_at = item.get("created_at")
+
+                if created_at:
+                    chat.created_at = datetime.strptime(
+                        created_at,
+                        "%Y-%m-%d %H:%M:%S"
+                    )
 
                 loaded_chats[chat.id] = chat
                 next_id = max(
