@@ -340,21 +340,26 @@ Kullanıcı:
                 # JSON bloğu yakalama
                 #
 
-                match = re.search(
-                    r"\{.*\}",
-                    response,
-                    re.DOTALL
-                )
+                try:
+                    decision = json.loads(response)
+                except json.JSONDecodeError:
+                    start = response.find("{")
 
-                if not match:
+                    if start == -1:
+                        raise ValueError(
+                            "Decision model did not return valid JSON."
+                        )
 
-                    raise ValueError(
-                        "Decision model did not return valid JSON."
-                    )
+                    decoder = json.JSONDecoder()
 
-                decision = json.loads(
-                    match.group()
-                )
+                    try:
+                        decision, _ = decoder.raw_decode(
+                            response[start:]
+                        )
+                    except json.JSONDecodeError:
+                        raise ValueError(
+                            "Decision model did not return valid JSON."
+                        )
 
             #
             # Decision Validation

@@ -273,3 +273,26 @@ def test_decision_refactor_routes_to_improve():
     assert isinstance(result, DecisionContract)
     assert result.system == "development"
     assert result.action == "improve"
+
+@pytest.mark.unit
+def test_process_extracts_first_json_object_from_extra_response_content():
+    class FakeLLM:
+        def generate(self, prompt, temperature=0.1):
+            return (
+                'Here is the decision:\n'
+                '{"system": "development", "reason": "code request"}\n'
+                'Additional data: {"ignored": true}'
+            )
+
+    agent = DecisionAgent(
+        llm=FakeLLM(),
+        memory=None,
+        registry=None,
+    )
+
+    result = agent.process(
+        "Bana uygun bir sistem seç."
+    )
+
+    assert result.system == "development"
+    assert result.reason == "code request"
