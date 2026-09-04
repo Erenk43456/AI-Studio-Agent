@@ -90,7 +90,13 @@ class DevelopmentContext:
 
         target_files = self.collect_target_files(targets, all_files)
 
-        related_files = self.find_related_files(task, targets, all_files, architecture)
+        related_files = self.find_related_files(
+            task,
+            targets,
+            all_files,
+            architecture,
+            max_files=max_files,
+        )
 
         relationships = self.build_relationships(
             targets, target_files, related_files, architecture
@@ -182,7 +188,11 @@ class DevelopmentContext:
 
         return files
 
-    def collect_target_files(self, targets, all_files):
+    def collect_target_files(
+        self, 
+        targets, 
+        all_files
+    ):
 
         result = {}
 
@@ -258,7 +268,14 @@ class DevelopmentContext:
     # Related files
     # =============================================================
 
-    def find_related_files(self, task, targets, all_files, architecture=None):
+    def find_related_files(
+        self,
+        task,
+        targets,
+        all_files,
+        architecture=None,
+        max_files=12,
+    ):
 
         if not isinstance(all_files, dict):
 
@@ -438,7 +455,7 @@ class DevelopmentContext:
         )
 
         # Keep development context bounded.
-        return dict(ordered[:12])
+        return dict(ordered[:max_files])
 
     # =============================================================
     # Architecture relationship scoring
