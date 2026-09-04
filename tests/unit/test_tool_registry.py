@@ -202,20 +202,13 @@ def test_execute_returns_error_when_tool_has_no_execute():
     class NonExecutableTool:
         pass
 
-    registry.register(
+    assert registry.register(
         "broken",
         NonExecutableTool(),
-    )
+    ) is False
 
-    result = registry.execute(
-        "broken",
-        {"value": 42},
-    )
-
-    assert result == {
-        "success": False,
-        "error": "Tool broken has no execute method.",
-    }
+    assert registry.exists("broken") is False
+    assert registry.can_execute("broken") is False
 
 
 @pytest.mark.unit
@@ -423,4 +416,34 @@ def test_execute_preserves_tool_failure_status():
     assert result["result"] == {
         "success": False,
         "error": "operation failed",
+    }
+
+def test_register_stores_tool_metadata():
+    class FakeTool:
+        description = "Test tool"
+        purpose = "Testing"
+        safe = False
+        modifies_files = True
+        requires_confirmation = True
+        version = "2.0"
+
+        def execute(self, data):
+            return {"success": True}
+
+    registry = ToolRegistry()
+
+    assert registry.register(
+        "test_tool",
+        FakeTool(),
+        metadata={"extra": "value"},
+    ) is True
+
+    assert registry.get_metadata("test_tool") == {
+        "description": "Test tool",
+        "purpose": "Testing",
+        "safe": False,
+        "modifies_files": True,
+        "requires_confirmation": True,
+        "version": "2.0",
+        "extra": "value",
     }

@@ -31,6 +31,7 @@ class ToolRegistry:
                 f"Tool {name} has no execute method."
             )
 
+            return False
 
 
         self.tools[name] = tool
@@ -99,7 +100,7 @@ class ToolRegistry:
             f"Tool registered: {name}"
         )
 
-
+        return True
 
 
 
