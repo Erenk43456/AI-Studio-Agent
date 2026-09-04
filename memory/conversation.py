@@ -20,6 +20,7 @@ class ConversationMemory:
             self.file = Path(file_path)
 
             self.file.parent.mkdir(
+                parents=True,
                 exist_ok=True
             )
 
