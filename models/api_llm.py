@@ -411,8 +411,13 @@ class APILLM(LLMContract):
 
         try:
 
-            response = requests.get(
+            response = requests.post(
                 self.url,
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json"
+                },
+                json={},
                 timeout=5
             )
 
