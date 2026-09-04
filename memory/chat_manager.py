@@ -1,5 +1,7 @@
 import json
 import shutil
+import threading
+
 from datetime import datetime
 from pathlib import Path
 
@@ -16,6 +18,8 @@ class ChatManager:
 
         self.next_id = 1
 
+        self._lock = threading.RLock()
+
         self.file = Path("data/chats.json")
 
         self.file.parent.mkdir(exist_ok=True)
@@ -24,145 +28,163 @@ class ChatManager:
 
     def create_chat(self, title="New Chat"):
 
-        chat = Chat(self.next_id, title)
+        with self._lock:
 
-        self.chats[chat.id] = chat
+            chat = Chat(self.next_id, title)
 
-        self.current_chat = chat
-
-        self.next_id += 1
-
-        self.save()
-
-        return chat
-
-    def get_chat(self, chat_id):
-
-        return self.chats.get(chat_id)
-
-    def get_current_chat(self):
-
-        return self.current_chat
-
-    def switch_chat(self, chat_id):
-
-        chat = self.get_chat(chat_id)
-
-        if chat:
+            self.chats[chat.id] = chat
 
             self.current_chat = chat
 
+            self.next_id += 1
+
+            self.save()
+
             return chat
 
-        return None
+    def get_chat(self, chat_id):
+
+        with self._lock:
+
+            return self.chats.get(chat_id)
+
+    def get_current_chat(self):
+
+        with self._lock:
+
+            return self.current_chat
+
+    def switch_chat(self, chat_id):
+
+        with self._lock:
+
+            chat = self.get_chat(chat_id)
+
+            if chat:
+
+                self.current_chat = chat
+
+                return chat
+
+            return None
 
     def rename_chat(self, chat_id, title):
 
-        chat = self.get_chat(chat_id)
+        with self._lock:
 
-        if chat:
+            chat = self.get_chat(chat_id)
 
-            chat.title = title
+            if chat:
+
+                chat.title = title
+
+                self.save()
+
+                return True
+
+            return False
+
+    def delete_chat(self, chat_id):
+
+        with self._lock:
+
+            chat = self.chats.get(chat_id)
+
+            if not chat:
+
+                return False
+
+            # Diskteki chat klasörünü sil
+
+            if chat.folder.exists():
+
+                shutil.rmtree(chat.folder)
+
+            # Chat listesinden kaldır
+
+            del self.chats[chat_id]
+
+            # Aktif chat silindiyse
+
+            if self.current_chat and self.current_chat.id == chat_id:
+
+                self.current_chat = None
 
             self.save()
 
             return True
 
-        return False
-
-    def delete_chat(self, chat_id):
-
-        chat = self.chats.get(chat_id)
-
-        if not chat:
-
-            return False
-
-        # Diskteki chat klasörünü sil
-
-        if chat.folder.exists():
-
-            shutil.rmtree(chat.folder)
-
-        # Chat listesinden kaldır
-
-        del self.chats[chat_id]
-
-        # Aktif chat silindiyse
-
-        if self.current_chat and self.current_chat.id == chat_id:
-
-            self.current_chat = None
-
-        self.save()
-
-        return True
-
     def list_chats(self):
 
-        return sorted(self.chats.values(), key=lambda chat: chat.id)
+        with self._lock:
+
+            return sorted(self.chats.values(), key=lambda chat: chat.id)
 
     def save(self):
 
-        data = []
+        with self._lock:
 
-        for chat in self.chats.values():
+            data = []
 
-            data.append(chat.info())
+            for chat in self.chats.values():
 
-        with open(self.file, "w", encoding="utf-8") as f:
+                data.append(chat.info())
 
-            json.dump(data, f, ensure_ascii=False, indent=4)
+            with open(self.file, "w", encoding="utf-8") as f:
+
+                json.dump(data, f, ensure_ascii=False, indent=4)
 
     def load(self):
 
-        if not self.file.exists():
+        with self._lock:
 
-            return
+            if not self.file.exists():
 
-        try:
+                return
 
-            with open(
-                self.file,
-                "r",
-                encoding="utf-8"
-            ) as f:
+            try:
 
-                data = json.load(f)
+                with open(
+                    self.file,
+                    "r",
+                    encoding="utf-8"
+                ) as f:
 
-            loaded_chats = {}
-            next_id = self.next_id
+                    data = json.load(f)
 
-            for item in data:
+                loaded_chats = {}
+                next_id = self.next_id
 
-                chat = Chat(
-                    item["id"],
-                    item["title"]
-                )
+                for item in data:
 
-                created_at = item.get("created_at")
-
-                if created_at:
-                    chat.created_at = datetime.strptime(
-                        created_at,
-                        "%Y-%m-%d %H:%M:%S"
+                    chat = Chat(
+                        item["id"],
+                        item["title"]
                     )
 
-                loaded_chats[chat.id] = chat
-                next_id = max(
-                    next_id,
-                    chat.id + 1
+                    created_at = item.get("created_at")
+
+                    if created_at:
+                        chat.created_at = datetime.strptime(
+                            created_at,
+                            "%Y-%m-%d %H:%M:%S"
+                        )
+
+                    loaded_chats[chat.id] = chat
+                    next_id = max(
+                        next_id,
+                        chat.id + 1
+                    )
+
+                self.chats = loaded_chats
+                self.next_id = next_id
+
+                if self.chats:
+
+                    self.current_chat = self.list_chats()[0]
+
+            except Exception as error:
+
+                print(
+                    f"Failed to load chats: {error}"
                 )
-
-            self.chats = loaded_chats
-            self.next_id = next_id
-
-            if self.chats:
-
-                self.current_chat = self.list_chats()[0]
-
-        except Exception as error:
-
-            print(
-                f"Failed to load chats: {error}"
-            )
