@@ -18,10 +18,13 @@ class FakeWatcher:
         self.path = path
         self.callback = callback
         self.started = False
+        self.stopped = False
 
     def start(self):
         self.started = True
 
+    def stop(self):
+        self.stopped = True
 
 class FakeModels:
     code_llm = FakeLLM()
@@ -140,3 +143,27 @@ def test_workspace_changes_trigger_project_memory_sync(monkeypatch):
     sync = FakeProjectMemorySync.instances[-1]
 
     assert sync.calls == [changed_files]
+
+@pytest.mark.unit
+def test_development_container_close_stops_watcher(monkeypatch):
+
+    monkeypatch.setattr(module, "WorkspaceWatcher", FakeWatcher)
+
+    container = DevelopmentContainer(FakeMain())
+
+    assert container.watcher.started is True
+    assert container.watcher.stopped is False
+
+    container.close()
+
+    assert container.watcher.stopped is True
+
+@pytest.mark.unit
+def test_development_container_context_manager_closes_watcher(monkeypatch):
+
+    monkeypatch.setattr(module, "WorkspaceWatcher", FakeWatcher)
+
+    with DevelopmentContainer(FakeMain()) as container:
+        assert container.watcher.started is True
+
+    assert container.watcher.stopped is True

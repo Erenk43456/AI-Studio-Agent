@@ -107,3 +107,13 @@ class DevelopmentContainer:
     def on_workspace_changes(self, changed_files):
 
         self.project_memory_sync.sync(changed_files)
+
+    def close(self):
+        if self.watcher:
+            self.watcher.stop()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
