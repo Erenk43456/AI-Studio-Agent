@@ -210,20 +210,22 @@ class ProjectMemory:
 
         project_info = dict(overview)
 
-        if "generated_at" in analysis:
-            project_info["analysis_generated_at"] = analysis["generated_at"]
+        project = self.project_store.load(default={})
 
-            project = self.project_store.load(default={})
-            if not isinstance(project, dict):
-                project = {}
-            project.update(
-                {
-                    **project_info,
-                    "generation_id": generation_id,
-                    "repository_fingerprint": repository_fingerprint,
-                    "last_scan": str(datetime.now()),
-                }
-            )
+        if not isinstance(project, dict):
+            project = {}
+
+        project.update(
+            {
+                **project_info,
+                "generation_id": generation_id,
+                "repository_fingerprint": repository_fingerprint,
+                "last_scan": str(datetime.now()),
+            }
+        )
+
+        if "generated_at" in analysis:
+            project["analysis_generated_at"] = analysis["generated_at"]
 
         indexed_files = analysis.get("files", {})
         if not isinstance(indexed_files, dict):
