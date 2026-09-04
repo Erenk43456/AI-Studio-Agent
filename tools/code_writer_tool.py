@@ -133,11 +133,14 @@ class CodeWriterTool:
                 }
             else:
                 try:
-                    snapshots[str(path_obj)] = (
-                        path_obj.read_bytes()
-                        if path_obj.exists()
-                        else None
-                    )
+                    snapshot_key = str(path_obj)
+
+                    if snapshot_key not in snapshots:
+                        snapshots[snapshot_key] = (
+                            path_obj.read_bytes()
+                            if path_obj.exists()
+                            else None
+                        )
                 except Exception as error:
                     result = {
                         "file": path,

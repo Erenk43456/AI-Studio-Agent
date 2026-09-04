@@ -1627,3 +1627,70 @@ def test_execute_rolls_back_previous_file_changes_on_failure(
     assert second_file.read_text(
         encoding="utf-8"
     ) == second_original
+
+@pytest.mark.unit
+def test_execute_preserves_original_snapshot_for_duplicate_paths(
+    tmp_path,
+):
+    original = """\
+VALUE = 1
+"""
+
+    source = tmp_path / "duplicate.py"
+    source.write_text(
+        original,
+        encoding="utf-8",
+    )
+
+    class DuplicatePathWriter(CodeWriterTool):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.call_count = 0
+
+        def modify_file(self, path, changes):
+            self.call_count += 1
+
+            if self.call_count == 1:
+                source.write_text(
+                    "VALUE = 2\n",
+                    encoding="utf-8",
+                )
+                return {
+                    "file": path,
+                    "status": "updated",
+                }
+
+            source.write_text(
+                "VALUE = 3\n",
+                encoding="utf-8",
+            )
+            return {
+                "file": path,
+                "error": "Second change failed.",
+            }
+
+    writer = DuplicatePathWriter(
+        llm=FakeLLM(),
+        workspace=tmp_path,
+    )
+
+    result = writer.execute(
+        {
+            "files": [
+                {
+                    "path": "duplicate.py",
+                    "changes": ["First change"],
+                },
+                {
+                    "path": "duplicate.py",
+                    "changes": ["Second change"],
+                },
+            ],
+        }
+    )
+
+    assert result["success"] is False
+
+    assert source.read_text(
+        encoding="utf-8"
+    ) == original
